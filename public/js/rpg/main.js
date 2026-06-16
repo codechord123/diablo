@@ -5,6 +5,7 @@ import { BootScene } from './scenes/BootScene.js';
 import { DungeonScene } from './scenes/DungeonScene.js';
 import { BattleScene } from './scenes/BattleScene.js';
 import { TownScene } from './scenes/TownScene.js';
+import { ClassSelectScene } from './scenes/ClassSelectScene.js';
 
 const computeSize = () => {
   // HUD(70px) + 헬프바(36px) 제외한 영역을 캔버스에 할당
@@ -22,7 +23,7 @@ const config = {
   height,
   backgroundColor: '#0d0908',
   pixelArt: false,
-  scene: [BootScene, DungeonScene, BattleScene, TownScene],
+  scene: [BootScene, ClassSelectScene, DungeonScene, BattleScene, TownScene],
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,

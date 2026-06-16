@@ -5,6 +5,7 @@ import { generateDungeon, TILE_SIZE, MAP_W, MAP_H } from '../dungeon.js';
 import { findPath } from '../pathfinding.js';
 import { MONSTERS, pickMonster, xpToNext } from '../../monsters.js';
 import { loadProgress, saveProgress, getUser } from '../../firebase-config.js';
+import { CLASSES, getClass, playerSpriteKey, tierForLevel } from '../../classes.js';
 
 export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
@@ -14,6 +15,13 @@ export class DungeonScene extends Phaser.Scene {
     try {
       this.uid = (await getUser()).uid;
       this.player = await loadProgress(this.uid);
+
+      // 직업 미선택 시 ClassSelectScene으로 라우팅
+      if (!this.player.class) {
+        this.scene.start('ClassSelect', { uid: this.uid, player: this.player });
+        return;
+      }
+      this.classDef = getClass(this.player.class);
 
       const dungeon = generateDungeon();
       this.grid = dungeon.grid;
@@ -78,15 +86,23 @@ export class DungeonScene extends Phaser.Scene {
   spawnPlayer(spawn) {
     const px = spawn.x * TILE_SIZE + TILE_SIZE/2;
     const py = spawn.y * TILE_SIZE + TILE_SIZE/2;
-    this.playerSprite = this.add.image(px, py, 'player').setDepth(20);
+    const spriteKey = playerSpriteKey(this.player.class, this.player.level);
+    this.playerSprite = this.add.image(px, py, spriteKey).setDepth(20);
     this.playerSprite.tile = { ...spawn };
-    // 발광 빛
+    this.playerSprite.currentTier = tierForLevel(this.player.level);
+    // 발광 빛 (직업 색상)
     this.playerLight = this.add.image(px, py, 'torch')
       .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(2.0)
-      .setAlpha(0.6)
+      .setAlpha(0.55)
       .setDepth(11)
-      .setTint(0x4cc9f0);
+      .setTint(this.classDef.glowColor);
+    // 살짝 떠다니는 idle
+    this.tweens.add({
+      targets: this.playerSprite,
+      y: py - 2,
+      duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
   }
 
   spawnMonsters() {
@@ -100,26 +116,36 @@ export class DungeonScene extends Phaser.Scene {
         const tx = room.x + 1 + Math.floor(Math.random() * (room.w - 2));
         const ty = room.y + 1 + Math.floor(Math.random() * (room.h - 2));
         if (this.grid[ty][tx] !== 0) continue;
-        const sprite = this.add.image(
-          tx * TILE_SIZE + TILE_SIZE/2,
-          ty * TILE_SIZE + TILE_SIZE/2,
-          `m-${data.id}`,
-        ).setDepth(20);
-        const label = this.add.text(sprite.x, sprite.y - 4, ['💀','🧟','👹','👻','🗿','🐲'][i % 6], {
-          fontSize: '22px',
-        }).setOrigin(0.5).setDepth(21);
+        const wx = tx * TILE_SIZE + TILE_SIZE/2;
+        const wy = ty * TILE_SIZE + TILE_SIZE/2;
+        const sprite = this.add.image(wx, wy + 4, `m-${data.id}`).setDepth(20);
+        // 카테고리 아이콘 (몬스터 머리 위 작은 표시)
+        const catIcon = this.categoryIcon(data.category);
+        const label = this.add.text(wx, wy - 30, catIcon, {
+          fontSize: '14px',
+        }).setOrigin(0.5).setDepth(21).setAlpha(0.7);
         this.monsters.push({ data, sprite, label, tile: { x: tx, y: ty } });
 
-        // 살랑살랑 idle 애니메이션
+        // 살랑살랑 idle
         this.tweens.add({
-          targets: [sprite, label],
-          y: '+=4',
+          targets: sprite,
+          y: wy + 1,
           duration: 800 + Math.random() * 400,
           yoyo: true,
-          repeat: -1,
+          repeat: -1, ease: 'Sine.easeInOut',
         });
       }
     }
+  }
+
+  categoryIcon(category) {
+    return {
+      'add-same':  '➕',
+      'sub-same':  '➖',
+      'add-diff':  '🟦',
+      'sub-diff':  '🟥',
+      'mixed':     '🔢',
+    }[category] || '❓';
   }
 
   setupCamera() {
@@ -212,6 +238,10 @@ export class DungeonScene extends Phaser.Scene {
     document.getElementById('hud-xp').textContent  = `${this.player.xp}/${xpToNext(this.player.level)}`;
     document.getElementById('hud-kills').textContent = this.player.kills;
     document.getElementById('hud-gold').textContent  = this.player.gold || 0;
+    const classEl = document.getElementById('hud-class');
+    if (classEl && this.classDef) {
+      classEl.textContent = `${this.classDef.icon} ${this.classDef.name}`;
+    }
   }
 
   // ---------- 이동 ----------
@@ -276,9 +306,10 @@ export class DungeonScene extends Phaser.Scene {
     this.scene.launch('Battle', {
       level: this.player.level,
       enemyName: enemy.data.name,
-      enemyEmoji: enemy.label.text,
+      enemyEmoji: enemy.data.emoji,
       enemyHp: enemy.data.maxHp,
-      category: enemy.data.category, // 몬스터별 문제 유형
+      category: enemy.data.category,
+      playerClass: this.player.class,
     });
   }
 
@@ -316,7 +347,11 @@ export class DungeonScene extends Phaser.Scene {
       }
     }
     this.player.mistakes += result.mistakes || 0;
-    if (result.victory) this.player.gold = (this.player.gold || 0) + enemy.data.gold;
+    if (result.victory) {
+      // 도적 골드 보너스 적용
+      const goldGain = Math.round(enemy.data.gold * (this.classDef.goldMul || 1));
+      this.player.gold = (this.player.gold || 0) + goldGain;
+    }
     this.setupHud();
     await saveProgress(this.uid, this.player);
 
@@ -328,13 +363,36 @@ export class DungeonScene extends Phaser.Scene {
 
   gainXp(xp) {
     this.player.xp += xp;
+    let leveledUp = false;
     while (this.player.xp >= xpToNext(this.player.level)) {
       this.player.xp -= xpToNext(this.player.level);
       this.player.level += 1;
-      this.player.maxHp += 1;
+      // 직업별 maxHp 성장률 (전사 +2, 그 외 +1)
+      this.player.maxHp += this.classDef.hpPerLevel || 1;
       this.player.hp = this.player.maxHp;
       this.showLevelUp();
+      leveledUp = true;
     }
+    // 외형 단계가 바뀌었으면 스프라이트 교체 (페이드 트윈)
+    if (leveledUp) this.maybeUpgradeAppearance();
+  }
+
+  maybeUpgradeAppearance() {
+    const newTier = tierForLevel(this.player.level);
+    if (newTier === this.playerSprite.currentTier) return;
+    const newKey = playerSpriteKey(this.player.class, this.player.level);
+    // 페이드 아웃 → 텍스처 교체 → 페이드 인
+    this.tweens.add({
+      targets: [this.playerSprite, this.playerLight],
+      alpha: 0.1,
+      duration: 400,
+      yoyo: true,
+      onYoyo: () => {
+        this.playerSprite.setTexture(newKey);
+        this.playerSprite.currentTier = newTier;
+        this.playerLight.setScale(2.0 + newTier * 0.15);
+      },
+    });
   }
 
   showLevelUp() {

@@ -3,6 +3,7 @@
 // 분수 모양은 HTML이 가장 깔끔하므로 Phaser canvas 위에 DOM을 띄움
 // ============================================================
 import { generateProblem, checkAnswer, problemToHtml, CATEGORIES } from '../../fractionEngine.js';
+import { getClass } from '../../classes.js';
 
 export class BattleScene extends Phaser.Scene {
   constructor() { super('Battle'); }
@@ -14,7 +15,11 @@ export class BattleScene extends Phaser.Scene {
     this.enemyHp = data.enemyHp;
     this.enemyMaxHp = data.enemyHp;
     this.category = data.category;
+    this.playerClass = data.playerClass;
+    this.classDef = getClass(this.playerClass);
     this.playerMistakes = 0;
+    this.correctStreak = 0;     // 마법사 능력용 카운터
+    this.firstMistake = true;   // 도적: 첫 오답은 회피 불가
     this.locked = false;
   }
 
@@ -76,8 +81,16 @@ export class BattleScene extends Phaser.Scene {
     const correct = checkAnswer(choice, this.problem.answer);
     const fb = document.getElementById('bm-feedback');
     if (correct) {
-      this.enemyHp -= 1;
-      fb.innerHTML = `✨ 명중! 정답: ${this.problem.answer.toHtml()}`;
+      // 기본 데미지 1 + 마법사 능력 (3회 연속마다 +1)
+      let dmg = 1;
+      this.correctStreak += 1;
+      const everyN = this.classDef.extraDamageEveryN || 0;
+      const bonus = (everyN > 0 && this.correctStreak % everyN === 0);
+      if (bonus) dmg += 1;
+      this.enemyHp -= dmg;
+      fb.innerHTML = bonus
+        ? `🔮 마법의 일격! +${dmg} 데미지 (정답: ${this.problem.answer.toHtml()})`
+        : `✨ 명중! 정답: ${this.problem.answer.toHtml()}`;
       fb.className = 'bm-feedback hit';
       this.renderEnemyHp();
       if (this.enemyHp <= 0) {
@@ -85,12 +98,20 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
     } else {
-      this.playerMistakes += 1;
-      fb.innerHTML = `💥 빗나감! 정답: ${this.problem.answer.toHtml()}`;
-      fb.className = 'bm-feedback miss';
-      // 학생도 HP 1 잃음 — DungeonScene에 전달
+      // 도적 회피 — 첫 오답 제외, 20% 확률
+      const evadeChance = this.classDef.evadeChance || 0;
+      const evaded = !this.firstMistake && evadeChance > 0 && Math.random() < evadeChance;
+      this.firstMistake = false;
+      if (evaded) {
+        fb.innerHTML = `🌀 회피! 데미지를 받지 않았다 (정답: ${this.problem.answer.toHtml()})`;
+        fb.className = 'bm-feedback evade';
+      } else {
+        this.playerMistakes += 1;
+        fb.innerHTML = `💥 빗나감! 정답: ${this.problem.answer.toHtml()}`;
+        fb.className = 'bm-feedback miss';
+      }
     }
-    setTimeout(() => this.nextProblem(), 800);
+    setTimeout(() => this.nextProblem(), 900);
   }
 
   flee() {

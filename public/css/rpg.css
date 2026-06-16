@@ -35,6 +35,13 @@ body {
   align-items: baseline;
   font-size: 18px;
 }
+.hud-class-cell {
+  padding: 4px 10px;
+  border-right: 1px solid var(--gold);
+  font-size: 16px;
+  color: var(--gold);
+  letter-spacing: 1px;
+}
 .hud-key {
   font-size: 11px;
   color: var(--gold);
@@ -207,8 +214,9 @@ body {
   font-size: 16px;
   font-weight: bold;
 }
-.bm-feedback.hit  { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
-.bm-feedback.miss { color: #ff6b6b; text-shadow: 0 0 10px #ff6b6b; }
+.bm-feedback.hit   { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+.bm-feedback.miss  { color: #ff6b6b; text-shadow: 0 0 10px #ff6b6b; }
+.bm-feedback.evade { color: #88dd55; text-shadow: 0 0 10px #88dd55; }
 .bm-feedback .frac { font-size: 18px; }
 
 .bm-hint {

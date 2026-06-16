@@ -47,13 +47,13 @@ export async function getUser() {
 
 export async function loadProgress(uid) {
   const local = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-  if (!isConfigured) return local || defaultProgress();
+  if (!isConfigured) return migrateProgress(local);
   try {
     const snap = await getDoc(doc(db, 'players', uid));
-    return snap.exists() ? snap.data() : (local || defaultProgress());
+    return migrateProgress(snap.exists() ? snap.data() : local);
   } catch (e) {
     console.warn('Firestore 로드 실패 — LocalStorage 사용', e);
-    return local || defaultProgress();
+    return migrateProgress(local);
   }
 }
 
@@ -65,5 +65,24 @@ export async function saveProgress(uid, data) {
 }
 
 function defaultProgress() {
-  return { level: 1, xp: 0, hp: 5, maxHp: 5, kills: 0, mistakes: 0 };
+  return {
+    level: 1, xp: 0, hp: 5, maxHp: 5,
+    kills: 0, mistakes: 0, gold: 0,
+    class: null,  // 미선택 시 ClassSelectScene으로 라우팅
+  };
+}
+
+// 구버전 세이브 호환 (없는 필드 채움)
+export function migrateProgress(p) {
+  if (!p) return defaultProgress();
+  return {
+    level:    p.level    ?? 1,
+    xp:       p.xp       ?? 0,
+    hp:       p.hp       ?? 5,
+    maxHp:    p.maxHp    ?? 5,
+    kills:    p.kills    ?? 0,
+    mistakes: p.mistakes ?? 0,
+    gold:     p.gold     ?? 0,
+    class:    p.class    ?? null,
+  };
 }
