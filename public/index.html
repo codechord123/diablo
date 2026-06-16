@@ -17,6 +17,8 @@
     <div class="hud-cell"><span class="hud-key">XP</span><span id="hud-xp">0/50</span></div>
     <div class="hud-cell"><span class="hud-key">💰</span><span id="hud-gold">0</span></div>
     <div class="hud-cell"><span class="hud-key">처치</span><span id="hud-kills">0</span></div>
+    <div class="hud-cell"><span id="hud-weapon">🗡️</span></div>
+    <div class="hud-cell"><span id="hud-potion">🧪0</span></div>
     <div class="hud-cell hud-right"><a href="classic.html" class="link-classic">▷ Classic 모드</a></div>
   </header>
 
@@ -25,7 +27,7 @@
 
   <!-- 도움말 -->
   <footer class="help-bar">
-    🖱️ 클릭 or ⌨️ WASD/방향키 = 이동 · 몬스터 접근 = 자동 전투 · 전투 중 1~4 = 답 선택 · ESC = 도주 · R = 던전 재생성
+    🖱️ 클릭 or ⌨️ WASD/방향키 = 이동 · 1~4 = 답 · H = 포션 · ESC = 도주 · R = 던전 재생성
   </footer>
 
   <!-- 레벨업 배너 -->
@@ -47,7 +49,23 @@
       <div id="bm-problem" class="bm-problem"></div>
       <div id="bm-choices" class="bm-choices"></div>
       <div id="bm-feedback" class="bm-feedback"></div>
-      <div class="bm-hint">키보드 1~4 = 답 선택 · ESC = 도주</div>
+      <div class="bm-actions">
+        <button id="bm-potion" class="bm-potion">🧪 포션 사용 (0)</button>
+      </div>
+      <div class="bm-hint">키보드 1~4 = 답 · H = 포션 · ESC = 도주</div>
+    </div>
+  </div>
+
+  <!-- 상점 모달 -->
+  <div id="shop-modal" class="shop-modal">
+    <div class="shop-card">
+      <div class="shop-header">
+        <div id="shop-title" class="shop-title">상점</div>
+        <div class="shop-gold-bar">💰 <span id="shop-gold">0</span> G</div>
+        <button id="shop-close" class="shop-close">✕</button>
+      </div>
+      <div id="shop-items" class="shop-items"></div>
+      <div class="shop-hint">ESC = 닫기</div>
     </div>
   </div>
 

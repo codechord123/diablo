@@ -7,6 +7,8 @@
 import { TILE_SIZE } from '../dungeon.js';
 import { xpToNext } from '../../monsters.js';
 import { getClass, playerSpriteKey } from '../../classes.js';
+import { ITEMS, SHOPS, canAfford, ownsWeapon, addPotion } from '../../items.js';
+import { saveProgress } from '../../firebase-config.js';
 
 export class TownScene extends Phaser.Scene {
   constructor() { super('Town'); }
@@ -113,9 +115,12 @@ export class TownScene extends Phaser.Scene {
     changeBtn.on('pointerout',  () => changeBtn.setStyle({ color: '#888' }));
     changeBtn.on('pointerdown', () => this.changeClass());
 
-    // Phase 2B 안내
-    this.add.text(W/2, H * 0.74, '🏪 상점 · 🔨 대장간 (다음 업데이트)', {
-      fontSize: '12px', color: '#666',
+    // NPC 배치 (좌: 상인, 우: 대장장이)
+    this.spawnNpc(W * 0.22, H * 0.62, 'merchant',   '🧙‍♀️', '상인 헬가',     '#88ddff');
+    this.spawnNpc(W * 0.78, H * 0.62, 'blacksmith', '🧔',   '대장장이 군나르', '#ff8855');
+
+    this.add.text(W/2, H * 0.74, 'NPC를 클릭하여 상점 열기', {
+      fontSize: '12px', color: '#888',
     }).setOrigin(0.5);
 
     this.input.keyboard.on('keydown-ENTER', () => this.enterDungeon());
@@ -135,6 +140,141 @@ export class TownScene extends Phaser.Scene {
   }
 
   enterDungeon() {
+    if (this._shopOpen) return; // 상점 열린 상태면 입장 차단
     this.scene.start('Dungeon');
+  }
+
+  // ============================================================
+  // NPC
+  // ============================================================
+  spawnNpc(x, y, shopKey, emoji, name, colorHex) {
+    const glow = this.add.image(x, y, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(1.4).setAlpha(0.55)
+      .setTint(parseInt(colorHex.slice(1), 16));
+    this.tweens.add({
+      targets: glow,
+      alpha: { from: 0.45, to: 0.7 },
+      duration: 1100, yoyo: true, repeat: -1,
+    });
+
+    const sprite = this.add.text(x, y, emoji, { fontSize: '54px' })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    this.add.text(x, y + 45, name, {
+      fontSize: '14px', color: colorHex,
+      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    }).setOrigin(0.5);
+
+    this.add.text(x, y + 64, shopKey === 'merchant' ? '🏪 포션' : '🔨 무기', {
+      fontSize: '12px', color: '#d4af37',
+    }).setOrigin(0.5);
+
+    sprite.on('pointerover', () => sprite.setScale(1.1));
+    sprite.on('pointerout',  () => sprite.setScale(1.0));
+    sprite.on('pointerdown', () => this.openShop(shopKey, name));
+  }
+
+  // ============================================================
+  // 상점 모달 (DOM 오버레이)
+  // ============================================================
+  openShop(shopKey, npcName) {
+    const modal = document.getElementById('shop-modal');
+    document.getElementById('shop-title').textContent = `${npcName}의 상점`;
+    const list = document.getElementById('shop-items');
+    list.innerHTML = '';
+    this.shopKey = shopKey;
+    this.shopNpcName = npcName;
+
+    SHOPS[shopKey].forEach(itemId => this.renderShopItem(list, itemId));
+    this.refreshShopGold();
+    modal.classList.add('show');
+    this._shopOpen = true;
+
+    // ESC 닫기
+    if (!this._escHandler) {
+      this._escHandler = (e) => {
+        if (e.key === 'Escape' && this._shopOpen) this.closeShop();
+      };
+      document.addEventListener('keydown', this._escHandler);
+    }
+    // 닫기 버튼 (1회 등록)
+    const closeBtn = document.getElementById('shop-close');
+    if (!closeBtn._wired) {
+      closeBtn.addEventListener('click', () => this.closeShop());
+      closeBtn._wired = true;
+    }
+  }
+
+  renderShopItem(list, itemId) {
+    const item = ITEMS[itemId];
+    const row = document.createElement('div');
+    row.className = 'shop-row';
+
+    const owned = item.type === 'weapon' && ownsWeapon(this.player, itemId);
+    const affordable = canAfford(this.player, item);
+    const disabled = owned || !affordable;
+
+    row.innerHTML = `
+      <div class="shop-icon">${item.icon}</div>
+      <div class="shop-info">
+        <div class="shop-name">${item.name}</div>
+        <div class="shop-desc">${item.desc}</div>
+      </div>
+      <div class="shop-price">💰 ${item.price}G</div>
+      <button class="shop-buy" ${disabled ? 'disabled' : ''}>
+        ${owned ? '보유 중' : (affordable ? '구매' : '골드 부족')}
+      </button>
+    `;
+    const btn = row.querySelector('.shop-buy');
+    if (!disabled) btn.addEventListener('click', () => this.buy(itemId, row));
+    list.appendChild(row);
+  }
+
+  async buy(itemId, row) {
+    const item = ITEMS[itemId];
+    if (!canAfford(this.player, item)) return;
+    this.player.gold -= item.price;
+    if (item.type === 'potion') {
+      addPotion(this.player, itemId);
+    } else if (item.type === 'weapon') {
+      this.player.weapons = this.player.weapons || ['sword_basic'];
+      if (!this.player.weapons.includes(itemId)) this.player.weapons.push(itemId);
+      this.player.equippedWeapon = itemId;
+    }
+    await saveProgress(this.uid, this.player);
+
+    row.classList.add('shop-row-bought');
+    setTimeout(() => this.refreshShopList(), 400);
+    this.refreshShopGold();
+    this.refreshHud();
+  }
+
+  refreshShopList() {
+    const list = document.getElementById('shop-items');
+    list.innerHTML = '';
+    SHOPS[this.shopKey].forEach(itemId => this.renderShopItem(list, itemId));
+  }
+
+  refreshShopGold() {
+    document.getElementById('shop-gold').textContent = this.player.gold || 0;
+  }
+
+  refreshHud() {
+    document.getElementById('hud-gold').textContent = this.player.gold || 0;
+    const weapon = ITEMS[this.player.equippedWeapon || 'sword_basic'];
+    const potionCount = Object.entries(this.player.inventory || {})
+      .filter(([id]) => ITEMS[id]?.type === 'potion')
+      .reduce((a, [, n]) => a + n, 0);
+    const wEl = document.getElementById('hud-weapon');
+    if (wEl) wEl.textContent = `${weapon.icon}`;
+    const pEl = document.getElementById('hud-potion');
+    if (pEl) pEl.textContent = `🧪${potionCount}`;
+  }
+
+  closeShop() {
+    document.getElementById('shop-modal').classList.remove('show');
+    this._shopOpen = false;
   }
 }

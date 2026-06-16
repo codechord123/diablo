@@ -6,6 +6,7 @@ import { findPath } from '../pathfinding.js';
 import { MONSTERS, pickMonster, xpToNext } from '../../monsters.js';
 import { loadProgress, saveProgress, getUser } from '../../firebase-config.js';
 import { CLASSES, getClass, playerSpriteKey, tierForLevel } from '../../classes.js';
+import { ITEMS, useFirstPotion, totalPotions, getEquippedWeapon } from '../../items.js';
 
 export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
@@ -97,12 +98,7 @@ export class DungeonScene extends Phaser.Scene {
       .setAlpha(0.55)
       .setDepth(11)
       .setTint(this.classDef.glowColor);
-    // 살짝 떠다니는 idle
-    this.tweens.add({
-      targets: this.playerSprite,
-      y: py - 2,
-      duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
+    // (idle 부유 트윈 제거 — 이동 트윈과 좌표 충돌로 캐릭터가 튕김)
   }
 
   spawnMonsters() {
@@ -185,7 +181,24 @@ export class DungeonScene extends Phaser.Scene {
       d: Phaser.Input.Keyboard.KeyCodes.D,
     });
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
+    this.input.keyboard.on('keydown-H', () => this.usePotionInDungeon());
     this.lastMoveTime = 0;
+  }
+
+  usePotionInDungeon() {
+    if (this.player.hp >= this.player.maxHp) return;
+    const usedId = useFirstPotion(this.player);
+    if (!usedId) return;
+    const item = ITEMS[usedId];
+    this.setupHud();
+    // 시각 피드백: 플레이어 빛 일시적으로 증폭
+    this.tweens.add({
+      targets: this.playerLight,
+      alpha: { from: 1, to: 0.55 },
+      scale: { from: 3.2, to: 2.0 },
+      duration: 600,
+    });
+    saveProgress(this.uid, this.player);
   }
 
   // 매 프레임 키 상태 확인 → 한 타일씩 이동 (150ms 쿨다운)
@@ -242,6 +255,11 @@ export class DungeonScene extends Phaser.Scene {
     if (classEl && this.classDef) {
       classEl.textContent = `${this.classDef.icon} ${this.classDef.name}`;
     }
+    const weapon = getEquippedWeapon(this.player);
+    const wEl = document.getElementById('hud-weapon');
+    if (wEl) wEl.textContent = `${weapon.icon}`;
+    const pEl = document.getElementById('hud-potion');
+    if (pEl) pEl.textContent = `🧪${totalPotions(this.player)}`;
   }
 
   // ---------- 이동 ----------
@@ -310,6 +328,7 @@ export class DungeonScene extends Phaser.Scene {
       enemyHp: enemy.data.maxHp,
       category: enemy.data.category,
       playerClass: this.player.class,
+      player: this.player, // 인벤토리/HP 공유 (참조 전달)
     });
   }
 
@@ -334,16 +353,13 @@ export class DungeonScene extends Phaser.Scene {
       this.gainXp(enemy.data.xp);
       this.player.kills += 1;
     } else {
-      this.player.hp = result.playerHpRemaining;
-      if (this.player.hp <= 0) {
+      // HP는 BattleScene에서 즉시 차감됨 → 이미 player.hp에 반영
+      if (this.player.hp <= 0 || result.defeated) {
+        // 사망 → 마을로 강제 귀환 (HP 회복은 TownScene이 처리)
         this.player.hp = this.player.maxHp;
-        // 시작 위치로 리스폰
-        const spawn = this.rooms[0];
-        this.playerSprite.x = spawn.cx * TILE_SIZE + TILE_SIZE/2;
-        this.playerSprite.y = spawn.cy * TILE_SIZE + TILE_SIZE/2;
-        this.playerSprite.tile = { x: spawn.cx, y: spawn.cy };
-        this.playerLight.x = this.playerSprite.x;
-        this.playerLight.y = this.playerSprite.y;
+        await saveProgress(this.uid, this.player);
+        this.scene.start('Town', { player: this.player, uid: this.uid });
+        return;
       }
     }
     this.player.mistakes += result.mistakes || 0;
