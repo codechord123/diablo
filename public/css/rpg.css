@@ -129,7 +129,13 @@ body {
 }
 .bm-enemy-emoji { font-size: 60px; filter: drop-shadow(0 0 8px var(--blood)); }
 .bm-enemy-info { flex: 1; text-align: left; }
-.bm-enemy-name { font-size: 20px; color: var(--gold); margin-bottom: 6px; }
+.bm-enemy-name { font-size: 20px; color: var(--gold); margin-bottom: 4px; }
+.bm-category {
+  font-size: 12px;
+  color: #4cc9f0;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
 .bm-hpbar { background: #000; border: 1px solid #444; border-radius: 4px; height: 12px; overflow: hidden; }
 .bm-hpbar-fill {
   height: 100%;
@@ -170,6 +176,23 @@ body {
   font-family: inherit;
   cursor: pointer;
   transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+}
+.bm-choice-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--gold);
+  color: #000;
+  font-size: 14px;
+  font-weight: bold;
 }
 .bm-choice .frac { font-size: 26px; }
 .bm-choice:hover {
@@ -193,4 +216,43 @@ body {
   font-size: 11px;
   color: #888;
   letter-spacing: 2px;
+}
+
+/* ============================================================
+   Responsive — 태블릿/모바일 (가로·세로 모두)
+   ============================================================ */
+@media (max-width: 900px) {
+  .hud-bar { gap: 12px; padding: 8px 12px; flex-wrap: wrap; }
+  .hud-cell { font-size: 14px; }
+  .hud-key { font-size: 9px; letter-spacing: 1px; }
+  .link-classic { font-size: 11px; padding: 4px 8px; }
+  .help-bar { font-size: 10px; padding: 6px; }
+
+  .bm-card { min-width: auto; width: 95vw; padding: 20px; }
+  .bm-problem { font-size: 40px; gap: 8px; }
+  .bm-problem .frac { font-size: 28px; }
+  .bm-choice { padding: 10px; }
+  .bm-choice .frac { font-size: 22px; }
+  .bm-enemy-emoji { font-size: 48px; }
+  .bm-enemy-name { font-size: 16px; }
+}
+
+@media (max-width: 500px) {
+  .hud-bar { gap: 8px; }
+  .hud-cell { font-size: 12px; }
+  .hud-right { display: none; }  /* Classic 링크는 모바일에서 숨김 */
+  .bm-problem { font-size: 32px; }
+  .bm-problem .frac { font-size: 22px; }
+  .bm-choices { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .bm-choice .frac { font-size: 18px; }
+  .bm-choice-key { width: 20px; height: 20px; font-size: 12px; }
+  .levelup-banner { font-size: 36px; }
+}
+
+/* 가로 모드 (모바일 landscape) — 모달 높이 부족 방지 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .bm-card { padding: 12px 20px; }
+  .bm-problem { font-size: 28px; margin: 12px 0; }
+  .bm-enemy { padding-bottom: 10px; margin-bottom: 10px; }
+  .bm-enemy-emoji { font-size: 36px; }
 }

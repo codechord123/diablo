@@ -136,21 +136,74 @@ export class DungeonScene extends Phaser.Scene {
 
   setupInput() {
     this.input.on('pointerdown', (pointer) => {
+      // UI 영역(상단 HUD/하단 헬프바) 클릭은 무시
+      if (pointer.event.target !== this.game.canvas) return;
       const wx = pointer.worldX, wy = pointer.worldY;
       const tx = Math.floor(wx / TILE_SIZE);
       const ty = Math.floor(wy / TILE_SIZE);
       this.moveTo({ x: tx, y: ty });
     });
-    // ESC / R = 던전 재생성 (디버그 편의)
+
+    // 키보드: 방향키 + WASD
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.wasd = this.input.keyboard.addKeys({
+      w: Phaser.Input.Keyboard.KeyCodes.W,
+      a: Phaser.Input.Keyboard.KeyCodes.A,
+      s: Phaser.Input.Keyboard.KeyCodes.S,
+      d: Phaser.Input.Keyboard.KeyCodes.D,
+    });
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
+    this.lastMoveTime = 0;
+  }
+
+  // 매 프레임 키 상태 확인 → 한 타일씩 이동 (150ms 쿨다운)
+  update(time) {
+    if (this.moving || this.scene.isPaused()) return;
+    if (time - this.lastMoveTime < 150) return;
+
+    let dx = 0, dy = 0;
+    const c = this.cursors, k = this.wasd;
+    // 마지막 입력 우선 (대각선 어긋남 방지: 가로/세로 중 하나만)
+    if (c.left.isDown || k.a.isDown)       dx = -1;
+    else if (c.right.isDown || k.d.isDown) dx = 1;
+    else if (c.up.isDown || k.w.isDown)    dy = -1;
+    else if (c.down.isDown || k.s.isDown)  dy = 1;
+    if (dx === 0 && dy === 0) return;
+
+    this.stepDir(dx, dy);
+    this.lastMoveTime = time;
+  }
+
+  // 키보드 한 칸 이동 (벽이면 무시, 인접 몬스터 있으면 전투 트리거)
+  stepDir(dx, dy) {
+    const cur = this.playerSprite.tile;
+    const next = { x: cur.x + dx, y: cur.y + dy };
+    if (next.y < 0 || next.y >= this.grid.length) return;
+    if (next.x < 0 || next.x >= this.grid[0].length) return;
+    if (this.grid[next.y][next.x] === 1) return;
+
+    const enemy = this.monsters.find(m => m.tile.x === next.x && m.tile.y === next.y);
+    if (enemy) { this.triggerBattle(enemy); return; }
+
+    this.moving = true;
+    this.tweens.add({
+      targets: [this.playerSprite, this.playerLight],
+      x: next.x * TILE_SIZE + TILE_SIZE/2,
+      y: next.y * TILE_SIZE + TILE_SIZE/2,
+      duration: 130,
+      onComplete: () => {
+        this.playerSprite.tile = next;
+        this.moving = false;
+      },
+    });
   }
 
   setupHud() {
-    // HUD는 DOM으로 — 분수 모양 일관성 + 가독성 ↑
     document.getElementById('hud-lv').textContent  = this.player.level;
     document.getElementById('hud-hp').textContent  = `${this.player.hp}/${this.player.maxHp}`;
     document.getElementById('hud-xp').textContent  = `${this.player.xp}/${xpToNext(this.player.level)}`;
     document.getElementById('hud-kills').textContent = this.player.kills;
+    document.getElementById('hud-gold').textContent  = this.player.gold || 0;
   }
 
   // ---------- 이동 ----------
@@ -217,6 +270,7 @@ export class DungeonScene extends Phaser.Scene {
       enemyName: enemy.data.name,
       enemyEmoji: enemy.label.text,
       enemyHp: enemy.data.maxHp,
+      category: enemy.data.category, // 몬스터별 문제 유형
     });
   }
 
@@ -254,12 +308,13 @@ export class DungeonScene extends Phaser.Scene {
       }
     }
     this.player.mistakes += result.mistakes || 0;
+    if (result.victory) this.player.gold = (this.player.gold || 0) + enemy.data.gold;
     this.setupHud();
     await saveProgress(this.uid, this.player);
 
-    // 모든 몬스터 처치 시 자동 던전 재생성
+    // 모든 몬스터 처치 시 마을로 복귀
     if (this.monsters.length === 0) {
-      this.scene.restart();
+      this.scene.start('Town', { player: this.player, uid: this.uid });
     }
   }
 

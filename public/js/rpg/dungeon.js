@@ -62,9 +62,9 @@ function carveCorridor(grid, a, b, seedFn) {
 
 function carveH(grid, x1, x2, y) {
   const [a, b] = [Math.min(x1, x2), Math.max(x1, x2)];
-  for (let x = a; x <= b; x++) { grid[y][x] = 0; grid[y+1] && (grid[y+1][x] = grid[y+1][x] === 1 && x % 1 === 0 ? 0 : grid[y+1][x]); }
+  for (let x = a; x <= b; x++) grid[y][x] = 0;
 }
 function carveV(grid, y1, y2, x) {
   const [a, b] = [Math.min(y1, y2), Math.max(y1, y2)];
-  for (let y = a; y <= b; y++) { grid[y][x] = 0; }
+  for (let y = a; y <= b; y++) grid[y][x] = 0;
 }

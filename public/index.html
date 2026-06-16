@@ -14,6 +14,7 @@
     <div class="hud-cell"><span class="hud-key">Lv</span><span id="hud-lv">1</span></div>
     <div class="hud-cell"><span class="hud-key">HP</span><span id="hud-hp">5/5</span></div>
     <div class="hud-cell"><span class="hud-key">XP</span><span id="hud-xp">0/50</span></div>
+    <div class="hud-cell"><span class="hud-key">💰</span><span id="hud-gold">0</span></div>
     <div class="hud-cell"><span class="hud-key">처치</span><span id="hud-kills">0</span></div>
     <div class="hud-cell hud-right"><a href="classic.html" class="link-classic">▷ Classic 모드</a></div>
   </header>
@@ -23,7 +24,7 @@
 
   <!-- 도움말 -->
   <footer class="help-bar">
-    🖱️ 클릭하여 이동 · 몬스터에 접근하면 자동 전투 · ESC 도주 · R 던전 재생성
+    🖱️ 클릭 or ⌨️ WASD/방향키 = 이동 · 몬스터 접근 = 자동 전투 · 전투 중 1~4 = 답 선택 · ESC = 도주 · R = 던전 재생성
   </footer>
 
   <!-- 레벨업 배너 -->
@@ -36,6 +37,7 @@
         <span id="bm-enemy-emoji" class="bm-enemy-emoji">💀</span>
         <div class="bm-enemy-info">
           <div id="bm-enemy-name" class="bm-enemy-name">해골 전사</div>
+          <div id="bm-category" class="bm-category">📚 동분모 덧셈</div>
           <div class="bm-hpbar"><div id="bm-enemy-hpbar" class="bm-hpbar-fill"></div></div>
           <div id="bm-enemy-hp" class="bm-enemy-hp">2 / 2</div>
         </div>
@@ -44,7 +46,7 @@
       <div id="bm-problem" class="bm-problem"></div>
       <div id="bm-choices" class="bm-choices"></div>
       <div id="bm-feedback" class="bm-feedback"></div>
-      <div class="bm-hint">ESC: 도주</div>
+      <div class="bm-hint">키보드 1~4 = 답 선택 · ESC = 도주</div>
     </div>
   </div>
 

@@ -2,7 +2,7 @@
 // BattleScene — 분수 전투 (DOM 오버레이 모달)
 // 분수 모양은 HTML이 가장 깔끔하므로 Phaser canvas 위에 DOM을 띄움
 // ============================================================
-import { generateProblem, checkAnswer, problemToHtml } from '../../fractionEngine.js';
+import { generateProblem, checkAnswer, problemToHtml, CATEGORIES } from '../../fractionEngine.js';
 
 export class BattleScene extends Phaser.Scene {
   constructor() { super('Battle'); }
@@ -13,6 +13,7 @@ export class BattleScene extends Phaser.Scene {
     this.enemyEmoji = data.enemyEmoji;
     this.enemyHp = data.enemyHp;
     this.enemyMaxHp = data.enemyHp;
+    this.category = data.category;
     this.playerMistakes = 0;
     this.locked = false;
   }
@@ -22,11 +23,23 @@ export class BattleScene extends Phaser.Scene {
     this.modal.classList.add('show');
     document.getElementById('bm-enemy-emoji').textContent = this.enemyEmoji;
     document.getElementById('bm-enemy-name').textContent = this.enemyName;
+    // 문제 유형 라벨
+    const catLabel = (CATEGORIES[this.category] || {}).label || '분수';
+    document.getElementById('bm-category').textContent = `📚 ${catLabel}`;
     this.renderEnemyHp();
     this.nextProblem();
 
-    this.escKey = this.input.keyboard.addKey('ESC');
-    this.escKey.on('down', () => this.flee());
+    // 키보드: ESC=도주, 1~4 답 선택
+    this.input.keyboard.addKey('ESC').on('down', () => this.flee());
+    ['ONE', 'TWO', 'THREE', 'FOUR'].forEach((k, i) => {
+      this.input.keyboard.addKey(`${k}`).on('down', () => this.pickByIndex(i));
+    });
+  }
+
+  pickByIndex(i) {
+    if (this.locked) return;
+    if (i < 0 || i >= this.problem.choices.length) return;
+    this.answer(this.problem.choices[i]);
   }
 
   renderEnemyHp() {
@@ -36,16 +49,20 @@ export class BattleScene extends Phaser.Scene {
   }
 
   nextProblem() {
-    this.problem = generateProblem(this.level);
+    // 몬스터별 카테고리 사용 (레벨 부족 시 자동 폴백)
+    this.problem = generateProblem(this.level, this.category);
     document.getElementById('bm-problem').innerHTML =
       `${problemToHtml(this.problem)} <span class="op">=</span> <span class="q">?</span>`;
     const box = document.getElementById('bm-choices');
     box.innerHTML = '';
-    this.problem.choices.forEach((c) => {
+    this.problem.choices.forEach((c, idx) => {
       const btn = document.createElement('button');
       btn.className = 'bm-choice';
       const [n, d] = c.split('/');
-      btn.innerHTML = `<span class="frac frac-sm"><span class="num">${n}</span><span class="den">${d}</span></span>`;
+      btn.innerHTML = `
+        <span class="bm-choice-key">${idx + 1}</span>
+        <span class="frac frac-sm"><span class="num">${n}</span><span class="den">${d}</span></span>
+      `;
       btn.addEventListener('click', () => this.answer(c));
       box.appendChild(btn);
     });
