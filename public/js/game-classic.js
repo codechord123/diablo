@@ -1,7 +1,7 @@
 // ============================================================
 // game.js — 게임 루프 및 DOM UI 컨트롤러
 // ============================================================
-import { generateProblem, checkAnswer } from './fractionEngine.js';
+import { generateProblem, checkAnswer, problemToHtml } from './fractionEngine.js';
 import { pickMonster, xpToNext } from './monsters.js';
 import { getUser, loadProgress, saveProgress } from './firebase-config.js';
 
@@ -51,7 +51,7 @@ async function attack(choice) {
 
   if (correct) {
     state.monster.currentHp -= 1;
-    feedback.textContent = `✨ 명중! ${state.problem.text} = ${state.problem.answer.toString()}`;
+    feedback.innerHTML = `✨ 명중! ${problemToHtml(state.problem)} = ${state.problem.answer.toHtml()}`;
     feedback.className = 'feedback hit';
     monsterEl.classList.add('shake');
     setTimeout(() => monsterEl.classList.remove('shake'), 300);
@@ -65,7 +65,7 @@ async function attack(choice) {
   } else {
     state.player.hp = Math.max(0, state.player.hp - 1);
     state.player.mistakes += 1;
-    feedback.textContent = `💥 빗나감! 정답은 ${state.problem.answer.toString()}`;
+    feedback.innerHTML = `💥 빗나감! 정답은 ${state.problem.answer.toHtml()}`;
     feedback.className = 'feedback miss';
     $('#player').classList.add('shake');
     setTimeout(() => $('#player').classList.remove('shake'), 300);
@@ -146,13 +146,16 @@ function renderMonster() {
 }
 
 function renderProblem() {
-  $('#problem-text').textContent = `${state.problem.text} = ?`;
+  // 진짜 분수 모양으로 렌더링
+  $('#problem-text').innerHTML = `${problemToHtml(state.problem)} <span class="op">=</span> <span class="q">?</span>`;
   const box = $('#choices');
   box.innerHTML = '';
   state.problem.choices.forEach((c) => {
     const btn = document.createElement('button');
     btn.className = 'choice';
-    btn.textContent = c;
+    // 선택지 "n/d" 문자열을 분수 모양으로
+    const [n, d] = c.split('/');
+    btn.innerHTML = `<span class="frac frac-sm"><span class="num">${n}</span><span class="den">${d}</span></span>`;
     btn.addEventListener('click', () => attack(c));
     box.appendChild(btn);
   });

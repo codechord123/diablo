@@ -1,0 +1,196 @@
+/* ============================================================
+   rpg.css — Phaser RPG 모드 UI + 배틀 모달
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-0: #0d0908;
+  --bg-1: #1a110e;
+  --gold: #d4af37;
+  --blood: #a31621;
+  --text: #ead7b7;
+}
+
+body {
+  font-family: 'Cinzel', 'Noto Serif KR', Georgia, serif;
+  background: radial-gradient(ellipse at center, var(--bg-1) 0%, #000 100%);
+  color: var(--text);
+  min-height: 100vh;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* ---------- HUD Bar ---------- */
+.hud-bar {
+  display: flex;
+  gap: 24px;
+  padding: 10px 24px;
+  background: linear-gradient(180deg, #2a1a14, #0d0908);
+  border-bottom: 2px solid var(--gold);
+  align-items: center;
+}
+.hud-cell {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 18px;
+}
+.hud-key {
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+.hud-right { margin-left: auto; }
+.link-classic {
+  color: var(--gold);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.link-classic:hover { background: var(--gold); color: #000; }
+
+/* ---------- Game Canvas ---------- */
+#game-canvas {
+  width: 100vw;
+  height: calc(100vh - 90px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#game-canvas canvas { box-shadow: 0 0 40px rgba(0,0,0,0.8); }
+
+/* ---------- Help Bar ---------- */
+.help-bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  padding: 8px;
+  color: var(--gold);
+  background: rgba(0,0,0,0.6);
+  border-top: 1px solid #333;
+}
+
+/* ---------- Level Up Banner ---------- */
+.levelup-banner {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  font-size: 56px;
+  font-weight: bold;
+  color: var(--gold);
+  text-shadow: 0 0 30px var(--gold), 0 0 60px var(--blood);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 200;
+  transition: all 0.4s;
+}
+.levelup-banner.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ---------- Battle Modal ---------- */
+.battle-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+.battle-modal.show { display: flex; }
+
+.bm-card {
+  background: linear-gradient(180deg, #2a1a14, #0d0706);
+  border: 3px solid var(--gold);
+  border-radius: 12px;
+  padding: 30px 40px;
+  min-width: 480px;
+  max-width: 90vw;
+  box-shadow: 0 0 60px rgba(212,175,55,0.5);
+  text-align: center;
+}
+
+.bm-enemy {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #333;
+  margin-bottom: 20px;
+}
+.bm-enemy-emoji { font-size: 60px; filter: drop-shadow(0 0 8px var(--blood)); }
+.bm-enemy-info { flex: 1; text-align: left; }
+.bm-enemy-name { font-size: 20px; color: var(--gold); margin-bottom: 6px; }
+.bm-hpbar { background: #000; border: 1px solid #444; border-radius: 4px; height: 12px; overflow: hidden; }
+.bm-hpbar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a0c0c, #c75a5a);
+  transition: width 0.3s;
+  width: 100%;
+}
+.bm-enemy-hp { font-size: 13px; color: #c75a5a; margin-top: 4px; }
+
+.bm-problem {
+  font-size: 56px;
+  font-weight: bold;
+  color: var(--text);
+  margin: 24px 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  text-shadow: 0 0 15px rgba(212,175,55,0.6);
+}
+.bm-problem .op { color: var(--gold); }
+.bm-problem .q  { color: #ff6b6b; }
+.bm-problem .frac { font-size: 40px; }
+
+.bm-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.bm-choice {
+  background: linear-gradient(180deg, #3a2418, #1a0e08);
+  color: var(--text);
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+  padding: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bm-choice .frac { font-size: 26px; }
+.bm-choice:hover {
+  background: linear-gradient(180deg, #5a3a24, #2a1810);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212,175,55,0.4);
+}
+
+.bm-feedback {
+  min-height: 28px;
+  margin-top: 16px;
+  font-size: 16px;
+  font-weight: bold;
+}
+.bm-feedback.hit  { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+.bm-feedback.miss { color: #ff6b6b; text-shadow: 0 0 10px #ff6b6b; }
+.bm-feedback .frac { font-size: 18px; }
+
+.bm-hint {
+  margin-top: 14px;
+  font-size: 11px;
+  color: #888;
+  letter-spacing: 2px;
+}

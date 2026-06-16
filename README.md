@@ -2,11 +2,24 @@
 
 초등학교 5학년 **분수의 덧셈과 뺄셈**을 학습하는 디아블로 스타일 RPG 게임.
 
-## 현재 단계: 단일 플레이어 프로토타입 (Phase 1)
+## 현재 단계: Phase 1.5 — Phaser RPG 단일 플레이어
 
-- 분수 문제 엔진 (동분모/이분모, 덧셈/뺄셈)
-- 몬스터 전투 시스템 (레벨/경험치/HP)
-- Firebase 진행도 저장 (익명 인증)
+| 모드 | URL | 설명 |
+|------|-----|------|
+| **RPG** (메인) | `/` (index.html) | 디아블로식 던전 탐험, 클릭 이동, 절차적 맵 |
+| Classic | `/classic.html` | DOM 기반 정적 카드 전투 (초기 프로토타입) |
+
+**공통 기능:**
+- 분수 문제 엔진 (동분모/이분모, 덧셈/뺄셈, 레벨 자동 적응)
+- 진짜 분수 모양 표시 (분자/분모 위아래로 — CSS 컴포넌트)
+- Firebase 진행도 저장 (익명 인증, LocalStorage 폴백)
+
+**RPG 모드 추가 기능:**
+- Phaser 3 기반 절차적 던전 (방 + 복도 자동 생성)
+- A* 길찾기 클릭 이동
+- 횃불 조명 + 비네팅 (디아블로 분위기)
+- 몬스터 조우 시 분수 전투 모달
+- 외부 에셋 0개 — 모든 스프라이트 절차 생성
 
 > 멀티플레이(25인 동시) 및 교사 대시보드는 Phase 2에서 추가 예정.
 
@@ -14,14 +27,26 @@
 
 ```
 diablo/
-├── public/                # Firebase Hosting 배포 대상
-│   ├── index.html
-│   ├── style.css
+├── public/
+│   ├── index.html              # RPG 모드 (메인)
+│   ├── classic.html            # Classic 모드
+│   ├── css/
+│   │   ├── fraction.css        # 진짜 분수 모양 (공용)
+│   │   ├── classic.css
+│   │   └── rpg.css
 │   └── js/
-│       ├── fractionEngine.js   # 분수 계산/문제 생성 (핵심)
-│       ├── monsters.js         # 몬스터 데이터
-│       ├── game.js             # 게임 루프/UI
-│       └── firebase-config.js  # Firebase 초기화
+│       ├── fractionEngine.js   # 분수 엔진 (공용)
+│       ├── monsters.js         # 몬스터 데이터 (공용)
+│       ├── firebase-config.js  # Firebase 초기화 (공용)
+│       ├── game-classic.js     # Classic 모드 로직
+│       └── rpg/
+│           ├── main.js         # Phaser 부트스트랩
+│           ├── dungeon.js      # 절차적 던전 생성
+│           ├── pathfinding.js  # A* 길찾기
+│           └── scenes/
+│               ├── BootScene.js     # 절차적 텍스처 생성
+│               ├── DungeonScene.js  # 맵 탐험
+│               └── BattleScene.js   # 분수 전투
 ├── firebase.json
 └── README.md
 ```

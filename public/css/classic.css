@@ -83,13 +83,22 @@ body {
 }
 .problem-label { font-size: 14px; color: var(--gold); margin-bottom: 16px; letter-spacing: 2px; }
 .problem-text {
-  font-size: 48px;
+  font-size: 56px;
   font-weight: bold;
   color: var(--text);
   margin: 20px 0 28px;
   font-family: 'Cinzel', Georgia, serif;
   text-shadow: 0 0 15px rgba(212,175,55,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
+.problem-text .op { color: var(--gold); }
+.problem-text .q  { color: #ff6b6b; }
+.problem-text .frac { font-size: 36px; }
+.choice .frac { font-size: 22px; }
 .choices {
   display: grid;
   grid-template-columns: 1fr 1fr;

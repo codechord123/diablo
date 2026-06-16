@@ -19,6 +19,17 @@ export class Fraction {
   equals(f) { return this.n === f.n && this.d === f.d; }
   toString() { return `${this.n}/${this.d}`; }
   toLatex()  { return `\\frac{${this.n}}{${this.d}}`; }
+
+  // 진짜 분수 모양 HTML — fraction.css와 함께 사용
+  toHtml() {
+    return `<span class="frac"><span class="num">${this.n}</span><span class="den">${this.d}</span></span>`;
+  }
+}
+
+// 문제 텍스트(`a/b + c/d`)를 진짜 분수 모양 HTML로 변환
+export function problemToHtml(problem) {
+  const opSpan = `<span class="op">${problem.op}</span>`;
+  return `${problem.a.toHtml()} ${opSpan} ${problem.b.toHtml()}`;
 }
 
 // ------------------------------------------------------------
