@@ -10,22 +10,28 @@ export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
 
   async create() {
-    this.uid = (await getUser()).uid;
-    this.player = await loadProgress(this.uid);
+    this.ready = false; // update() 가드용
+    try {
+      this.uid = (await getUser()).uid;
+      this.player = await loadProgress(this.uid);
 
-    const dungeon = generateDungeon();
-    this.grid = dungeon.grid;
-    this.rooms = dungeon.rooms;
+      const dungeon = generateDungeon();
+      this.grid = dungeon.grid;
+      this.rooms = dungeon.rooms;
 
-    this.drawMap();
-    this.spawnTorches();
-    this.spawnPlayer(dungeon.spawn);
-    this.spawnMonsters();
-    this.setupCamera();
-    this.setupLighting();
-    this.setupInput();
-    this.setupHud();
-    this.events.on('battle-result', this.onBattleResult, this);
+      this.drawMap();
+      this.spawnTorches();
+      this.spawnPlayer(dungeon.spawn);
+      this.spawnMonsters();
+      this.setupCamera();
+      this.setupLighting();
+      this.setupInput();
+      this.setupHud();
+      this.events.on('battle-result', this.onBattleResult, this);
+      this.ready = true; // 모든 셋업 완료 → update() 활성화
+    } catch (err) {
+      console.error('[DungeonScene.create] failed:', err);
+    }
   }
 
   // ---------- 맵 그리기 ----------
@@ -158,6 +164,8 @@ export class DungeonScene extends Phaser.Scene {
 
   // 매 프레임 키 상태 확인 → 한 타일씩 이동 (150ms 쿨다운)
   update(time) {
+    // async create()가 끝나기 전엔 cursors/wasd 미존재 → 가드
+    if (!this.ready || !this.cursors || !this.wasd) return;
     if (this.moving || this.scene.isPaused()) return;
     if (time - this.lastMoveTime < 150) return;
 

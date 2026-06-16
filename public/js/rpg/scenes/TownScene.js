@@ -11,19 +11,28 @@ export class TownScene extends Phaser.Scene {
   constructor() { super('Town'); }
 
   init(data) {
-    this.player = data.player;
-    this.uid = data.uid;
+    // 데이터 누락 대비 fallback
+    this.player = (data && data.player) || { level: 1, xp: 0, hp: 5, maxHp: 5, kills: 0, mistakes: 0, gold: 0 };
+    this.uid = (data && data.uid) || 'local-player';
   }
 
   create() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    try {
+      const W = this.scale.width;
+      const H = this.scale.height;
 
-    // 마을 배경 — 따뜻한 황금빛 그라데이션
-    this.cameras.main.setBackgroundColor('#1a0e08');
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(0x3a2418, 0x3a2418, 0x0d0706, 0x0d0706, 1);
-    bg.fillRect(0, 0, W, H);
+      // 카메라 명시적 리셋 (이전 던전 zoom/scroll 잔재 제거)
+      this.cameras.main.setScroll(0, 0).setZoom(1).setBackgroundColor('#1a0e08');
+
+      // 마을 배경 — 단색 (gradient는 일부 환경 미지원)
+      this.add.rectangle(W/2, H/2, W, H, 0x2a1a14).setDepth(-10);
+      this.createUi(W, H);
+    } catch (err) {
+      console.error('[TownScene.create] failed:', err);
+    }
+  }
+
+  createUi(W, H) {
 
     // 모닥불 빛
     const fire = this.add.image(W/2, H/2 + 50, 'torch')
