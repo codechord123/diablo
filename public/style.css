@@ -1,0 +1,161 @@
+/* ============================================================
+   Fraction Dungeon — Diablo-inspired dark theme
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-0: #0d0908;
+  --bg-1: #1a110e;
+  --bg-2: #2a1a14;
+  --gold: #d4af37;
+  --blood: #a31621;
+  --health: #d62828;
+  --xp: #4cc9f0;
+  --text: #ead7b7;
+  --shadow: 0 0 20px rgba(0,0,0,0.8);
+}
+
+body {
+  font-family: 'Cinzel', 'Noto Serif KR', Georgia, serif;
+  background:
+    radial-gradient(ellipse at center, var(--bg-1) 0%, var(--bg-0) 100%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='40' height='40' fill='%23000'/><circle cx='20' cy='20' r='1' fill='%23222'/></svg>");
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+  user-select: none;
+}
+
+/* ---------- HUD ---------- */
+.hud {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr auto;
+  gap: 16px;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  padding: 14px 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+.hud-block { display: flex; flex-direction: column; gap: 4px; min-width: 80px; }
+.hud-label { font-size: 12px; color: var(--gold); letter-spacing: 1px; }
+.hud-value { font-size: 24px; font-weight: bold; color: var(--text); }
+.bar { background: #000; border: 1px solid #444; border-radius: 4px; height: 14px; overflow: hidden; }
+.bar.small { height: 8px; }
+.bar-fill { height: 100%; transition: width 0.4s ease-out; }
+.hp-fill { background: linear-gradient(90deg, #5a0c0c, var(--health)); }
+.xp-fill { background: linear-gradient(90deg, #154360, var(--xp)); }
+.monster-fill { background: linear-gradient(90deg, #4a0c0c, #c75a5a); }
+
+/* ---------- Arena ---------- */
+.arena {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 30px;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ---------- Monster ---------- */
+.monster {
+  background: radial-gradient(circle, #2a0808, #100303);
+  border: 3px solid #a31621;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(163,22,33,0.4);
+  transition: border-color 0.3s;
+}
+.monster-emoji { font-size: 80px; margin-bottom: 12px; filter: drop-shadow(0 0 10px #a31621); }
+.monster-name { font-size: 18px; color: var(--gold); margin-bottom: 10px; }
+.monster-hp { font-size: 13px; color: #c75a5a; margin-top: 6px; }
+
+/* ---------- Problem Card ---------- */
+.problem-card {
+  background: linear-gradient(180deg, #2a1a14, #1a0f0c);
+  border: 3px solid var(--gold);
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(212,175,55,0.3);
+}
+.problem-label { font-size: 14px; color: var(--gold); margin-bottom: 16px; letter-spacing: 2px; }
+.problem-text {
+  font-size: 48px;
+  font-weight: bold;
+  color: var(--text);
+  margin: 20px 0 28px;
+  font-family: 'Cinzel', Georgia, serif;
+  text-shadow: 0 0 15px rgba(212,175,55,0.6);
+}
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.choice {
+  background: linear-gradient(180deg, #3a2418, #1a0e08);
+  color: var(--text);
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 24px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.choice:hover {
+  background: linear-gradient(180deg, #5a3a24, #2a1810);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212,175,55,0.4);
+}
+.choice:active { transform: translateY(0); }
+
+.feedback { min-height: 24px; font-size: 16px; font-weight: bold; }
+.feedback.hit  { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+.feedback.miss { color: #ff6b6b; text-shadow: 0 0 10px #ff6b6b; }
+
+/* ---------- Player ---------- */
+.player {
+  background: radial-gradient(circle, #0c1a2a, #030710);
+  border: 3px solid #4cc9f0;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(76,201,240,0.3);
+}
+.player-emoji { font-size: 80px; filter: drop-shadow(0 0 10px #4cc9f0); }
+.player-name { font-size: 18px; color: #4cc9f0; margin-top: 8px; }
+
+/* ---------- Animations ---------- */
+.shake { animation: shake 0.3s; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-8px); }
+  40%,80% { transform: translateX(8px); }
+}
+
+.levelup-banner {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  font-size: 56px;
+  font-weight: bold;
+  color: var(--gold);
+  text-shadow: 0 0 30px var(--gold), 0 0 60px var(--blood);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 100;
+  transition: all 0.4s;
+}
+.levelup-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+@media (max-width: 800px) {
+  .arena { grid-template-columns: 1fr; }
+  .problem-text { font-size: 36px; }
+}
