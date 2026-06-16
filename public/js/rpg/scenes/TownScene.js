@@ -22,12 +22,14 @@ export class TownScene extends Phaser.Scene {
   create() {
     try {
       this.cameras.main.setScroll(0, 0).setZoom(1).setBackgroundColor('#1a0e1a');
+      this.cameras.main.fadeIn(400, 0, 0, 0);
       this.drawSky();
       this.drawHorizon();
       this.drawGround();
       this.drawBuildings();
       this.drawAltar();
       this.drawTorchPosts();
+      this.drawDungeonPortal();     // 🚪 던전 입구 포털
       this.drawCharacter();
       this.drawNpcs();
       this.drawUiOverlay();
@@ -229,7 +231,90 @@ export class TownScene extends Phaser.Scene {
     g.fillCircle(cx, cy - 16, 1.5);
   }
 
-  // ---------- 횃불 기둥 ----------
+  // ---------- 던전 포털 (입구 아치) ----------
+  drawDungeonPortal() {
+    const W = this.scale.width, H = this.scale.height;
+    // 화면 오른쪽 위, 산기슭에 배치
+    const cx = W * 0.5;
+    const cy = H * 0.42;
+
+    // 아치 뒤 어둠 (입구 깊이)
+    const archDark = this.add.graphics().setDepth(-2);
+    archDark.fillStyle(0x000000, 1);
+    archDark.beginPath();
+    archDark.moveTo(cx - 32, cy + 30);
+    archDark.lineTo(cx - 32, cy - 10);
+    archDark.arc(cx, cy - 10, 32, Math.PI, 0, false);
+    archDark.lineTo(cx + 32, cy + 30);
+    archDark.closePath();
+    archDark.fillPath();
+
+    // 아치 돌 테두리
+    const archStone = this.add.graphics().setDepth(-1);
+    archStone.lineStyle(8, 0x4a3a30, 1);
+    archStone.beginPath();
+    archStone.moveTo(cx - 36, cy + 32);
+    archStone.lineTo(cx - 36, cy - 10);
+    archStone.arc(cx, cy - 10, 36, Math.PI, 0, false);
+    archStone.lineTo(cx + 36, cy + 32);
+    archStone.strokePath();
+
+    // 아치 돌 세부 (벽돌 줄눈)
+    archStone.lineStyle(1, 0x1a0a05, 0.7);
+    for (let i = 0; i < 7; i++) {
+      const a = Math.PI + (i / 6) * Math.PI;
+      const x1 = cx + Math.cos(a) * 32;
+      const y1 = cy - 10 + Math.sin(a) * 32;
+      const x2 = cx + Math.cos(a) * 40;
+      const y2 = cy - 10 + Math.sin(a) * 40;
+      archStone.lineBetween(x1, y1, x2, y2);
+    }
+
+    // 적색 룬 글로우 (위험 신호)
+    const portalGlow = this.add.image(cx, cy + 5, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(1.6).setAlpha(0.7).setTint(0xa31621)
+      .setDepth(-1);
+    this.tweens.add({
+      targets: portalGlow,
+      alpha: { from: 0.6, to: 0.95 },
+      scale: { from: 1.5, to: 1.75 },
+      duration: 700, yoyo: true, repeat: -1,
+    });
+
+    // 입구 안 빨간 안개
+    const mist = this.add.rectangle(cx, cy + 8, 56, 30, 0xa31621, 0.4).setDepth(-1);
+    this.tweens.add({
+      targets: mist,
+      alpha: { from: 0.3, to: 0.55 },
+      duration: 900, yoyo: true, repeat: -1,
+    });
+
+    // 룬 마크 (입구 위)
+    const runeText = this.add.text(cx, cy - 38, '⚔', {
+      fontSize: '20px', color: '#ff5544',
+    }).setOrigin(0.5).setDepth(0);
+    this.tweens.add({
+      targets: runeText,
+      alpha: { from: 0.6, to: 1.0 }, duration: 500, yoyo: true, repeat: -1,
+    });
+
+    // "던전 입장" 라벨 + 안내
+    this.add.text(cx, cy + 50, '⚔️ 던전 입구', {
+      fontSize: '15px', color: '#ff8855',
+      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    }).setOrigin(0.5).setDepth(20);
+
+    this.add.text(cx, cy + 68, '클릭 / Enter', {
+      fontSize: '11px', color: '#888',
+    }).setOrigin(0.5).setDepth(20);
+
+    // 클릭 영역 (히트박스 — 아치 + 라벨 포함)
+    const hit = this.add.zone(cx, cy + 10, 100, 110).setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => portalGlow.setScale(1.85));
+    hit.on('pointerout',  () => portalGlow.setScale(1.6));
+    hit.on('pointerdown', () => this.enterDungeon());
+  }
   drawTorchPosts() {
     const W = this.scale.width, H = this.scale.height;
     const groundY = H * 0.78;
@@ -388,8 +473,12 @@ export class TownScene extends Phaser.Scene {
   }
 
   enterDungeon() {
-    if (this._shopOpen) return;
-    this.scene.start('Dungeon');
+    if (this._shopOpen || this._leaving) return;
+    this._leaving = true;
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('Loading', { target: 'Dungeon', mode: 'enter' });
+    });
   }
 
   // ============================================================

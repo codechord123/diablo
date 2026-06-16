@@ -168,8 +168,11 @@ export class ClassSelectScene extends Phaser.Scene {
     }
     this.player.class = classKey;
     await saveProgress(this.uid, this.player);
-    // 직업 선택 후 마을부터 시작 (디아블로 흐름)
-    this.scene.start('Town', { uid: this.uid, player: this.player });
+    // 직업 선택 후 마을부터 시작 (로딩 경유)
+    this.scene.start('Loading', {
+      target: 'Town', mode: 'return',
+      data: { uid: this.uid, player: this.player },
+    });
   }
 
   responsiveFontSize(desktop, mobile) {

@@ -39,14 +39,17 @@ export class BootScene extends Phaser.Scene {
     this.makeGolem();
     this.makeDragon();
 
-    // 라우팅: 직업 미선택 → ClassSelect / 있음 → Town (디아블로 시작 흐름)
+    // 라우팅: 직업 미선택 → ClassSelect / 있음 → Town 로딩
     try {
       const user = await getUser();
       const player = await loadProgress(user.uid);
       if (!player.class) {
         this.scene.start('ClassSelect', { uid: user.uid, player });
       } else {
-        this.scene.start('Town', { uid: user.uid, player });
+        this.scene.start('Loading', {
+          target: 'Town', mode: 'return',
+          data: { uid: user.uid, player },
+        });
       }
     } catch (err) {
       console.error('[BootScene routing] failed:', err);

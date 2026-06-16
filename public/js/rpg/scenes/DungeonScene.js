@@ -12,7 +12,9 @@ export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
 
   async create() {
-    this.ready = false; // update() 가드용
+    this.ready = false;
+    this._leaving = false;
+    this.cameras.main.fadeIn(400, 0, 0, 0);
     try {
       this.uid = (await getUser()).uid;
       this.player = await loadProgress(this.uid);
@@ -31,6 +33,7 @@ export class DungeonScene extends Phaser.Scene {
       this.drawMap();
       this.spawnTorches();
       this.spawnPlayer(dungeon.spawn);
+      this.spawnExitStairs(dungeon.spawn);  // 마을로 돌아가는 계단
       this.spawnMonsters();
       this.setupCamera();
       this.setupLighting();
@@ -187,8 +190,72 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   async returnToTown() {
+    if (this._leaving) return;
+    this._leaving = true;
     await saveProgress(this.uid, this.player);
-    this.scene.start('Town', { uid: this.uid, player: this.player });
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('Loading', {
+        target: 'Town', mode: 'return',
+        data: { uid: this.uid, player: this.player },
+      });
+    });
+  }
+
+  // 시작 방에 마을로 돌아가는 계단 배치 + 인접 시 인터랙션
+  spawnExitStairs(spawn) {
+    // 시작 방 모서리에 계단 위치 (스폰 위치에서 살짝 떨어진 곳)
+    const sx = Math.max(1, spawn.x - 2);
+    const sy = spawn.y;
+    if (!this.grid[sy] || this.grid[sy][sx] === 1) {
+      // 막혔으면 그냥 spawn 옆에
+      this.exitTile = { x: spawn.x + 1, y: spawn.y };
+    } else {
+      this.exitTile = { x: sx, y: sy };
+    }
+    const wx = this.exitTile.x * TILE_SIZE + TILE_SIZE/2;
+    const wy = this.exitTile.y * TILE_SIZE + TILE_SIZE/2;
+
+    // 계단 그리기 (위 방향)
+    const g = this.add.graphics().setDepth(8);
+    g.fillStyle(0x4a3a30, 1).fillRect(wx - 16, wy - 16, 32, 32);
+    g.fillStyle(0x6a5a4a, 1).fillRect(wx - 14, wy - 14, 28, 4);
+    g.fillStyle(0x8a7a6a, 1).fillRect(wx - 12, wy - 8,  24, 4);
+    g.fillStyle(0xaa9a8a, 1).fillRect(wx - 10, wy - 2,  20, 4);
+    g.fillStyle(0xcab9aa, 1).fillRect(wx - 8,  wy + 4,  16, 4);
+    g.lineStyle(1, 0x000000, 0.6).strokeRect(wx - 16, wy - 16, 32, 32);
+    // 위로 향하는 화살표 표시
+    g.fillStyle(0xffd700, 0.9);
+    g.fillTriangle(wx, wy - 22, wx - 5, wy - 14, wx + 5, wy - 14);
+
+    // 따뜻한 빛
+    const exitGlow = this.add.image(wx, wy, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(1.4).setAlpha(0.5).setTint(0xffd17a).setDepth(9);
+    this.tweens.add({
+      targets: exitGlow,
+      alpha: { from: 0.4, to: 0.7 },
+      scale: { from: 1.3, to: 1.6 },
+      duration: 900, yoyo: true, repeat: -1,
+    });
+
+    // 라벨
+    this.exitLabel = this.add.text(wx, wy - 32, '🏰 마을 (E)', {
+      fontSize: '12px', color: '#ffd700',
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      padding: { left: 4, right: 4, top: 2, bottom: 2 },
+    }).setOrigin(0.5).setDepth(22).setVisible(false);
+
+    // E 키 인터랙션
+    this.input.keyboard.on('keydown-E', () => {
+      if (this.isAdjacentToExit()) this.returnToTown();
+    });
+  }
+
+  isAdjacentToExit() {
+    if (!this.exitTile || !this.playerSprite) return false;
+    const p = this.playerSprite.tile;
+    return Math.abs(p.x - this.exitTile.x) <= 1 && Math.abs(p.y - this.exitTile.y) <= 1;
   }
 
   usePotionInDungeon() {
@@ -211,6 +278,8 @@ export class DungeonScene extends Phaser.Scene {
   update(time) {
     // async create()가 끝나기 전엔 cursors/wasd 미존재 → 가드
     if (!this.ready || !this.cursors || !this.wasd) return;
+    // 출구 인접 시 라벨 표시
+    if (this.exitLabel) this.exitLabel.setVisible(this.isAdjacentToExit());
     if (this.moving || this.scene.isPaused()) return;
     if (time - this.lastMoveTime < 150) return;
 
@@ -361,10 +430,17 @@ export class DungeonScene extends Phaser.Scene {
     } else {
       // HP는 BattleScene에서 즉시 차감됨 → 이미 player.hp에 반영
       if (this.player.hp <= 0 || result.defeated) {
-        // 사망 → 마을로 강제 귀환 (HP 회복은 TownScene이 처리)
+        // 사망 → 마을 강제 귀환 (HP 회복은 TownScene이 처리)
         this.player.hp = this.player.maxHp;
         await saveProgress(this.uid, this.player);
-        this.scene.start('Town', { player: this.player, uid: this.uid });
+        this._leaving = true;
+        this.cameras.main.fadeOut(400, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          this.scene.start('Loading', {
+            target: 'Town', mode: 'return',
+            data: { uid: this.uid, player: this.player },
+          });
+        });
         return;
       }
     }
@@ -377,9 +453,16 @@ export class DungeonScene extends Phaser.Scene {
     this.setupHud();
     await saveProgress(this.uid, this.player);
 
-    // 모든 몬스터 처치 시 마을로 복귀
+    // 모든 몬스터 처치 시 마을로 복귀 (로딩 경유)
     if (this.monsters.length === 0) {
-      this.scene.start('Town', { player: this.player, uid: this.uid });
+      this._leaving = true;
+      this.cameras.main.fadeOut(300, 0, 0, 0);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.scene.start('Loading', {
+          target: 'Town', mode: 'return',
+          data: { uid: this.uid, player: this.player },
+        });
+      });
     }
   }
 
