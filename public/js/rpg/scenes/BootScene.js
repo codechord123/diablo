@@ -5,6 +5,7 @@
 // 몬스터: 6종 고유 실루엣
 // ============================================================
 import { CLASSES } from '../../classes.js';
+import { getUser, loadProgress } from '../../firebase-config.js';
 
 // Phaser fillPoints는 {x,y} 객체 배열을 요구 → flat→object 변환 헬퍼
 const pts = (...coords) => {
@@ -16,7 +17,7 @@ const pts = (...coords) => {
 export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
 
-  create() {
+  async create() {
     // 환경 텍스처
     this.makeFloorTile();
     this.makeWallTile();
@@ -38,7 +39,19 @@ export class BootScene extends Phaser.Scene {
     this.makeGolem();
     this.makeDragon();
 
-    this.scene.start('Dungeon');
+    // 라우팅: 직업 미선택 → ClassSelect / 있음 → Town (디아블로 시작 흐름)
+    try {
+      const user = await getUser();
+      const player = await loadProgress(user.uid);
+      if (!player.class) {
+        this.scene.start('ClassSelect', { uid: user.uid, player });
+      } else {
+        this.scene.start('Town', { uid: user.uid, player });
+      }
+    } catch (err) {
+      console.error('[BootScene routing] failed:', err);
+      this.scene.start('ClassSelect');
+    }
   }
 
   // ============================================================

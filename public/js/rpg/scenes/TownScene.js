@@ -1,8 +1,5 @@
 // ============================================================
-// TownScene — 마을 (Phase 1: placeholder, Phase 2: 상점/대장간 본격 구현)
-// ============================================================
-// 현재는 던전 클리어 후 잠시 머무는 휴식 공간.
-// "다음 던전 입장" 버튼 / Enter 키 / 클릭으로 다음 던전 진입.
+// TownScene — 따뜻한 일몰 마을 (디아블로 트리스트람 분위기 차용)
 // ============================================================
 import { TILE_SIZE } from '../dungeon.js';
 import { xpToNext } from '../../monsters.js';
@@ -14,124 +11,375 @@ export class TownScene extends Phaser.Scene {
   constructor() { super('Town'); }
 
   init(data) {
-    // 데이터 누락 대비 fallback
-    this.player = (data && data.player) || { level: 1, xp: 0, hp: 5, maxHp: 5, kills: 0, mistakes: 0, gold: 0 };
+    this.player = (data && data.player) || {
+      level: 1, xp: 0, hp: 5, maxHp: 5, kills: 0, mistakes: 0, gold: 0,
+      class: 'warrior',
+      inventory: {}, weapons: ['sword_basic'], equippedWeapon: 'sword_basic',
+    };
     this.uid = (data && data.uid) || 'local-player';
   }
 
   create() {
     try {
-      const W = this.scale.width;
-      const H = this.scale.height;
-
-      // 카메라 명시적 리셋 (이전 던전 zoom/scroll 잔재 제거)
-      this.cameras.main.setScroll(0, 0).setZoom(1).setBackgroundColor('#1a0e08');
-
-      // 마을 배경 — 단색 (gradient는 일부 환경 미지원)
-      this.add.rectangle(W/2, H/2, W, H, 0x2a1a14).setDepth(-10);
-      this.createUi(W, H);
+      this.cameras.main.setScroll(0, 0).setZoom(1).setBackgroundColor('#1a0e1a');
+      this.drawSky();
+      this.drawHorizon();
+      this.drawGround();
+      this.drawBuildings();
+      this.drawAltar();
+      this.drawTorchPosts();
+      this.drawCharacter();
+      this.drawNpcs();
+      this.drawUiOverlay();
+      this.refreshHud();
     } catch (err) {
       console.error('[TownScene.create] failed:', err);
     }
   }
 
-  createUi(W, H) {
-    const classDef = getClass(this.player.class);
+  // ---------- 배경 레이어 ----------
+  drawSky() {
+    const W = this.scale.width, H = this.scale.height;
+    // 일몰 그라데이션 (Canvas)
+    const key = `town-sky-${W}x${H}`;
+    if (!this.textures.exists(key)) {
+      const c = this.textures.createCanvas(key, W, H);
+      const ctx = c.getContext();
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0,    '#1a0a3a');  // 보랏빛 밤
+      grad.addColorStop(0.35, '#6a1a3a');  // 진홍 노을
+      grad.addColorStop(0.55, '#c84a1a');  // 주황 노을
+      grad.addColorStop(0.72, '#8a3a18');  // 흙빛 지평선
+      grad.addColorStop(1,    '#2a1408');  // 어두운 땅
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+      // 별 (위쪽에만)
+      for (let i = 0; i < 40; i++) {
+        ctx.fillStyle = `rgba(255,230,180,${0.4 + Math.random() * 0.5})`;
+        const x = Math.random() * W;
+        const y = Math.random() * H * 0.35;
+        ctx.fillRect(x, y, 1.5, 1.5);
+      }
+      c.refresh();
+    }
+    this.add.image(W/2, H/2, key).setDepth(-30);
 
-    // 모닥불 빛
-    const fire = this.add.image(W/2, H * 0.62, 'torch')
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setScale(3.0)
-      .setTint(0xff7733);
-    this.tweens.add({
-      targets: fire,
-      alpha: { from: 0.7, to: 1.0 },
-      scale: { from: 2.8, to: 3.2 },
-      duration: 700, yoyo: true, repeat: -1,
+    // 떠다니는 태양 (일몰 디스크)
+    const sun = this.add.circle(W * 0.78, H * 0.4, 36, 0xffd17a, 0.9).setDepth(-25);
+    this.add.circle(W * 0.78, H * 0.4, 28, 0xffe9c0, 1).setDepth(-25);
+    // 태양 글로우
+    this.add.image(W * 0.78, H * 0.4, 'torch')
+      .setScale(2.2).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0xffb060).setDepth(-26);
+  }
+
+  drawHorizon() {
+    const W = this.scale.width, H = this.scale.height;
+    // 먼 산 실루엣 (어두운 보라/갈색)
+    const horizonY = H * 0.5;
+    const mountains = this.add.graphics().setDepth(-20);
+    mountains.fillStyle(0x2a1830, 1);
+    mountains.beginPath();
+    mountains.moveTo(0, horizonY + 60);
+    const peaks = 8;
+    for (let i = 0; i <= peaks; i++) {
+      const x = (W / peaks) * i;
+      const y = horizonY + (Math.sin(i * 1.7) * 30) - 20;
+      mountains.lineTo(x, y);
+    }
+    mountains.lineTo(W, horizonY + 60);
+    mountains.closePath();
+    mountains.fillPath();
+
+    // 더 가까운 작은 언덕
+    mountains.fillStyle(0x180810, 1);
+    mountains.beginPath();
+    mountains.moveTo(0, horizonY + 80);
+    for (let i = 0; i <= peaks * 1.5; i++) {
+      const x = (W / (peaks * 1.5)) * i;
+      const y = horizonY + 50 + Math.sin(i * 2.3) * 15;
+      mountains.lineTo(x, y);
+    }
+    mountains.lineTo(W, horizonY + 80);
+    mountains.closePath();
+    mountains.fillPath();
+  }
+
+  drawGround() {
+    const W = this.scale.width, H = this.scale.height;
+    // 돌바닥 그라데이션 (어두운 흙)
+    const ground = this.add.graphics().setDepth(-15);
+    ground.fillStyle(0x1a0a05, 1).fillRect(0, H * 0.7, W, H * 0.3);
+    // 돌 텍스처 점 산포
+    for (let i = 0; i < 60; i++) {
+      const x = Math.random() * W;
+      const y = H * 0.7 + Math.random() * H * 0.3;
+      const c = 0x3a2010 + Math.floor(Math.random() * 0x111111);
+      ground.fillStyle(c, 0.6).fillRect(x, y, 2 + Math.random() * 3, 1 + Math.random() * 2);
+    }
+  }
+
+  // ---------- 건물 ----------
+  drawBuildings() {
+    const W = this.scale.width, H = this.scale.height;
+    const groundY = H * 0.74;
+
+    // 왼쪽 큰 집 (상인 집)
+    this.drawHouse(W * 0.12, groundY, 110, 90, 0x3a2018, 0xff9933);
+    // 왼쪽 작은 집
+    this.drawHouse(W * 0.30, groundY + 8, 70, 60, 0x2a1810, 0xffaa44);
+
+    // 오른쪽 큰 집 (대장간 — 더 검고 굴뚝 있음)
+    this.drawHouse(W * 0.88, groundY, 110, 90, 0x2a1410, 0xff4400, true);
+    // 오른쪽 작은 집
+    this.drawHouse(W * 0.70, groundY + 8, 70, 60, 0x2a1810, 0xffaa44);
+  }
+
+  drawHouse(cx, baseY, w, h, bodyColor, windowColor, isForge) {
+    const top = baseY - h;
+    const g = this.add.graphics().setDepth(-5);
+    // 본체
+    g.fillStyle(bodyColor, 1).fillRect(cx - w/2, top, w, h);
+    // 본체 외곽
+    g.lineStyle(1, 0x000000, 0.6).strokeRect(cx - w/2, top, w, h);
+    // 지붕 삼각형
+    g.fillStyle(0x1a0c08, 1);
+    g.fillTriangle(cx - w/2 - 6, top, cx + w/2 + 6, top, cx, top - h * 0.55);
+    // 지붕 그림자
+    g.fillStyle(0x000000, 0.4);
+    g.fillTriangle(cx, top, cx + w/2 + 6, top, cx, top - h * 0.55);
+
+    // 문
+    g.fillStyle(0x0a0606, 1);
+    g.fillRect(cx - w * 0.12, top + h * 0.55, w * 0.24, h * 0.45);
+    // 문 손잡이
+    g.fillStyle(0xd4af37, 1);
+    g.fillCircle(cx + w * 0.06, top + h * 0.78, 1.5);
+
+    // 창문 (빛나는 노란빛)
+    const winW = w * 0.18, winH = h * 0.22;
+    const winY = top + h * 0.18;
+    [-1, 1].forEach(side => {
+      const wx = cx + side * w * 0.25 - winW/2;
+      g.fillStyle(0x000000, 1).fillRect(wx, winY, winW, winH);
+      g.fillStyle(windowColor, 0.85).fillRect(wx + 1, winY + 1, winW - 2, winH - 2);
+      // 십자 창살
+      g.lineStyle(1, 0x000000, 0.7);
+      g.lineBetween(wx + winW/2, winY, wx + winW/2, winY + winH);
+      g.lineBetween(wx, winY + winH/2, wx + winW, winY + winH/2);
     });
 
-    // 캐릭터 (직업 + 레벨에 맞는 스프라이트)
-    const charSprite = this.add.image(W/2, H * 0.45, playerSpriteKey(this.player.class, this.player.level))
-      .setScale(2.4);
-    // 직업 발광
-    const aura = this.add.image(W/2, H * 0.5, 'torch')
+    // 창문 빛 (글로우)
+    this.add.image(cx - w * 0.25, winY + winH/2, 'torch')
+      .setScale(0.5).setAlpha(0.6)
       .setBlendMode(Phaser.BlendModes.ADD)
-      .setScale(2.0)
-      .setAlpha(0.5)
-      .setTint(classDef.glowColor);
+      .setTint(windowColor).setDepth(-4);
+    this.add.image(cx + w * 0.25, winY + winH/2, 'torch')
+      .setScale(0.5).setAlpha(0.6)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(windowColor).setDepth(-4);
+
+    if (isForge) {
+      // 굴뚝
+      g.fillStyle(0x1a0a05, 1).fillRect(cx + w * 0.25, top - h * 0.7, 12, 22);
+      // 연기/불꽃 (애니메이션)
+      const smoke = this.add.image(cx + w * 0.25 + 6, top - h * 0.75, 'torch')
+        .setScale(0.8).setAlpha(0.5)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setTint(0xff4400).setDepth(-3);
+      this.tweens.add({
+        targets: smoke,
+        alpha: { from: 0.4, to: 0.7 },
+        scale: { from: 0.7, to: 0.95 },
+        duration: 600, yoyo: true, repeat: -1,
+      });
+    }
+  }
+
+  // ---------- 제단 (중앙) ----------
+  drawAltar() {
+    const W = this.scale.width, H = this.scale.height;
+    const cx = W/2, cy = H * 0.7;
+    const g = this.add.graphics().setDepth(0);
+    // 받침
+    g.fillStyle(0x3a2a20, 1).fillRect(cx - 30, cy + 12, 60, 8);
+    g.fillStyle(0x1a0e08, 1).fillRect(cx - 30, cy + 20, 60, 5);
+    // 기둥
+    g.fillStyle(0x4a3a30, 1).fillRect(cx - 20, cy - 10, 40, 22);
+    g.fillStyle(0x2a1a10, 1).fillRect(cx + 8, cy - 10, 12, 22);
+    // 상부
+    g.fillStyle(0x5a4a40, 1).fillRect(cx - 24, cy - 14, 48, 6);
+
+    // 룬 글로우 (가운데)
+    const rune = this.add.image(cx, cy - 22, 'torch')
+      .setScale(1.0).setAlpha(0.7)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(0xd4af37).setDepth(1);
     this.tweens.add({
-      targets: charSprite,
-      y: H * 0.45 - 6,
-      duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
-    this.tweens.add({
-      targets: aura,
-      alpha: { from: 0.4, to: 0.7 },
+      targets: rune,
+      alpha: { from: 0.5, to: 0.9 },
+      scale: { from: 0.9, to: 1.1 },
       duration: 1200, yoyo: true, repeat: -1,
     });
+    // 룬 마크 (작은 황금 점 4개)
+    g.fillStyle(0xffd700, 1);
+    g.fillCircle(cx - 6, cy - 22, 1.5);
+    g.fillCircle(cx + 6, cy - 22, 1.5);
+    g.fillCircle(cx, cy - 28, 1.5);
+    g.fillCircle(cx, cy - 16, 1.5);
+  }
+
+  // ---------- 횃불 기둥 ----------
+  drawTorchPosts() {
+    const W = this.scale.width, H = this.scale.height;
+    const groundY = H * 0.78;
+    const positions = [W * 0.06, W * 0.94];
+    positions.forEach(x => {
+      const g = this.add.graphics().setDepth(-1);
+      g.fillStyle(0x2a1810, 1).fillRect(x - 2, groundY - 60, 4, 60);
+      g.fillStyle(0x4a2810, 1).fillRect(x - 5, groundY - 65, 10, 6);
+      // 불꽃 광원
+      const flame = this.add.image(x, groundY - 70, 'torch')
+        .setScale(1.4).setAlpha(0.85)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setTint(0xff7733);
+      this.tweens.add({
+        targets: flame,
+        alpha: { from: 0.7, to: 1.0 },
+        scale: { from: 1.3, to: 1.5 },
+        duration: 500 + Math.random() * 300,
+        yoyo: true, repeat: -1,
+      });
+    });
+  }
+
+  // ---------- 캐릭터 ----------
+  drawCharacter() {
+    const W = this.scale.width, H = this.scale.height;
+    const classDef = getClass(this.player.class);
+    // 발광
+    this.add.image(W/2, H * 0.62, 'torch')
+      .setScale(1.6).setAlpha(0.5)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(classDef.glowColor).setDepth(2);
+    // 캐릭터 스프라이트
+    const ch = this.add.image(W/2, H * 0.6, playerSpriteKey(this.player.class, this.player.level))
+      .setScale(2.6).setDepth(3);
+    this.tweens.add({
+      targets: ch,
+      y: H * 0.6 - 4,
+      duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+  }
+
+  // ---------- NPC ----------
+  drawNpcs() {
+    const W = this.scale.width, H = this.scale.height;
+    this.spawnNpc(W * 0.20, H * 0.66, 'merchant',   '🧙‍♀️', '상인 헬가',     '#88ddff');
+    this.spawnNpc(W * 0.80, H * 0.66, 'blacksmith', '🧔',   '대장장이 군나르', '#ff8855');
+  }
+
+  spawnNpc(x, y, shopKey, emoji, name, colorHex) {
+    const colorNum = parseInt(colorHex.slice(1), 16);
+    const glow = this.add.image(x, y, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(1.2).setAlpha(0.55).setTint(colorNum).setDepth(4);
+    this.tweens.add({
+      targets: glow,
+      alpha: { from: 0.4, to: 0.7 },
+      duration: 1100, yoyo: true, repeat: -1,
+    });
+
+    const sprite = this.add.text(x, y, emoji, { fontSize: '46px' })
+      .setOrigin(0.5).setDepth(5)
+      .setInteractive({ useHandCursor: true });
+
+    this.add.text(x, y + 38, name, {
+      fontSize: '13px', color: colorHex,
+      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    }).setOrigin(0.5).setDepth(6);
+
+    this.add.text(x, y + 55, shopKey === 'merchant' ? '🏪 포션' : '🔨 무기', {
+      fontSize: '11px', color: '#d4af37',
+    }).setOrigin(0.5).setDepth(6);
+
+    sprite.on('pointerover', () => sprite.setScale(1.1));
+    sprite.on('pointerout',  () => sprite.setScale(1.0));
+    sprite.on('pointerdown', () => this.openShop(shopKey, name));
+  }
+
+  // ---------- UI 오버레이 ----------
+  drawUiOverlay() {
+    const W = this.scale.width, H = this.scale.height;
+    const classDef = getClass(this.player.class);
 
     // 타이틀
-    this.add.text(W/2, H * 0.08, '🏰 평화로운 마을', {
-      fontSize: '40px',
+    this.add.text(W/2, H * 0.07, '🏰 트리스트람 마을', {
+      fontSize: '36px',
       fontFamily: 'Cinzel, Noto Serif KR, serif',
-      color: '#d4af37',
-    }).setOrigin(0.5);
+      color: '#ffd700',
+    }).setOrigin(0.5).setDepth(20);
 
-    this.add.text(W/2, H * 0.16, `${classDef.icon} ${classDef.name} · Lv ${this.player.level}`, {
-      fontSize: '20px',
+    this.add.text(W/2, H * 0.13, `${classDef.icon} ${classDef.name} · Lv ${this.player.level}`, {
+      fontSize: '17px',
       color: '#ead7b7',
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(20);
 
-    // 진행도
     const stats = [
       `HP ${this.player.hp}/${this.player.maxHp}`,
       `XP ${this.player.xp}/${xpToNext(this.player.level)}`,
       `💰 ${this.player.gold || 0} G`,
       `처치 ${this.player.kills}`,
     ].join('   ·   ');
-    this.add.text(W/2, H * 0.22, stats, {
-      fontSize: '15px',
+    this.add.text(W/2, H * 0.19, stats, {
+      fontSize: '14px',
       color: '#d4af37',
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(20);
 
-    // 다음 던전 진입 버튼
-    const btn = this.add.text(W/2, H * 0.82, '⚔️  다음 던전 입장 (Enter)', {
+    // 입장 버튼
+    const btn = this.add.text(W/2, H * 0.88, '⚔️  던전 입장 (Enter)', {
       fontSize: '22px',
       color: '#ead7b7',
-      backgroundColor: '#3a2418',
-      padding: { left: 24, right: 24, top: 12, bottom: 12 },
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    btn.on('pointerover', () => btn.setStyle({ backgroundColor: '#5a3a24' }));
-    btn.on('pointerout',  () => btn.setStyle({ backgroundColor: '#3a2418' }));
+      backgroundColor: '#3a1818',
+      padding: { left: 28, right: 28, top: 14, bottom: 14 },
+    }).setOrigin(0.5).setDepth(20).setInteractive({ useHandCursor: true });
+    btn.on('pointerover', () => btn.setStyle({ backgroundColor: '#5a2828' }));
+    btn.on('pointerout',  () => btn.setStyle({ backgroundColor: '#3a1818' }));
     btn.on('pointerdown', () => this.enterDungeon());
 
-    // 캐릭터 변경 (작은 부가 버튼)
-    const changeBtn = this.add.text(W/2, H * 0.91, '🔄 캐릭터 변경', {
-      fontSize: '13px',
+    const changeBtn = this.add.text(W/2, H * 0.96, '🔄 캐릭터 변경', {
+      fontSize: '12px',
       color: '#888',
-      padding: { left: 12, right: 12, top: 6, bottom: 6 },
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      padding: { left: 12, right: 12, top: 4, bottom: 4 },
+    }).setOrigin(0.5).setDepth(20).setInteractive({ useHandCursor: true });
     changeBtn.on('pointerover', () => changeBtn.setStyle({ color: '#d4af37' }));
     changeBtn.on('pointerout',  () => changeBtn.setStyle({ color: '#888' }));
     changeBtn.on('pointerdown', () => this.changeClass());
-
-    // NPC 배치 (좌: 상인, 우: 대장장이)
-    this.spawnNpc(W * 0.22, H * 0.62, 'merchant',   '🧙‍♀️', '상인 헬가',     '#88ddff');
-    this.spawnNpc(W * 0.78, H * 0.62, 'blacksmith', '🧔',   '대장장이 군나르', '#ff8855');
-
-    this.add.text(W/2, H * 0.74, 'NPC를 클릭하여 상점 열기', {
-      fontSize: '12px', color: '#888',
-    }).setOrigin(0.5);
 
     this.input.keyboard.on('keydown-ENTER', () => this.enterDungeon());
     this.input.keyboard.on('keydown-SPACE', () => this.enterDungeon());
 
     // 마을 입장 시 HP 회복
     this.player.hp = this.player.maxHp;
+  }
+
+  refreshHud() {
+    const classDef = getClass(this.player.class);
     document.getElementById('hud-hp').textContent = `${this.player.hp}/${this.player.maxHp}`;
     document.getElementById('hud-gold').textContent = this.player.gold || 0;
+    document.getElementById('hud-lv').textContent = this.player.level;
+    document.getElementById('hud-xp').textContent = `${this.player.xp}/${xpToNext(this.player.level)}`;
+    document.getElementById('hud-kills').textContent = this.player.kills;
     const classEl = document.getElementById('hud-class');
     if (classEl) classEl.textContent = `${classDef.icon} ${classDef.name}`;
+    const weapon = ITEMS[this.player.equippedWeapon || 'sword_basic'] || ITEMS.sword_basic;
+    const wEl = document.getElementById('hud-weapon');
+    if (wEl) wEl.textContent = `${weapon.icon}`;
+    const potionCount = Object.entries(this.player.inventory || {})
+      .filter(([id]) => ITEMS[id]?.type === 'potion')
+      .reduce((a, [, n]) => a + n, 0);
+    const pEl = document.getElementById('hud-potion');
+    if (pEl) pEl.textContent = `🧪${potionCount}`;
   }
 
   changeClass() {
@@ -140,44 +388,12 @@ export class TownScene extends Phaser.Scene {
   }
 
   enterDungeon() {
-    if (this._shopOpen) return; // 상점 열린 상태면 입장 차단
+    if (this._shopOpen) return;
     this.scene.start('Dungeon');
   }
 
   // ============================================================
-  // NPC
-  // ============================================================
-  spawnNpc(x, y, shopKey, emoji, name, colorHex) {
-    const glow = this.add.image(x, y, 'torch')
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setScale(1.4).setAlpha(0.55)
-      .setTint(parseInt(colorHex.slice(1), 16));
-    this.tweens.add({
-      targets: glow,
-      alpha: { from: 0.45, to: 0.7 },
-      duration: 1100, yoyo: true, repeat: -1,
-    });
-
-    const sprite = this.add.text(x, y, emoji, { fontSize: '54px' })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
-
-    this.add.text(x, y + 45, name, {
-      fontSize: '14px', color: colorHex,
-      fontFamily: 'Cinzel, Noto Serif KR, serif',
-    }).setOrigin(0.5);
-
-    this.add.text(x, y + 64, shopKey === 'merchant' ? '🏪 포션' : '🔨 무기', {
-      fontSize: '12px', color: '#d4af37',
-    }).setOrigin(0.5);
-
-    sprite.on('pointerover', () => sprite.setScale(1.1));
-    sprite.on('pointerout',  () => sprite.setScale(1.0));
-    sprite.on('pointerdown', () => this.openShop(shopKey, name));
-  }
-
-  // ============================================================
-  // 상점 모달 (DOM 오버레이)
+  // 상점 모달
   // ============================================================
   openShop(shopKey, npcName) {
     const modal = document.getElementById('shop-modal');
@@ -185,21 +401,18 @@ export class TownScene extends Phaser.Scene {
     const list = document.getElementById('shop-items');
     list.innerHTML = '';
     this.shopKey = shopKey;
-    this.shopNpcName = npcName;
 
     SHOPS[shopKey].forEach(itemId => this.renderShopItem(list, itemId));
     this.refreshShopGold();
     modal.classList.add('show');
     this._shopOpen = true;
 
-    // ESC 닫기
     if (!this._escHandler) {
       this._escHandler = (e) => {
         if (e.key === 'Escape' && this._shopOpen) this.closeShop();
       };
       document.addEventListener('keydown', this._escHandler);
     }
-    // 닫기 버튼 (1회 등록)
     const closeBtn = document.getElementById('shop-close');
     if (!closeBtn._wired) {
       closeBtn.addEventListener('click', () => this.closeShop());
@@ -211,11 +424,9 @@ export class TownScene extends Phaser.Scene {
     const item = ITEMS[itemId];
     const row = document.createElement('div');
     row.className = 'shop-row';
-
     const owned = item.type === 'weapon' && ownsWeapon(this.player, itemId);
     const affordable = canAfford(this.player, item);
     const disabled = owned || !affordable;
-
     row.innerHTML = `
       <div class="shop-icon">${item.icon}</div>
       <div class="shop-info">
@@ -244,7 +455,6 @@ export class TownScene extends Phaser.Scene {
       this.player.equippedWeapon = itemId;
     }
     await saveProgress(this.uid, this.player);
-
     row.classList.add('shop-row-bought');
     setTimeout(() => this.refreshShopList(), 400);
     this.refreshShopGold();
@@ -259,18 +469,6 @@ export class TownScene extends Phaser.Scene {
 
   refreshShopGold() {
     document.getElementById('shop-gold').textContent = this.player.gold || 0;
-  }
-
-  refreshHud() {
-    document.getElementById('hud-gold').textContent = this.player.gold || 0;
-    const weapon = ITEMS[this.player.equippedWeapon || 'sword_basic'];
-    const potionCount = Object.entries(this.player.inventory || {})
-      .filter(([id]) => ITEMS[id]?.type === 'potion')
-      .reduce((a, [, n]) => a + n, 0);
-    const wEl = document.getElementById('hud-weapon');
-    if (wEl) wEl.textContent = `${weapon.icon}`;
-    const pEl = document.getElementById('hud-potion');
-    if (pEl) pEl.textContent = `🧪${potionCount}`;
   }
 
   closeShop() {

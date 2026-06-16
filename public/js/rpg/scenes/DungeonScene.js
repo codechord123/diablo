@@ -182,7 +182,13 @@ export class DungeonScene extends Phaser.Scene {
     });
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
     this.input.keyboard.on('keydown-H', () => this.usePotionInDungeon());
+    this.input.keyboard.on('keydown-Q', () => this.returnToTown());
     this.lastMoveTime = 0;
+  }
+
+  async returnToTown() {
+    await saveProgress(this.uid, this.player);
+    this.scene.start('Town', { uid: this.uid, player: this.player });
   }
 
   usePotionInDungeon() {
