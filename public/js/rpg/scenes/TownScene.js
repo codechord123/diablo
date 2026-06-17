@@ -23,6 +23,10 @@ export class TownScene extends Phaser.Scene {
       inventory: {}, weapons: ['sword_basic'], equippedWeapon: 'sword_basic',
     };
     this.uid = (data && data.uid) || 'local-player';
+    // 씬 재진입 시 이전 상태 플래그 초기화 (재진입 막힘 방지)
+    this._leaving = false;
+    this._shopOpen = false;
+    this._reviewOpen = false;
   }
 
   create() {
