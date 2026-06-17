@@ -110,10 +110,7 @@ export class LoadingScene extends Phaser.Scene {
   goNext() {
     if (this._transitioned) return;
     this._transitioned = true;
-    // 짧은 페이드 아웃 후 타겟 씬
-    this.cameras.main.fadeOut(200, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start(this.target, this.targetData);
-    });
+    // 페이드 체인 제거 — 검은 화면 잔존 방지
+    this.scene.start(this.target, this.targetData);
   }
 }

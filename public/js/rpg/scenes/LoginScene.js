@@ -13,7 +13,7 @@ export class LoginScene extends Phaser.Scene {
     try {
       const W = this.scale.width, H = this.scale.height;
       this.cameras.main.setBackgroundColor('#0a0408').setScroll(0,0).setZoom(1);
-      this.cameras.main.fadeIn(400, 0, 0, 0);
+      this.cameras.main.resetFX();
 
       // 배경 글로우
       this.add.image(W/2, H/2, 'torch')
@@ -78,9 +78,7 @@ export class LoginScene extends Phaser.Scene {
   }
 
   proceedToGame() {
-    this.cameras.main.fadeOut(400, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('Boot');
-    });
+    // 페이드 없이 즉시 전환 (이전 fadeOut→fadeIn 체인이 검은 화면 잔존 원인)
+    this.scene.start('Boot');
   }
 }

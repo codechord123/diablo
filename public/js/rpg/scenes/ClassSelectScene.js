@@ -25,7 +25,8 @@ export class ClassSelectScene extends Phaser.Scene {
       }
 
       this.cameras.main.setBackgroundColor('#080404').setScroll(0,0).setZoom(1);
-      audio.playBGM('town');
+      this.cameras.main.resetFX();
+      try { audio.playBGM('town'); } catch (e) { console.warn('BGM 실패:', e); }
       this.drawBackground();
       this.drawTitle();
       this.drawPanels();

@@ -27,7 +27,7 @@ export class DungeonScene extends Phaser.Scene {
     this.ready = false;
     this._leaving = false;
     this._bossDefeated = false;
-    this.cameras.main.fadeIn(400, 0, 0, 0);
+    this.cameras.main.resetFX();
     try {
       this.uid = (await getUser()).uid;
       this.player = await loadProgress(this.uid);
@@ -44,7 +44,8 @@ export class DungeonScene extends Phaser.Scene {
       this.theme = THEMES[themeKey] || THEMES.default;
       this.cameras.main.setBackgroundColor(this.theme.bgColor);
       // BGM: 보스 던전이면 boss, 아니면 dungeon
-      audio.playBGM(this.bossData ? 'boss' : 'dungeon');
+      try { audio.playBGM(this.bossData ? 'boss' : 'dungeon'); }
+      catch (e) { console.warn('BGM 실패:', e); }
 
       const dungeon = generateDungeon();
       this.grid = dungeon.grid;
@@ -300,12 +301,9 @@ export class DungeonScene extends Phaser.Scene {
     if (this._leaving) return;
     this._leaving = true;
     await saveProgress(this.uid, this.player);
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('Loading', {
-        target: 'Town', mode: 'return',
-        data: { uid: this.uid, player: this.player },
-      });
+    this.scene.start('Loading', {
+      target: 'Town', mode: 'return',
+      data: { uid: this.uid, player: this.player },
     });
   }
 
@@ -570,12 +568,9 @@ export class DungeonScene extends Phaser.Scene {
         this.player.hp = this.player.maxHp;
         await saveProgress(this.uid, this.player);
         this._leaving = true;
-        this.cameras.main.fadeOut(400, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-          this.scene.start('Loading', {
-            target: 'Town', mode: 'return',
-            data: { uid: this.uid, player: this.player },
-          });
+        this.scene.start('Loading', {
+          target: 'Town', mode: 'return',
+          data: { uid: this.uid, player: this.player },
         });
         return;
       }
@@ -597,12 +592,9 @@ export class DungeonScene extends Phaser.Scene {
       : this.monsters.length === 0;
     if (cleared) {
       this._leaving = true;
-      this.cameras.main.fadeOut(300, 0, 0, 0);
-      this.cameras.main.once('camerafadeoutcomplete', () => {
-        this.scene.start('Loading', {
-          target: 'Town', mode: 'return',
-          data: { uid: this.uid, player: this.player },
-        });
+      this.scene.start('Loading', {
+        target: 'Town', mode: 'return',
+        data: { uid: this.uid, player: this.player },
       });
     }
   }

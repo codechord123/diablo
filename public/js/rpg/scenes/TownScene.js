@@ -24,8 +24,8 @@ export class TownScene extends Phaser.Scene {
   create() {
     try {
       this.cameras.main.setScroll(0, 0).setZoom(1).setBackgroundColor('#1a0e1a');
-      this.cameras.main.fadeIn(400, 0, 0, 0);
-      audio.playBGM('town');
+      this.cameras.main.resetFX();
+      try { audio.playBGM('town'); } catch (e) { console.warn('BGM 실패:', e); }
       this.drawSky();
       this.drawHorizon();
       this.drawGround();
@@ -318,13 +318,10 @@ export class TownScene extends Phaser.Scene {
   enterBossArena(bossId) {
     if (this._shopOpen || this._leaving) return;
     this._leaving = true;
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      // 보스 던전(테마 적용) 모드로 일반 DungeonScene 진입
-      this.scene.start('Loading', {
-        target: 'Dungeon', mode: 'enter',
-        data: { uid: this.uid, player: this.player, dungeonMode: 'boss', bossId },
-      });
+    // 페이드 체인 제거 — Loading 씬이 자체 페이드 처리
+    this.scene.start('Loading', {
+      target: 'Dungeon', mode: 'enter',
+      data: { uid: this.uid, player: this.player, dungeonMode: 'boss', bossId },
     });
   }
 
@@ -580,12 +577,9 @@ export class TownScene extends Phaser.Scene {
     if (this._shopOpen || this._leaving) return;
     this._leaving = true;
     audio.doorOpen();
-    this.cameras.main.fadeOut(300, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('Loading', {
-        target: 'Dungeon', mode: 'enter',
-        data: { uid: this.uid, player: this.player, dungeonMode: 'normal' },
-      });
+    this.scene.start('Loading', {
+      target: 'Dungeon', mode: 'enter',
+      data: { uid: this.uid, player: this.player, dungeonMode: 'normal' },
     });
   }
 
