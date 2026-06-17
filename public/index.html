@@ -82,37 +82,30 @@
     </div>
   </div>
 
-  <!-- 로그인/회원가입 모달 -->
+  <!-- 로그인/회원가입 모달 (단일 폼: 닉네임 + PIN) -->
   <div id="login-modal" class="login-modal">
     <div class="login-card">
       <div class="login-title">⚔️ 분수 던전</div>
-      <div class="login-subtitle">학생 입장</div>
-
-      <div class="login-section-label">🧑‍🎓 기존 학생 (클릭하여 시작)</div>
-      <div id="login-student-grid" class="login-student-grid"></div>
+      <div class="login-subtitle">닉네임과 PIN으로 입장하세요</div>
 
       <form id="login-form" class="login-form" autocomplete="off">
-        <input type="hidden" id="login-mode" value="signup" />
         <label class="login-label">닉네임 (2~12자, 한글/영문/숫자)</label>
         <input type="text" id="login-nickname" class="login-input"
-          maxlength="12" placeholder="예: 영민이" required />
+          maxlength="12" placeholder="예: 영민이" required autofocus />
 
         <label class="login-label">PIN (숫자 4자리)</label>
         <input type="password" id="login-pin" class="login-input"
           inputmode="numeric" pattern="[0-9]{4}" maxlength="4"
           placeholder="****" required />
 
-        <label class="login-label" id="login-classcode-label">학급 코드 (선택, 비우면 default)</label>
+        <label class="login-label">학급 코드 (선택, 첫 등록 시만 적용)</label>
         <input type="text" id="login-classcode" class="login-input"
           maxlength="20" placeholder="예: 5-3반" />
 
         <div id="login-error" class="login-error"></div>
 
         <button type="submit" id="login-submit" class="login-submit">
-          ➕ 새 학생 등록
-        </button>
-        <button type="button" id="login-toggle" class="login-toggle">
-          ↩ 기존 학생 로그인
+          🚪 입장 (처음이면 자동 등록)
         </button>
       </form>
     </div>
