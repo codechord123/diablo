@@ -3,6 +3,7 @@
 // ============================================================
 import { CLASSES } from '../../classes.js';
 import { getUser, loadProgress, saveProgress } from '../../firebase-config.js';
+import audio from '../../audio.js';
 
 export class ClassSelectScene extends Phaser.Scene {
   constructor() { super('ClassSelect'); }
@@ -24,6 +25,7 @@ export class ClassSelectScene extends Phaser.Scene {
       }
 
       this.cameras.main.setBackgroundColor('#080404').setScroll(0,0).setZoom(1);
+      audio.playBGM('town');
       this.drawBackground();
       this.drawTitle();
       this.drawPanels();

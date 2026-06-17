@@ -9,6 +9,7 @@ import { CLASSES, getClass, playerSpriteKey, tierForLevel } from '../../classes.
 import { ITEMS, useFirstPotion, totalPotions, getEquippedWeapon } from '../../items.js';
 import { getBoss } from '../../bosses.js';
 import audio from '../../audio.js';
+import * as fx from '../../effects.js';
 
 export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
@@ -42,6 +43,8 @@ export class DungeonScene extends Phaser.Scene {
       const themeKey = this.bossData ? this.bossData.dungeonTheme : 'default';
       this.theme = THEMES[themeKey] || THEMES.default;
       this.cameras.main.setBackgroundColor(this.theme.bgColor);
+      // BGM: 보스 던전이면 boss, 아니면 dungeon
+      audio.playBGM(this.bossData ? 'boss' : 'dungeon');
 
       const dungeon = generateDungeon();
       this.grid = dungeon.grid;
@@ -524,6 +527,16 @@ export class DungeonScene extends Phaser.Scene {
     if (!enemy) return;
 
     if (result.victory) {
+      // 시각 효과 — 처치 위치
+      const ex = enemy.sprite.x, ey = enemy.sprite.y;
+      if (enemy.isBoss) {
+        fx.explosion(this, ex, ey);
+        fx.shake(this, 0.025, 500);
+      } else {
+        fx.sparkle(this, ex, ey, { count: 10, color: 0xffd700 });
+        fx.goldBurst(this, ex, ey, { count: 8 });
+        fx.shake(this, 0.008, 150);
+      }
       // 처치 애니메이션
       const targets = [enemy.sprite, enemy.label];
       if (enemy.glow) targets.push(enemy.glow);

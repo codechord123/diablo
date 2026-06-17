@@ -437,6 +437,41 @@ body {
 }
 
 /* ============================================================
+   Damage Number (DOM 떠오름)
+   ============================================================ */
+.fx-damage {
+  position: absolute;
+  font-family: 'Cinzel', 'Noto Serif KR', serif;
+  font-weight: bold;
+  font-size: 22px;
+  color: #ff5544;
+  text-shadow: 0 0 4px #000, 0 0 8px #ff0000;
+  pointer-events: none;
+  animation: fx-damage-rise 1s ease-out forwards;
+  z-index: 200;
+  left: 50%;
+  top: 0;
+  transform-origin: center;
+}
+.fx-damage.heal {
+  color: #88ddff;
+  text-shadow: 0 0 4px #000, 0 0 8px #00aaff;
+}
+.fx-damage.crit {
+  font-size: 32px;
+  color: #ffd700;
+  text-shadow: 0 0 4px #000, 0 0 12px #ff8800, 0 0 20px #ff4400;
+}
+@keyframes fx-damage-rise {
+  0%   { transform: translate(-50%, 0)    scale(0.6); opacity: 0; }
+  20%  { transform: translate(-50%, -10px) scale(1.2); opacity: 1; }
+  60%  { transform: translate(-50%, -36px) scale(1.0); opacity: 1; }
+  100% { transform: translate(-50%, -60px) scale(0.8); opacity: 0; }
+}
+/* 컨테이너가 데미지 숫자의 기준이 되도록 position: relative */
+.bm-enemy, .hud-cell { position: relative; }
+
+/* ============================================================
    Notepad — 태블릿 필기 노트 (우측 슬라이드 패널)
    ============================================================ */
 .notepad {

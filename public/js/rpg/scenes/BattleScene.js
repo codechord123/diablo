@@ -8,6 +8,7 @@ import { ITEMS, useFirstPotion, getEquippedWeapon, totalPotions } from '../../it
 import { toggleNotepad } from '../../notepad.js';
 import { getBoss } from '../../bosses.js';
 import audio from '../../audio.js';
+import * as fx from '../../effects.js';
 
 export class BattleScene extends Phaser.Scene {
   constructor() { super('Battle'); }
@@ -151,8 +152,11 @@ export class BattleScene extends Phaser.Scene {
     this.player.hp = Math.max(0, this.player.hp - dmg);
     document.getElementById('hud-hp').textContent = `${this.player.hp}/${this.player.maxHp}`;
     this.refreshPotionBtn();
+    fx.shake(this, ...fx.SHAKE.boss());
+    const hudHp = document.getElementById('hud-hp');
+    if (hudHp) fx.damageNumberDOM(hudHp.parentElement, -dmg, { crit: true });
 
-    // 화면 흔들림 + 텍스트 피드백
+    // 텍스트 피드백 + DOM 흔들림
     const fb = document.getElementById('bm-feedback');
     fb.innerHTML = `⚡ 보스의 일격! (-${dmg} HP)`;
     fb.className = 'bm-feedback miss';
@@ -227,6 +231,10 @@ export class BattleScene extends Phaser.Scene {
       if (armor > 0) dmg = Math.max(1, dmg - armor);
       this.enemyHp -= dmg;
       if (bonus) audio.magic(); else audio.hit();
+      // 데미지 숫자 (DOM, 적 위에 떠오름) + 화면 흔들림
+      const enemyEl = this.modal.querySelector('.bm-enemy');
+      if (enemyEl) fx.damageNumberDOM(enemyEl, -dmg, { crit: bonus });
+      fx.shake(this, ...(bonus ? fx.SHAKE.medium() : fx.SHAKE.light()));
       fb.innerHTML = bonus
         ? `🔮 마법의 일격! +${dmg} 데미지 (정답: ${this.problem.answer.toHtml()})`
         : `✨ 명중! 정답: ${this.problem.answer.toHtml()}`;
@@ -244,6 +252,8 @@ export class BattleScene extends Phaser.Scene {
       this.firstMistake = false;
       if (evaded) {
         audio.evade();
+        const playerEl = document.getElementById('hud-hp');
+        if (playerEl) fx.damageNumberDOM(playerEl.parentElement, 0, { miss: true, text: '회피!' });
         fb.innerHTML = `🌀 회피! 데미지를 받지 않았다 (정답: ${this.problem.answer.toHtml()})`;
         fb.className = 'bm-feedback evade';
       } else if (pierce && evadeChance > 0 && Math.random() < evadeChance) {
@@ -261,6 +271,9 @@ export class BattleScene extends Phaser.Scene {
         document.getElementById('hud-hp').textContent = `${this.player.hp}/${this.player.maxHp}`;
         this.refreshPotionBtn(); // HP 변동 시 포션 버튼 재평가
         audio.miss();
+        const hudHp = document.getElementById('hud-hp');
+        if (hudHp) fx.damageNumberDOM(hudHp.parentElement, -1);
+        fx.shake(this, ...fx.SHAKE.medium());
         fb.innerHTML = `💥 빗나감! 정답: ${this.problem.answer.toHtml()}`;
         fb.className = 'bm-feedback miss';
         if (this.player.hp <= 0) {

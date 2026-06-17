@@ -25,6 +25,7 @@ export class TownScene extends Phaser.Scene {
     try {
       this.cameras.main.setScroll(0, 0).setZoom(1).setBackgroundColor('#1a0e1a');
       this.cameras.main.fadeIn(400, 0, 0, 0);
+      audio.playBGM('town');
       this.drawSky();
       this.drawHorizon();
       this.drawGround();
