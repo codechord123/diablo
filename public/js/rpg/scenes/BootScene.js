@@ -49,6 +49,8 @@ export class BootScene extends Phaser.Scene {
     //   세션 있음 + 직업 미선택 → ClassSelect
     //   세션 있음 + 직업 있음 → Town (로딩 경유)
     try {
+      // 텍스처가 GPU에 커밋될 시간 확보 (첫 부팅 시 검은 화면 방지)
+      await new Promise(r => setTimeout(r, 60));
       if (!currentUser()) {
         this.scene.start('Login');
         return;

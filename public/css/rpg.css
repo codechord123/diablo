@@ -559,6 +559,135 @@ body {
   background: linear-gradient(180deg, #f2d04e, #b08820);
 }
 
+/* ============================================================
+   Achievement Toast (우측 상단 슬라이드 인)
+   ============================================================ */
+.achievement-toast {
+  position: fixed;
+  top: 80px; right: 20px;
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, #2a1814, #4a3018);
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  padding: 14px 20px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.7), 0 0 30px rgba(212,175,55,0.5);
+  z-index: 400;
+  transform: translateX(120%);
+  transition: transform 0.5s ease-out;
+  max-width: 360px;
+}
+.achievement-toast.show { transform: translateX(0); }
+.at-icon { font-size: 42px; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8)); }
+.at-body { display: flex; flex-direction: column; gap: 2px; }
+.at-label { font-size: 11px; color: var(--gold); letter-spacing: 1px; }
+.at-name { font-size: 16px; color: var(--text); font-weight: bold;
+  font-family: 'Cinzel', 'Noto Serif KR', serif; }
+.at-desc { font-size: 12px; color: #ccc; }
+
+/* ============================================================
+   Mission Modal
+   ============================================================ */
+.mission-modal, .trophy-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  justify-content: center; align-items: center;
+  z-index: 230;
+  backdrop-filter: blur(4px);
+}
+.mission-modal.show, .trophy-modal.show { display: flex; }
+.mission-card, .trophy-card {
+  background: linear-gradient(180deg, #2a1814, #0d0706);
+  border: 3px solid var(--gold);
+  border-radius: 12px;
+  padding: 22px 26px;
+  min-width: 480px;
+  max-width: 92vw;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+.mission-header, .trophy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #443;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+}
+.mission-title, .trophy-title {
+  font-size: 20px; color: var(--gold);
+  font-family: 'Cinzel', 'Noto Serif KR', serif;
+}
+.mission-close, .trophy-close {
+  background: transparent;
+  border: 1px solid #666;
+  color: #ccc;
+  width: 32px; height: 32px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.mission-close:hover, .trophy-close:hover { background: #441515; color: #fff; }
+.mission-intro {
+  font-size: 12px; color: #aaa;
+  margin-bottom: 14px; font-style: italic;
+}
+.mission-list { display: flex; flex-direction: column; gap: 10px; }
+.mission-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #443;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.mission-row.claimed { opacity: 0.5; }
+.mission-info { display: flex; flex-direction: column; gap: 4px; }
+.mission-name { font-size: 14px; color: var(--text); font-weight: bold; }
+.mission-bar { background: #000; border: 1px solid #444; border-radius: 3px; height: 8px; overflow: hidden; }
+.mission-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), #ffe9a0); transition: width 0.3s; }
+.mission-progress { font-size: 11px; color: #888; }
+.mission-reward { font-size: 13px; color: #ffd700; }
+.mission-claim {
+  background: linear-gradient(180deg, #3a2418, #1a0e08);
+  color: var(--text);
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mission-claim:hover:not(:disabled) {
+  background: linear-gradient(180deg, #5a3a24, #2a1810);
+}
+.mission-claim:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ----- Trophy Grid ----- */
+.trophy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.trophy-cell {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #443;
+  border-radius: 8px;
+  padding: 14px 10px;
+  text-align: center;
+  transition: all 0.2s;
+}
+.trophy-cell.unlocked {
+  background: linear-gradient(180deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05));
+  border-color: var(--gold);
+  box-shadow: 0 0 10px rgba(212,175,55,0.3);
+}
+.trophy-cell.locked { opacity: 0.4; }
+.trophy-icon { font-size: 36px; margin-bottom: 6px; }
+.trophy-name { font-size: 13px; color: var(--text); font-weight: bold; }
+.trophy-desc { font-size: 11px; color: #888; margin-top: 4px; }
+
 /* ----- 오답 복습 모달 ----- */
 .review-modal {
   position: fixed; inset: 0;

@@ -7,6 +7,7 @@ import { fractionWithVis, fractionSVG } from '../../fraction-vis.js';
 import { hasSeen, markSeen, showConcept } from '../../concepts.js';
 import { recordAnswer, recordWrong, getRecentAccuracy, clearWrongOne } from '../../storage.js';
 import { currentUser } from '../../auth.js';
+import { trackEvent } from '../../missions.js';
 import { getClass } from '../../classes.js';
 import { ITEMS, useFirstPotion, getEquippedWeapon, totalPotions } from '../../items.js';
 import { toggleNotepad } from '../../notepad.js';
@@ -288,6 +289,9 @@ export class BattleScene extends Phaser.Scene {
     const fb = document.getElementById('bm-feedback');
     if (correct) {
       recordAnswer(this.nickname, true);
+      trackEvent(this.nickname, 'corrects', 1);
+      // 연속 정답 최대치 갱신 (도전과제용)
+      this.player.correctStreakMax = Math.max(this.player.correctStreakMax || 0, this.correctStreak + 1);
       // 무기 데미지 + 마법사 능력 (3회 연속마다 +1)
       let dmg = this.weapon.damage || 1;
       this.correctStreak += 1;
@@ -365,26 +369,16 @@ export class BattleScene extends Phaser.Scene {
     this.modal.classList.remove('show');
     this.modal.classList.remove('boss');
     if (this.timerEvent) this.timerEvent.remove();
-    if (this.isBoss) {
-      const arena = this.scene.get('BossArena');
-      arena && arena.events.emit('boss-result', {
-        victory: !!result.victory,
-        fled: !!result.fled,
-        defeated: !!result.defeated,
-        timeout: !!result.timeout,
-        mistakes: this.playerMistakes,
-        bossId: this.bossId,
-      });
-    } else {
-      const dungeon = this.scene.get('Dungeon');
-      dungeon && dungeon.events.emit('battle-result', {
-        victory: !!result.victory,
-        fled: !!result.fled,
-        defeated: !!result.defeated,
-        mistakes: this.playerMistakes,
-        playerHpRemaining: this.player.hp,
-      });
-    }
+    // 보스 전투도 PR 4A부터 DungeonScene boss 모드로 통합 → 항상 Dungeon에 emit
+    const dungeon = this.scene.get('Dungeon');
+    dungeon && dungeon.events.emit('battle-result', {
+      victory: !!result.victory,
+      fled: !!result.fled,
+      defeated: !!result.defeated,
+      timeout: !!result.timeout,
+      mistakes: this.playerMistakes,
+      playerHpRemaining: this.player.hp,
+    });
     this.scene.stop();
   }
 }

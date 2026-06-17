@@ -78,7 +78,10 @@ export class LoginScene extends Phaser.Scene {
   }
 
   proceedToGame() {
-    // 페이드 없이 즉시 전환 (이전 fadeOut→fadeIn 체인이 검은 화면 잔존 원인)
+    // 모든 모달 강제 닫기 (이전 세션 잔존 방지)
+    ['login-modal', 'battle-modal', 'shop-modal', 'mission-modal',
+     'trophy-modal', 'review-modal', 'concept-modal']
+      .forEach(id => document.getElementById(id)?.classList.remove('show'));
     this.scene.start('Boot');
   }
 }

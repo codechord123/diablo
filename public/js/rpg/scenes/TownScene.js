@@ -11,6 +11,8 @@ import { listWrong, clearWrongOne } from '../../storage.js';
 import { currentUser } from '../../auth.js';
 import { checkAnswer, Fraction } from '../../fractionEngine.js';
 import { fractionSVG } from '../../fraction-vis.js';
+import { ACHIEVEMENTS, listUnlocked, checkAchievements } from '../../achievements.js';
+import { getTodaysMissions, claimMission } from '../../missions.js';
 import audio from '../../audio.js';
 
 export class TownScene extends Phaser.Scene {
@@ -462,10 +464,129 @@ export class TownScene extends Phaser.Scene {
   // ---------- NPC ----------
   drawNpcs() {
     const W = this.scale.width, H = this.scale.height;
-    this.spawnNpc(W * 0.25, H * 0.62, 'merchant',   'npc-merchant',   '상인 헬가',     '#88ddff');
-    this.spawnNpc(W * 0.75, H * 0.62, 'blacksmith', 'npc-blacksmith', '대장장이 군나르', '#ff8855');
+    this.spawnNpc(W * 0.22, H * 0.62, 'merchant',   'npc-merchant',   '상인 헬가',     '#88ddff');
+    this.spawnNpc(W * 0.78, H * 0.62, 'blacksmith', 'npc-blacksmith', '대장장이 군나르', '#ff8855');
     // 오답 복습 NPC — 가운데 살짝 위
     this.spawnReviewNpc(W * 0.50, H * 0.55);
+    // 미션 보드 + 트로피
+    this.spawnMissionBoard(W * 0.38, H * 0.62);
+    this.spawnTrophyBoard(W * 0.62, H * 0.62);
+  }
+
+  spawnMissionBoard(x, y) {
+    const glow = this.add.image(x, y, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(0.9).setAlpha(0.5).setTint(0xffd700).setDepth(4);
+    this.tweens.add({
+      targets: glow,
+      alpha: { from: 0.35, to: 0.65 }, duration: 1100, yoyo: true, repeat: -1,
+    });
+    const sprite = this.add.text(x, y, '📋', { fontSize: '42px' })
+      .setOrigin(0.5).setDepth(5).setInteractive({ useHandCursor: true });
+    this.tweens.add({
+      targets: sprite, y: y - 3,
+      duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    this.add.text(x, y + 32, '일일 미션', {
+      fontSize: '12px', color: '#ffd700',
+      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    }).setOrigin(0.5).setDepth(6);
+    sprite.on('pointerover', () => sprite.setScale(1.1));
+    sprite.on('pointerout',  () => sprite.setScale(1.0));
+    sprite.on('pointerdown', () => this.openMissionModal());
+  }
+
+  spawnTrophyBoard(x, y) {
+    const nick = currentUser()?.nickname || 'guest';
+    const count = listUnlocked(nick).length;
+    const glow = this.add.image(x, y, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(0.9).setAlpha(0.5).setTint(0xffaa33).setDepth(4);
+    this.tweens.add({
+      targets: glow,
+      alpha: { from: 0.35, to: 0.65 }, duration: 1300, yoyo: true, repeat: -1,
+    });
+    const sprite = this.add.text(x, y, '🏆', { fontSize: '42px' })
+      .setOrigin(0.5).setDepth(5).setInteractive({ useHandCursor: true });
+    this.add.text(x, y + 32, `트로피 ${count}/${ACHIEVEMENTS.length}`, {
+      fontSize: '12px', color: '#ffaa33',
+      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    }).setOrigin(0.5).setDepth(6);
+    sprite.on('pointerover', () => sprite.setScale(1.1));
+    sprite.on('pointerout',  () => sprite.setScale(1.0));
+    sprite.on('pointerdown', () => this.openTrophyModal());
+  }
+
+  openMissionModal() {
+    audio.click();
+    const nick = currentUser()?.nickname || 'guest';
+    const data = getTodaysMissions(nick);
+    const modal = document.getElementById('mission-modal');
+    const list = document.getElementById('mission-list');
+    list.innerHTML = '';
+    data.missions.forEach(m => {
+      const row = document.createElement('div');
+      row.className = 'mission-row ' + (m.claimed ? 'claimed' : '');
+      const pct = Math.min(100, (m.progress / m.target) * 100);
+      const done = m.progress >= m.target;
+      row.innerHTML = `
+        <div class="mission-info">
+          <div class="mission-name">${m.name}</div>
+          <div class="mission-bar"><div class="mission-bar-fill" style="width:${pct}%"></div></div>
+          <div class="mission-progress">${m.progress} / ${m.target}</div>
+        </div>
+        <div class="mission-reward">💰 ${m.reward}G</div>
+        <button class="mission-claim" ${(!done || m.claimed) ? 'disabled' : ''}>
+          ${m.claimed ? '✓ 완료' : (done ? '받기' : '진행중')}
+        </button>
+      `;
+      const btn = row.querySelector('.mission-claim');
+      if (done && !m.claimed) {
+        btn.addEventListener('click', () => {
+          const claimed = claimMission(nick, m.id);
+          if (claimed) {
+            this.player.gold = (this.player.gold || 0) + claimed.reward;
+            audio.coin();
+            saveProgress(this.uid, this.player);
+            this.refreshHud();
+            checkAchievements(this.player, nick);
+            this.openMissionModal();
+          }
+        });
+      }
+      list.appendChild(row);
+    });
+    modal.classList.add('show');
+    if (!modal._wired) {
+      modal._wired = true;
+      document.getElementById('mission-close').addEventListener('click', () => modal.classList.remove('show'));
+    }
+  }
+
+  openTrophyModal() {
+    audio.click();
+    const nick = currentUser()?.nickname || 'guest';
+    const unlocked = listUnlocked(nick);
+    const modal = document.getElementById('trophy-modal');
+    const grid = document.getElementById('trophy-grid');
+    grid.innerHTML = '';
+    ACHIEVEMENTS.forEach(a => {
+      const got = unlocked.includes(a.id);
+      const cell = document.createElement('div');
+      cell.className = 'trophy-cell ' + (got ? 'unlocked' : 'locked');
+      cell.innerHTML = `
+        <div class="trophy-icon">${got ? a.icon : '🔒'}</div>
+        <div class="trophy-name">${got ? a.name : '???'}</div>
+        <div class="trophy-desc">${a.desc}</div>
+      `;
+      grid.appendChild(cell);
+    });
+    document.getElementById('trophy-count').textContent = `${unlocked.length} / ${ACHIEVEMENTS.length}`;
+    modal.classList.add('show');
+    if (!modal._wired) {
+      modal._wired = true;
+      document.getElementById('trophy-close').addEventListener('click', () => modal.classList.remove('show'));
+    }
   }
 
   // 오답 복습 NPC (현자 — 클릭 시 오답 모달)
@@ -730,6 +851,10 @@ export class TownScene extends Phaser.Scene {
     if (!canAfford(this.player, item)) return;
     audio.coin();
     this.player.gold -= item.price;
+    // 미션 추적
+    const nick = currentUser()?.nickname || 'guest';
+    const { trackEvent } = await import('../../missions.js');
+    trackEvent(nick, 'spent', item.price);
     if (item.type === 'potion') {
       addPotion(this.player, itemId);
     } else if (item.type === 'weapon') {

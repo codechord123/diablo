@@ -10,6 +10,9 @@ import { ITEMS, useFirstPotion, totalPotions, getEquippedWeapon } from '../../it
 import { getBoss } from '../../bosses.js';
 import audio from '../../audio.js';
 import * as fx from '../../effects.js';
+import { currentUser } from '../../auth.js';
+import { checkAchievements } from '../../achievements.js';
+import { trackEvent } from '../../missions.js';
 
 export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
@@ -552,6 +555,15 @@ export class DungeonScene extends Phaser.Scene {
       this.monsters = this.monsters.filter(m => m !== enemy);
       this.gainXp(enemy.data.xp);
       this.player.kills += 1;
+      // 도전과제 / 미션 트리거
+      const nick = currentUser()?.nickname || 'guest';
+      trackEvent(nick, 'kills', 1);
+      // 오답 없는 전투면 완벽 전투 카운트 + 미션 진행
+      if ((result.mistakes || 0) === 0) {
+        this.player.noMistakeBattles = (this.player.noMistakeBattles || 0) + 1;
+        trackEvent(nick, 'perfectBattles', 1);
+      }
+      checkAchievements(this.player, nick, { noMistakeBattle: (result.mistakes || 0) === 0 });
       // 보스 처치 시 — 사운드 + 처치 마킹
       if (enemy.isBoss) {
         audio.victory();
@@ -605,13 +617,14 @@ export class DungeonScene extends Phaser.Scene {
     while (this.player.xp >= xpToNext(this.player.level)) {
       this.player.xp -= xpToNext(this.player.level);
       this.player.level += 1;
-      // 직업별 maxHp 성장률 (전사 +2, 그 외 +1)
       this.player.maxHp += this.classDef.hpPerLevel || 1;
       this.player.hp = this.player.maxHp;
       this.showLevelUp();
       leveledUp = true;
+      const nick = currentUser()?.nickname || 'guest';
+      trackEvent(nick, 'levelUps', 1);
+      checkAchievements(this.player, nick);
     }
-    // 외형 단계가 바뀌었으면 스프라이트 교체 (페이드 트윈)
     if (leveledUp) this.maybeUpgradeAppearance();
   }
 
