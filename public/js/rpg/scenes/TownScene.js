@@ -6,6 +6,7 @@ import { xpToNext } from '../../monsters.js';
 import { getClass, playerSpriteKey } from '../../classes.js';
 import { ITEMS, SHOPS, canAfford, ownsWeapon, addPotion } from '../../items.js';
 import { saveProgress } from '../../firebase-config.js';
+import { availableBosses, isBossDefeated } from '../../bosses.js';
 
 export class TownScene extends Phaser.Scene {
   constructor() { super('Town'); }
@@ -29,7 +30,8 @@ export class TownScene extends Phaser.Scene {
       this.drawBuildings();
       this.drawAltar();
       this.drawTorchPosts();
-      this.drawDungeonPortal();     // 🚪 던전 입구 포털
+      this.drawDungeonPortal();     // 🚪 일반 던전 포털
+      this.drawBossPortal();        // 💀 보스 포털 (해금 시)
       this.drawCharacter();
       this.drawNpcs();
       this.drawUiOverlay();
@@ -229,6 +231,98 @@ export class TownScene extends Phaser.Scene {
     g.fillCircle(cx + 6, cy - 22, 1.5);
     g.fillCircle(cx, cy - 28, 1.5);
     g.fillCircle(cx, cy - 16, 1.5);
+  }
+
+  // ---------- 보스 포털 (해금된 보스 선택) ----------
+  drawBossPortal() {
+    const W = this.scale.width, H = this.scale.height;
+    const bosses = availableBosses(this.player);
+    if (bosses.length === 0) {
+      // 잠긴 상태 (Lv 5 미만)
+      this.add.text(W * 0.18, H * 0.42, '🔒\nLv 5 해금', {
+        fontSize: '16px', color: '#666', align: 'center',
+      }).setOrigin(0.5).setDepth(20);
+      return;
+    }
+
+    // 다음 도전 가능한 보스 (이미 처치한 건 다음 보스로)
+    const next = bosses.find(b => !isBossDefeated(this.player, b.id)) || bosses[bosses.length - 1];
+
+    const cx = W * 0.18, cy = H * 0.45;
+
+    // 어두운 후광 (해골)
+    const glow = this.add.image(cx, cy + 6, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(1.7).setAlpha(0.7).setTint(0x660000).setDepth(-1);
+    this.tweens.add({
+      targets: glow,
+      alpha: { from: 0.5, to: 0.9 },
+      scale: { from: 1.6, to: 1.9 },
+      duration: 600, yoyo: true, repeat: -1,
+    });
+
+    // 보스방 아치 (검은 두개골 형태 — 어두운 룬 아치)
+    const archDark = this.add.graphics().setDepth(-2);
+    archDark.fillStyle(0x000000, 1);
+    archDark.beginPath();
+    archDark.moveTo(cx - 36, cy + 36);
+    archDark.lineTo(cx - 36, cy - 12);
+    archDark.arc(cx, cy - 12, 36, Math.PI, 0, false);
+    archDark.lineTo(cx + 36, cy + 36);
+    archDark.closePath();
+    archDark.fillPath();
+
+    const stone = this.add.graphics().setDepth(-1);
+    stone.lineStyle(8, 0x2a0a08, 1);
+    stone.beginPath();
+    stone.moveTo(cx - 40, cy + 38);
+    stone.lineTo(cx - 40, cy - 12);
+    stone.arc(cx, cy - 12, 40, Math.PI, 0, false);
+    stone.lineTo(cx + 40, cy + 38);
+    stone.strokePath();
+    // 핏자국 룬
+    stone.lineStyle(2, 0xff2200, 0.8);
+    stone.beginPath();
+    stone.moveTo(cx - 40, cy + 38);
+    stone.lineTo(cx - 40, cy - 12);
+    stone.arc(cx, cy - 12, 40, Math.PI, 0, false);
+    stone.lineTo(cx + 40, cy + 38);
+    stone.strokePath();
+
+    // 보스 미리보기 (작게)
+    this.add.text(cx, cy + 4, next.emoji, { fontSize: '46px' })
+      .setOrigin(0.5).setDepth(0);
+    this.add.text(cx + 18, cy - 16, next.subEmoji, { fontSize: '22px' })
+      .setOrigin(0.5).setDepth(0);
+
+    // 라벨
+    this.add.text(cx, cy + 56, `⚠️ ${next.name}`, {
+      fontSize: '13px', color: '#ff5544',
+      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    }).setOrigin(0.5).setDepth(20);
+
+    this.add.text(cx, cy + 72, `보스전 · ${next.timeSec}초`, {
+      fontSize: '11px', color: '#888',
+    }).setOrigin(0.5).setDepth(20);
+
+    // 클릭 영역
+    const hit = this.add.zone(cx, cy + 12, 110, 130)
+      .setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => glow.setScale(2.1));
+    hit.on('pointerout', () => glow.setScale(1.7));
+    hit.on('pointerdown', () => this.enterBossArena(next.id));
+  }
+
+  enterBossArena(bossId) {
+    if (this._shopOpen || this._leaving) return;
+    this._leaving = true;
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('Loading', {
+        target: 'BossArena', mode: 'enter',
+        data: { bossId, uid: this.uid, player: this.player },
+      });
+    });
   }
 
   // ---------- 던전 포털 (입구 아치) ----------

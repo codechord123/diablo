@@ -18,24 +18,44 @@ export class BattleScene extends Phaser.Scene {
     this.category = data.category;
     this.playerClass = data.playerClass;
     this.classDef = getClass(this.playerClass);
-    this.player = data.player; // DungeonScene이 직접 전달 (포션 인벤 공유)
+    this.player = data.player;
     this.weapon = getEquippedWeapon(this.player);
     this.playerMistakes = 0;
     this.correctStreak = 0;
     this.firstMistake = true;
     this.locked = false;
+    // 보스 모드
+    this.isBoss = !!data.isBoss;
+    this.timeLimitSec = data.timeLimitSec || 0;
+    this.bossId = data.bossId;
+    this.timeLeft = this.timeLimitSec;
+    this._timerExpired = false;
   }
 
   create() {
     this.modal = document.getElementById('battle-modal');
     this.modal.classList.add('show');
+    this.modal.classList.toggle('boss', this.isBoss);
     document.getElementById('bm-enemy-emoji').textContent = this.enemyEmoji;
-    document.getElementById('bm-enemy-name').textContent = this.enemyName;
-    // 문제 유형 라벨
+    document.getElementById('bm-enemy-name').textContent = (this.isBoss ? '⚠️ BOSS · ' : '') + this.enemyName;
     const catLabel = (CATEGORIES[this.category] || {}).label || '분수';
     document.getElementById('bm-category').textContent = `📚 ${catLabel}`;
     this.renderEnemyHp();
     this.nextProblem();
+
+    // 보스 타이머 UI
+    const timerEl = document.getElementById('bm-timer');
+    if (this.isBoss) {
+      timerEl.style.display = 'block';
+      this.updateTimerDisplay();
+      this.timerEvent = this.time.addEvent({
+        delay: 1000,
+        loop: true,
+        callback: () => this.tickTimer(),
+      });
+    } else {
+      timerEl.style.display = 'none';
+    }
 
     // 키보드: ESC=도주, 1~4 답 선택, H=포션
     this.input.keyboard.addKey('ESC').on('down', () => this.flee());
@@ -80,6 +100,29 @@ export class BattleScene extends Phaser.Scene {
     if (this.locked) return;
     if (i < 0 || i >= this.problem.choices.length) return;
     this.answer(this.problem.choices[i]);
+  }
+
+  // ----- 보스 타이머 -----
+  tickTimer() {
+    if (this._timerExpired) return;
+    this.timeLeft -= 1;
+    this.updateTimerDisplay();
+    if (this.timeLeft <= 0) {
+      this._timerExpired = true;
+      this.timerEvent && this.timerEvent.remove();
+      this.finish({ victory: false, defeated: true, timeout: true });
+    }
+  }
+
+  updateTimerDisplay() {
+    const txt = document.getElementById('bm-timer-text');
+    const bar = document.getElementById('bm-timer-bar');
+    if (!txt || !bar) return;
+    txt.textContent = `⏱ ${this.timeLeft}초`;
+    const pct = (this.timeLeft / this.timeLimitSec) * 100;
+    bar.style.width = `${Math.max(0, pct)}%`;
+    bar.classList.toggle('danger', this.timeLeft <= 10);
+    document.getElementById('bm-timer').classList.toggle('danger', this.timeLeft <= 10);
   }
 
   renderEnemyHp() {
@@ -163,15 +206,28 @@ export class BattleScene extends Phaser.Scene {
 
   finish(result) {
     this.modal.classList.remove('show');
-    const dungeon = this.scene.get('Dungeon');
-    // HP는 이미 player.hp에 즉시 반영됨 → 그대로 전달
-    dungeon.events.emit('battle-result', {
-      victory: !!result.victory,
-      fled: !!result.fled,
-      defeated: !!result.defeated,
-      mistakes: this.playerMistakes,
-      playerHpRemaining: this.player.hp,
-    });
+    this.modal.classList.remove('boss');
+    if (this.timerEvent) this.timerEvent.remove();
+    if (this.isBoss) {
+      const arena = this.scene.get('BossArena');
+      arena && arena.events.emit('boss-result', {
+        victory: !!result.victory,
+        fled: !!result.fled,
+        defeated: !!result.defeated,
+        timeout: !!result.timeout,
+        mistakes: this.playerMistakes,
+        bossId: this.bossId,
+      });
+    } else {
+      const dungeon = this.scene.get('Dungeon');
+      dungeon && dungeon.events.emit('battle-result', {
+        victory: !!result.victory,
+        fled: !!result.fled,
+        defeated: !!result.defeated,
+        mistakes: this.playerMistakes,
+        playerHpRemaining: this.player.hp,
+      });
+    }
     this.scene.stop();
   }
 }

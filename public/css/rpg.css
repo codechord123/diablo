@@ -354,6 +354,62 @@ body {
 }
 
 /* ============================================================
+   Boss Timer + Boss Mode Battle Modal
+   ============================================================ */
+.bm-timer {
+  margin: 14px 0 10px;
+  padding: 10px 14px;
+  border: 1px solid #ff4422;
+  border-radius: 6px;
+  background: rgba(80, 10, 10, 0.4);
+}
+.bm-timer-text {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ffd700;
+  text-align: center;
+  margin-bottom: 6px;
+  font-family: 'Cinzel', 'Noto Serif KR', serif;
+}
+.bm-timer-bar-bg {
+  background: #000;
+  border: 1px solid #443;
+  border-radius: 4px;
+  height: 12px;
+  overflow: hidden;
+}
+.bm-timer-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd700, #ff8833);
+  transition: width 0.3s linear;
+  width: 100%;
+}
+.bm-timer-bar-fill.danger {
+  background: linear-gradient(90deg, #ff2200, #ff5544);
+  animation: pulse-red 0.5s infinite alternate;
+}
+.bm-timer.danger {
+  border-color: #ff0000;
+  box-shadow: 0 0 16px #ff2200;
+  animation: pulse-red 0.6s infinite alternate;
+}
+@keyframes pulse-red {
+  from { box-shadow: 0 0 8px rgba(255, 34, 0, 0.6); }
+  to   { box-shadow: 0 0 24px rgba(255, 34, 0, 1.0); }
+}
+
+/* 보스 모드 모달 — 적색 강조 */
+.battle-modal.boss .bm-card {
+  border-color: #ff2222;
+  box-shadow: 0 0 60px rgba(255, 34, 34, 0.7);
+  background: linear-gradient(180deg, #2a0608, #0a0204);
+}
+.battle-modal.boss .bm-enemy-name {
+  color: #ff5544;
+  text-shadow: 0 0 8px #ff2222;
+}
+
+/* ============================================================
    Responsive — 태블릿/모바일 (가로·세로 모두)
    ============================================================ */
 @media (max-width: 900px) {

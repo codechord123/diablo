@@ -87,5 +87,6 @@ export function migrateProgress(p) {
     inventory:        p.inventory       ?? {},                  // { potion_small: N, ... }
     weapons:          p.weapons         ?? ['sword_basic'],     // 보유 무기 목록
     equippedWeapon:   p.equippedWeapon  ?? 'sword_basic',       // 장착 무기
+    defeatedBosses:   p.defeatedBosses  ?? [],                  // 처치한 보스 id 목록
   };
 }
