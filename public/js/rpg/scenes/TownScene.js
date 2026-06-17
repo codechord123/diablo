@@ -454,36 +454,43 @@ export class TownScene extends Phaser.Scene {
   // ---------- NPC ----------
   drawNpcs() {
     const W = this.scale.width, H = this.scale.height;
-    this.spawnNpc(W * 0.20, H * 0.66, 'merchant',   '🧙‍♀️', '상인 헬가',     '#88ddff');
-    this.spawnNpc(W * 0.80, H * 0.66, 'blacksmith', '🧔',   '대장장이 군나르', '#ff8855');
+    this.spawnNpc(W * 0.30, H * 0.62, 'merchant',   'npc-merchant',   '상인 헬가',     '#88ddff');
+    this.spawnNpc(W * 0.70, H * 0.62, 'blacksmith', 'npc-blacksmith', '대장장이 군나르', '#ff8855');
   }
 
-  spawnNpc(x, y, shopKey, emoji, name, colorHex) {
+  spawnNpc(x, y, shopKey, spriteKey, name, colorHex) {
     const colorNum = parseInt(colorHex.slice(1), 16);
-    const glow = this.add.image(x, y, 'torch')
+    const glow = this.add.image(x, y + 4, 'torch')
       .setBlendMode(Phaser.BlendModes.ADD)
-      .setScale(1.2).setAlpha(0.55).setTint(colorNum).setDepth(4);
+      .setScale(1.4).setAlpha(0.55).setTint(colorNum).setDepth(4);
     this.tweens.add({
       targets: glow,
-      alpha: { from: 0.4, to: 0.7 },
+      alpha: { from: 0.4, to: 0.75 },
+      scale: { from: 1.3, to: 1.5 },
       duration: 1100, yoyo: true, repeat: -1,
     });
 
-    const sprite = this.add.text(x, y, emoji, { fontSize: '46px' })
-      .setOrigin(0.5).setDepth(5)
+    // 절차적 NPC 스프라이트
+    const sprite = this.add.image(x, y, spriteKey).setScale(1.8).setDepth(5)
       .setInteractive({ useHandCursor: true });
+    // 살랑살랑 idle
+    this.tweens.add({
+      targets: sprite,
+      y: y - 3,
+      duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
 
-    this.add.text(x, y + 38, name, {
-      fontSize: '13px', color: colorHex,
+    this.add.text(x, y + 60, name, {
+      fontSize: '14px', color: colorHex,
       fontFamily: 'Cinzel, Noto Serif KR, serif',
     }).setOrigin(0.5).setDepth(6);
 
-    this.add.text(x, y + 55, shopKey === 'merchant' ? '🏪 포션' : '🔨 무기', {
+    this.add.text(x, y + 78, shopKey === 'merchant' ? '🏪 포션 판매' : '🔨 무기 제작', {
       fontSize: '11px', color: '#d4af37',
     }).setOrigin(0.5).setDepth(6);
 
-    sprite.on('pointerover', () => sprite.setScale(1.1));
-    sprite.on('pointerout',  () => sprite.setScale(1.0));
+    sprite.on('pointerover', () => sprite.setScale(1.95));
+    sprite.on('pointerout',  () => sprite.setScale(1.8));
     sprite.on('pointerdown', () => this.openShop(shopKey, name));
   }
 

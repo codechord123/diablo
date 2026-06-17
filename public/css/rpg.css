@@ -409,6 +409,16 @@ body {
   text-shadow: 0 0 8px #ff2222;
 }
 
+/* 보스 자동 공격 흔들림 */
+.bm-card.shake {
+  animation: card-shake 0.35s;
+}
+@keyframes card-shake {
+  0%,100% { transform: translate(0,0); }
+  20%,60% { transform: translate(-8px, 2px); }
+  40%,80% { transform: translate(8px, -2px); }
+}
+
 /* ============================================================
    Notepad — 태블릿 필기 노트 (우측 슬라이드 패널)
    ============================================================ */

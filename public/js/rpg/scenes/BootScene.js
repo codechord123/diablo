@@ -39,6 +39,10 @@ export class BootScene extends Phaser.Scene {
     this.makeGolem();
     this.makeDragon();
 
+    // NPC (상인 + 대장장이)
+    this.makeMerchant();
+    this.makeBlacksmith();
+
     // 라우팅: 직업 미선택 → ClassSelect / 있음 → Town 로딩
     try {
       const user = await getUser();
@@ -431,6 +435,92 @@ export class BootScene extends Phaser.Scene {
     g.fillCircle(cx - 4, 10, 1.5);
     g.fillCircle(cx + 4, 10, 1.5);
     g.generateTexture('m-golem', W, H);
+    g.destroy();
+  }
+
+  // ---------- NPC: 상인 헬가 ----------
+  makeMerchant() {
+    const W = 40, H = 56;
+    const cx = W/2;
+    const g = this.add.graphics();
+    // 발광
+    g.fillStyle(0x88ddff, 0.18).fillCircle(cx, H - 8, 14);
+    // 망토 (청색)
+    const body = pts(cx - 9, 18, cx + 9, 18, cx + 14, H - 4, cx - 14, H - 4);
+    g.fillStyle(0x080a14, 1).fillPoints(body, true);
+    g.fillStyle(0x2d4a8a, 0.9).fillPoints(body, true);
+    // 어깨 가방 (옆구리에)
+    g.fillStyle(0x6b3a18, 1);
+    g.fillRect(cx + 6, 26, 10, 14);
+    g.fillStyle(0x4a2810, 1);
+    g.fillRect(cx + 6, 26, 10, 2);
+    // 황금 동전 표시
+    g.fillStyle(0xffd700, 1);
+    g.fillCircle(cx + 11, 33, 1.5);
+    // 후드
+    g.fillStyle(0x080a14, 1);
+    g.beginPath(); g.arc(cx, 16, 11, Math.PI, Math.PI * 2, false); g.fillPath();
+    g.fillStyle(0x2d4a8a, 0.6);
+    g.beginPath(); g.arc(cx, 16, 11, Math.PI, Math.PI * 2, false); g.fillPath();
+    // 얼굴 (밝은 분홍빛 — 친근감)
+    g.fillStyle(0xeac0a0, 1).fillCircle(cx, 14, 5.5);
+    // 미소 + 눈
+    g.fillStyle(0x000000, 1);
+    g.fillCircle(cx - 2, 13, 0.9);
+    g.fillCircle(cx + 2, 13, 0.9);
+    g.lineStyle(1, 0xa0000a, 1);
+    g.lineBetween(cx - 2, 16, cx + 2, 16);
+    // 동전 글로우 (어깨 가방 위)
+    g.fillStyle(0xffd700, 0.4).fillCircle(cx + 11, 33, 4);
+    g.generateTexture('npc-merchant', W, H);
+    g.destroy();
+  }
+
+  // ---------- NPC: 대장장이 군나르 ----------
+  makeBlacksmith() {
+    const W = 44, H = 56;
+    const cx = W/2;
+    const g = this.add.graphics();
+    g.fillStyle(0xff8855, 0.2).fillCircle(cx, H - 8, 14);
+    // 몸 (어두운 갈색 망토)
+    const body = pts(cx - 11, 18, cx + 11, 18, cx + 15, H - 4, cx - 15, H - 4);
+    g.fillStyle(0x1a0e08, 1).fillPoints(body, true);
+    g.fillStyle(0x5a3a20, 0.9).fillPoints(body, true);
+    // 가죽 앞치마 (가운데)
+    g.fillStyle(0x4a2810, 1);
+    g.fillRect(cx - 8, 22, 16, 24);
+    g.fillStyle(0x2a1408, 1);
+    g.fillRect(cx - 8, 22, 16, 2);  // 끈
+    // 앞치마 자국 (불꽃 그을림)
+    g.fillStyle(0xa31621, 0.5);
+    g.fillCircle(cx - 3, 30, 2);
+    g.fillCircle(cx + 4, 36, 1.5);
+    // 어깨 가죽끈
+    g.lineStyle(2, 0x2a1408, 1);
+    g.lineBetween(cx - 8, 22, cx + 8, 22);
+    // 머리 (모자 없이, 굵은 얼굴)
+    g.fillStyle(0x080404, 1).fillCircle(cx, 13, 8);
+    g.fillStyle(0xc09060, 1).fillCircle(cx, 14, 6.5);  // 그을린 얼굴
+    // 굵은 눈썹 + 눈
+    g.fillStyle(0x080404, 1);
+    g.fillRect(cx - 4, 11, 3, 1.5);
+    g.fillRect(cx + 1, 11, 3, 1.5);
+    g.fillCircle(cx - 2, 14, 0.9);
+    g.fillCircle(cx + 2, 14, 0.9);
+    // 수염
+    g.fillStyle(0x4a2810, 1);
+    g.fillTriangle(cx - 4, 17, cx + 4, 17, cx, 21);
+    // 망치 (오른쪽에 들고 있음)
+    const hx = cx + 16, hy = 30;
+    g.fillStyle(0x6b3a18, 1).fillRect(hx - 1, hy, 2, 18);  // 손잡이
+    g.fillStyle(0x4a4a4a, 1).fillRect(hx - 5, hy - 4, 10, 8);  // 머리
+    g.lineStyle(1, 0x000000, 0.7).strokeRect(hx - 5, hy - 4, 10, 8);
+    // 망치 광택
+    g.fillStyle(0xcccccc, 0.6).fillRect(hx - 4, hy - 3, 8, 1);
+    // 불꽃 (왼쪽 어깨 옆)
+    g.fillStyle(0xff7733, 0.8).fillCircle(cx - 18, 28, 3);
+    g.fillStyle(0xffd700, 1).fillCircle(cx - 18, 28, 1.5);
+    g.generateTexture('npc-blacksmith', W, H);
     g.destroy();
   }
 

@@ -9,8 +9,16 @@ export const BOSSES = [
     goldReward: 100, xpReward: 80,
     unlockLevel: 5,
     color: 0xcfd2cf,
-    category: 'sub-same',  // 주력 카테고리 (전투 중 랜덤 섞임)
+    category: 'sub-same',
     intro: '"무덤에서 일어선 자가, 너의 분수를 시험한다."',
+    abilities: {
+      autoAttackEverySec: 7,    // 7초마다 1 피해
+      autoAttackDamage: 1,
+      lockCategory: false,       // 카테고리 강제 안 함
+      pierceEvade: false,        // 도적 회피 막지 않음
+      armor: 0,                  // 데미지 감소 없음
+      enrageBelowSec: 0,         // 분노 없음
+    },
   },
   {
     id: 'necro-captain', name: '부활한 사령관',
@@ -21,6 +29,14 @@ export const BOSSES = [
     color: 0x8db580,
     category: 'add-diff',
     intro: '"통분의 늪에 가라앉으리라..."',
+    abilities: {
+      autoAttackEverySec: 0,
+      autoAttackDamage: 0,
+      lockCategory: true,        // 카테고리 고정 (이분모만)
+      pierceEvade: false,
+      armor: 0,
+      enrageBelowSec: 0,
+    },
   },
   {
     id: 'demon-knight', name: '악마 기사',
@@ -31,6 +47,14 @@ export const BOSSES = [
     color: 0xd96459,
     category: 'sub-diff',
     intro: '"지옥의 분수가 너를 찢어내리라!"',
+    abilities: {
+      autoAttackEverySec: 0,
+      autoAttackDamage: 0,
+      lockCategory: false,
+      pierceEvade: true,         // 도적 회피 무효화
+      armor: 1,                  // 정답 데미지 -1 (최소 1 보장)
+      enrageBelowSec: 0,
+    },
   },
   {
     id: 'dragon-lord', name: '드래곤 군주',
@@ -41,6 +65,14 @@ export const BOSSES = [
     color: 0xf4a261,
     category: 'mixed',
     intro: '"마지막 시험이다. 모든 분수를 정복하라!"',
+    abilities: {
+      autoAttackEverySec: 8,
+      autoAttackDamage: 1,
+      lockCategory: false,
+      pierceEvade: true,
+      armor: 1,
+      enrageBelowSec: 30,        // 30초 미만 시 자동 공격 2배
+    },
   },
 ];
 

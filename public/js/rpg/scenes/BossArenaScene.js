@@ -115,22 +115,41 @@ export class BossArenaScene extends Phaser.Scene {
 
   drawIntro() {
     const W = this.scale.width, H = this.scale.height;
-    const t1 = this.add.text(W/2, H * 0.18, `⚠️ 보스: ${this.boss.name}`, {
+    const t1 = this.add.text(W/2, H * 0.15, `⚠️ 보스: ${this.boss.name}`, {
       fontSize: '36px', fontFamily: 'Cinzel, Noto Serif KR, serif',
       color: '#ff3322',
     }).setOrigin(0.5).setDepth(50).setAlpha(0);
 
-    const t2 = this.add.text(W/2, H * 0.26, this.boss.intro, {
+    const t2 = this.add.text(W/2, H * 0.22, this.boss.intro, {
       fontSize: '16px', color: '#ead7b7', fontStyle: 'italic',
     }).setOrigin(0.5).setDepth(50).setAlpha(0);
 
-    const t3 = this.add.text(W/2, H * 0.34, `⏱  ${this.boss.timeSec}초 안에 처치하라!`, {
+    const t3 = this.add.text(W/2, H * 0.28, `⏱  ${this.boss.timeSec}초 안에 처치하라!`, {
       fontSize: '20px', color: '#ffd700',
     }).setOrigin(0.5).setDepth(50).setAlpha(0);
 
+    // 보스 고유 능력 안내
+    const abilityText = this.formatAbilities();
+    const t4 = this.add.text(W/2, H * 0.34, abilityText, {
+      fontSize: '14px', color: '#ff8855',
+      align: 'center', wordWrap: { width: W * 0.7 },
+    }).setOrigin(0.5).setDepth(50).setAlpha(0);
+
     this.tweens.add({ targets: t1, alpha: 1, duration: 500 });
-    this.tweens.add({ targets: t2, alpha: 1, delay: 600, duration: 500 });
-    this.tweens.add({ targets: t3, alpha: 1, delay: 1100, duration: 500 });
+    this.tweens.add({ targets: t2, alpha: 1, delay: 500, duration: 500 });
+    this.tweens.add({ targets: t3, alpha: 1, delay: 1000, duration: 500 });
+    this.tweens.add({ targets: t4, alpha: 1, delay: 1500, duration: 500 });
+  }
+
+  formatAbilities() {
+    const a = this.boss.abilities || {};
+    const parts = [];
+    if (a.autoAttackEverySec > 0) parts.push(`⚡ ${a.autoAttackEverySec}초마다 자동 공격 -${a.autoAttackDamage} HP`);
+    if (a.lockCategory) parts.push(`📚 ${this.boss.category} 카테고리 강제`);
+    if (a.armor > 0) parts.push(`🛡️ 방어막 -${a.armor} 데미지`);
+    if (a.pierceEvade) parts.push(`💢 회피 무효 (도적도 피할 수 없다)`);
+    if (a.enrageBelowSec > 0) parts.push(`🔥 ${a.enrageBelowSec}초 미만 = 분노 모드`);
+    return parts.length ? '특수: ' + parts.join(' · ') : '';
   }
 
   startBossBattle() {
