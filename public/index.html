@@ -27,7 +27,7 @@
 
   <!-- 도움말 -->
   <footer class="help-bar">
-    🖱️/⌨️ WASD/방향키 = 이동 · 1~4 = 답 · H = 포션 · E = 계단(마을) · Q = 즉시 귀환 · ESC = 도주 · R = 던전 재생성
+    🖱️/⌨️ WASD = 이동 · 1~4 = 답 · H = 포션 · N = 풀이노트 · E = 계단 · Q = 마을 · ESC = 도주 · R = 재생성
   </footer>
 
   <!-- 레벨업 배너 -->
@@ -59,6 +59,7 @@
       <div id="bm-feedback" class="bm-feedback"></div>
       <div class="bm-actions">
         <button id="bm-potion" class="bm-potion">🧪 포션 사용 (0)</button>
+        <button id="bm-notepad" class="bm-notepad-btn">📝 풀이 노트 (N)</button>
       </div>
       <div class="bm-hint">키보드 1~4 = 답 · H = 포션 · ESC = 도주</div>
     </div>
@@ -75,6 +76,22 @@
       <div id="shop-items" class="shop-items"></div>
       <div class="shop-hint">ESC = 닫기</div>
     </div>
+  </div>
+
+  <!-- 필기 노트 (N 키 토글) -->
+  <div id="notepad" class="notepad">
+    <div class="np-toolbar">
+      <button class="np-tool active" data-tool="pen-black" title="검정 펜">✏️</button>
+      <button class="np-tool" data-tool="pen-blue" title="파랑 펜">🖊️</button>
+      <button class="np-tool" data-tool="pen-red" title="빨강 펜">🖍️</button>
+      <button class="np-tool" data-tool="eraser" title="지우개">🧽</button>
+      <button class="np-clear" title="전체 지우기">🗑️</button>
+      <div class="np-spacer"></div>
+      <div class="np-title">📝 풀이 노트</div>
+      <button class="np-close" title="닫기 (N)">✕</button>
+    </div>
+    <canvas id="np-canvas" class="np-canvas"></canvas>
+    <div class="np-hint">통분 · 약분 · 계산 과정을 적어보세요</div>
   </div>
 
   <script type="module" src="js/rpg/main.js"></script>

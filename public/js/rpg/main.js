@@ -8,6 +8,7 @@ import { TownScene } from './scenes/TownScene.js';
 import { ClassSelectScene } from './scenes/ClassSelectScene.js';
 import { LoadingScene } from './scenes/LoadingScene.js';
 import { BossArenaScene } from './scenes/BossArenaScene.js';
+import { initNotepad, toggleNotepad } from '../notepad.js';
 
 const computeSize = () => {
   // HUD(70px) + 헬프바(36px) 제외한 영역을 캔버스에 할당
@@ -33,6 +34,18 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+
+// 노트패드 — DOM 준비 + 전역 N 키
+document.addEventListener('DOMContentLoaded', () => initNotepad());
+if (document.readyState !== 'loading') initNotepad();
+
+// N 키: 어디서나 노트 토글 (input 포커스 중엔 무시)
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'n' && e.key !== 'N') return;
+  const tag = (e.target && e.target.tagName) || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  toggleNotepad();
+});
 
 // 창 크기 변경 시 캔버스 + 비네팅 갱신
 window.addEventListener('resize', () => {

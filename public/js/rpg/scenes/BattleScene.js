@@ -5,6 +5,7 @@
 import { generateProblem, checkAnswer, problemToHtml, CATEGORIES } from '../../fractionEngine.js';
 import { getClass } from '../../classes.js';
 import { ITEMS, useFirstPotion, getEquippedWeapon, totalPotions } from '../../items.js';
+import { toggleNotepad } from '../../notepad.js';
 
 export class BattleScene extends Phaser.Scene {
   constructor() { super('Battle'); }
@@ -69,6 +70,12 @@ export class BattleScene extends Phaser.Scene {
     if (potionBtn && !potionBtn._wired) {
       potionBtn.addEventListener('click', () => this.usePotion());
       potionBtn._wired = true;
+    }
+    // 노트 토글 버튼
+    const noteBtn = document.getElementById('bm-notepad');
+    if (noteBtn && !noteBtn._wired) {
+      noteBtn.addEventListener('click', () => toggleNotepad());
+      noteBtn._wired = true;
     }
     this.refreshPotionBtn();
   }

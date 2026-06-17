@@ -410,6 +410,130 @@ body {
 }
 
 /* ============================================================
+   Notepad — 태블릿 필기 노트 (우측 슬라이드 패널)
+   ============================================================ */
+.notepad {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: min(480px, 45vw);
+  height: 100vh;
+  background: #faf5e6;
+  border-left: 4px solid #6b3a18;
+  box-shadow: -8px 0 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(105%);
+  transition: transform 0.3s ease-out;
+  z-index: 150;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.notepad.show {
+  transform: translateX(0);
+}
+
+.np-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #d4af37, #b08820);
+  border-bottom: 2px solid #6b3a18;
+}
+.np-tool, .np-clear, .np-close {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(107, 58, 24, 0.5);
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+.np-tool:hover, .np-clear:hover, .np-close:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+.np-tool.active {
+  background: #2a1810;
+  color: #fff;
+  border-color: #2a1810;
+}
+.np-spacer { flex: 1; }
+.np-title {
+  font-family: 'Cinzel', 'Noto Serif KR', serif;
+  font-size: 14px;
+  color: #2a1810;
+  font-weight: bold;
+}
+
+.np-canvas {
+  flex: 1;
+  background:
+    /* 모눈 격자 (계산용) */
+    linear-gradient(to right,  rgba(107, 58, 24, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(107, 58, 24, 0.08) 1px, transparent 1px),
+    /* 가로 줄 (필기용) */
+    repeating-linear-gradient(to bottom, transparent, transparent 31px, rgba(33, 96, 212, 0.18) 32px),
+    #faf5e6;
+  background-size: 24px 24px, 24px 24px, 100% 32px, 100% 100%;
+  width: 100%;
+  cursor: crosshair;
+}
+
+.np-hint {
+  padding: 6px 12px;
+  background: #f3e8c8;
+  border-top: 1px solid #c4a868;
+  font-size: 11px;
+  color: #6b3a18;
+  text-align: center;
+  font-style: italic;
+}
+
+/* 노트 열림 시 배틀 모달 왼쪽으로 이동 */
+body.notepad-open .bm-card {
+  margin-right: min(480px, 45vw);
+  transition: margin 0.3s;
+}
+
+/* 노트 토글 버튼 (배틀 모달 안) */
+.bm-notepad-btn {
+  background: linear-gradient(180deg, #d4af37, #8b6914);
+  color: #2a1810;
+  border: 1px solid #6b3a18;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 8px;
+}
+.bm-notepad-btn:hover {
+  background: linear-gradient(180deg, #f2d04e, #b08820);
+}
+
+/* 모바일/태블릿 세로: 노트는 화면 하단 60% */
+@media (max-width: 720px), (orientation: portrait) {
+  .notepad {
+    top: auto;
+    bottom: 0;
+    right: 0;
+    width: 100vw;
+    height: 60vh;
+    border-left: none;
+    border-top: 4px solid #6b3a18;
+    transform: translateY(105%);
+  }
+  .notepad.show { transform: translateY(0); }
+  body.notepad-open .bm-card { margin-right: 0; }
+}
+
+/* ============================================================
    Responsive — 태블릿/모바일 (가로·세로 모두)
    ============================================================ */
 @media (max-width: 900px) {
