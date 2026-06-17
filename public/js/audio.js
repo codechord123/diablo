@@ -10,27 +10,34 @@ class AudioEngine {
     this.ctx = null;
     this.masterGain = null;
     this.enabled = true;
-    this.volume = 0.4;
+    this.volume = 0.6;
     // BGM 상태
     this.bgmGain = null;
     this.bgmIntervalId = null;
     this.bgmCurrentTrack = null;
     this.bgmStep = 0;
-    this.bgmVolume = 0.5;
+    this.bgmVolume = 0.8;
   }
 
   init() {
-    if (this.ctx) return;
+    if (this.ctx) {
+      // 재호출 시 suspended라면 resume 시도 (탭 비활성 후 복귀 등)
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      return;
+    }
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       this.ctx = new Ctx();
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(e => console.warn('resume failed', e));
+      }
       this.masterGain = this.ctx.createGain();
       this.masterGain.gain.value = this.volume;
       this.masterGain.connect(this.ctx.destination);
-      // BGM 전용 게인 (개별 음량 조절)
       this.bgmGain = this.ctx.createGain();
       this.bgmGain.gain.value = this.bgmVolume;
       this.bgmGain.connect(this.masterGain);
+      console.log('[Audio] init, state =', this.ctx.state);
     } catch (e) {
       console.warn('AudioContext init failed', e);
       this.enabled = false;
@@ -232,53 +239,52 @@ class AudioEngine {
 // interval: 노트 간격(ms)
 // ============================================================
 const BGM_PATTERNS = {
-  // 마을: C 메이저 펜타토닉 (따뜻한 하프 톤)
+  // 마을: C 메이저 펜타토닉
   town: {
     interval: 400,
     notes: [
-      { f: 523, d: 0.35, t: 'triangle', v: 0.10 },  // C5
-      { f: 659, d: 0.35, t: 'triangle', v: 0.09 },  // E5
-      { f: 784, d: 0.35, t: 'triangle', v: 0.09 },  // G5
-      { f: 880, d: 0.50, t: 'triangle', v: 0.10 },  // A5
+      { f: 523, d: 0.40, t: 'triangle', v: 0.25 },  // C5
+      { f: 659, d: 0.40, t: 'triangle', v: 0.22 },  // E5
+      { f: 784, d: 0.40, t: 'triangle', v: 0.22 },  // G5
+      { f: 880, d: 0.55, t: 'triangle', v: 0.25 },  // A5
+      null,
+      { f: 659, d: 0.40, t: 'triangle', v: 0.20 },  // E5
+      { f: 587, d: 0.40, t: 'triangle', v: 0.20 },  // D5
+      { f: 523, d: 0.70, t: 'triangle', v: 0.25 },  // C5
       null, null,
-      { f: 659, d: 0.35, t: 'triangle', v: 0.08 },  // E5
-      { f: 587, d: 0.35, t: 'triangle', v: 0.08 },  // D5
-      { f: 523, d: 0.60, t: 'triangle', v: 0.10 },  // C5
-      null, null, null,
-      { f: 392, d: 0.40, t: 'triangle', v: 0.07 },  // G4 (저음 베이스)
+      { f: 392, d: 0.50, t: 'triangle', v: 0.18 },  // G4 베이스
       null,
     ],
   },
-  // 던전: 어두운 드론 + 간헐적 종소리
+  // 던전: 저음 드론 + 종
   dungeon: {
     interval: 600,
     notes: [
-      { f: 110, d: 0.70, t: 'sawtooth', v: 0.06 },  // A2 드론
-      null, null,
-      { f: 220, d: 0.30, t: 'triangle', v: 0.05 },  // A3
+      { f: 110, d: 0.80, t: 'sawtooth', v: 0.16 },
       null,
-      { f: 165, d: 0.70, t: 'sawtooth', v: 0.06 },  // E3
+      { f: 220, d: 0.35, t: 'triangle', v: 0.14 },
+      null,
+      { f: 165, d: 0.80, t: 'sawtooth', v: 0.16 },
+      null,
+      { f: 330, d: 0.25, t: 'sine',     v: 0.13 },
       null, null,
-      { f: 330, d: 0.20, t: 'sine',     v: 0.04 },  // E4 종
-      null, null, null,
-      { f: 110, d: 0.70, t: 'sawtooth', v: 0.06 },
-      null, null,
-      { f: 220, d: 0.40, t: 'sine',     v: 0.04 },  // A3 종
-      null, null,
+      { f: 110, d: 0.80, t: 'sawtooth', v: 0.16 },
+      null,
+      { f: 220, d: 0.50, t: 'sine',     v: 0.13 },
     ],
   },
-  // 보스: 빠른 비트 + 단조 + 긴장감
+  // 보스: 빠른 비트 + 긴장감
   boss: {
     interval: 220,
     notes: [
-      { f: 110, d: 0.18, t: 'sawtooth', v: 0.10 },
-      { f: 220, d: 0.18, t: 'sawtooth', v: 0.08 },
-      { f: 110, d: 0.18, t: 'sawtooth', v: 0.10 },
-      { f: 165, d: 0.18, t: 'sawtooth', v: 0.08 },
-      { f: 110, d: 0.18, t: 'sawtooth', v: 0.10 },
-      { f: 247, d: 0.18, t: 'sawtooth', v: 0.08 },  // B3 (불협화)
-      { f: 110, d: 0.18, t: 'sawtooth', v: 0.10 },
-      { f: 196, d: 0.18, t: 'sawtooth', v: 0.08 },  // G3
+      { f: 110, d: 0.20, t: 'sawtooth', v: 0.28 },
+      { f: 220, d: 0.20, t: 'sawtooth', v: 0.22 },
+      { f: 110, d: 0.20, t: 'sawtooth', v: 0.28 },
+      { f: 165, d: 0.20, t: 'sawtooth', v: 0.22 },
+      { f: 110, d: 0.20, t: 'sawtooth', v: 0.28 },
+      { f: 247, d: 0.20, t: 'sawtooth', v: 0.22 },
+      { f: 110, d: 0.20, t: 'sawtooth', v: 0.28 },
+      { f: 196, d: 0.20, t: 'sawtooth', v: 0.22 },
     ],
   },
 };

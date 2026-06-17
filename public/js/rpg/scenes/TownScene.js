@@ -7,6 +7,10 @@ import { getClass, playerSpriteKey } from '../../classes.js';
 import { ITEMS, SHOPS, canAfford, ownsWeapon, addPotion } from '../../items.js';
 import { saveProgress } from '../../firebase-config.js';
 import { availableBosses, isBossDefeated } from '../../bosses.js';
+import { listWrong, clearWrongOne } from '../../storage.js';
+import { currentUser } from '../../auth.js';
+import { checkAnswer, Fraction } from '../../fractionEngine.js';
+import { fractionSVG } from '../../fraction-vis.js';
 import audio from '../../audio.js';
 
 export class TownScene extends Phaser.Scene {
@@ -454,8 +458,91 @@ export class TownScene extends Phaser.Scene {
   // ---------- NPC ----------
   drawNpcs() {
     const W = this.scale.width, H = this.scale.height;
-    this.spawnNpc(W * 0.30, H * 0.62, 'merchant',   'npc-merchant',   '상인 헬가',     '#88ddff');
-    this.spawnNpc(W * 0.70, H * 0.62, 'blacksmith', 'npc-blacksmith', '대장장이 군나르', '#ff8855');
+    this.spawnNpc(W * 0.25, H * 0.62, 'merchant',   'npc-merchant',   '상인 헬가',     '#88ddff');
+    this.spawnNpc(W * 0.75, H * 0.62, 'blacksmith', 'npc-blacksmith', '대장장이 군나르', '#ff8855');
+    // 오답 복습 NPC — 가운데 살짝 위
+    this.spawnReviewNpc(W * 0.50, H * 0.55);
+  }
+
+  // 오답 복습 NPC (현자 — 클릭 시 오답 모달)
+  spawnReviewNpc(x, y) {
+    const nickname = currentUser()?.nickname || 'guest';
+    const wrongCount = listWrong(nickname).length;
+    if (wrongCount === 0) return; // 오답 없으면 표시 안 함
+
+    const glow = this.add.image(x, y, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(1.2).setAlpha(0.6).setTint(0xddaa88).setDepth(4);
+    this.tweens.add({
+      targets: glow,
+      alpha: { from: 0.4, to: 0.7 }, duration: 1100, yoyo: true, repeat: -1,
+    });
+    const sprite = this.add.text(x, y, '🧙‍♂️', { fontSize: '46px' })
+      .setOrigin(0.5).setDepth(5)
+      .setInteractive({ useHandCursor: true });
+    this.tweens.add({
+      targets: sprite, y: y - 4,
+      duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    this.add.text(x, y + 38, '현자 메를린', {
+      fontSize: '13px', color: '#ddaa88',
+      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    }).setOrigin(0.5).setDepth(6);
+    this.add.text(x, y + 55, `📚 오답 복습 (${wrongCount})`, {
+      fontSize: '11px', color: '#d4af37',
+    }).setOrigin(0.5).setDepth(6);
+
+    sprite.on('pointerover', () => sprite.setScale(1.1));
+    sprite.on('pointerout',  () => sprite.setScale(1.0));
+    sprite.on('pointerdown', () => this.openReviewModal());
+  }
+
+  openReviewModal() {
+    audio.click();
+    const modal = document.getElementById('review-modal');
+    this.renderReviewList();
+    modal.classList.add('show');
+    this._reviewOpen = true;
+    if (!modal._wired) {
+      modal._wired = true;
+      document.getElementById('review-close').addEventListener('click', () => {
+        modal.classList.remove('show');
+        this._reviewOpen = false;
+      });
+    }
+  }
+
+  renderReviewList() {
+    const nickname = currentUser()?.nickname || 'guest';
+    const list = document.getElementById('review-list');
+    const wrong = listWrong(nickname);
+    list.innerHTML = '';
+    if (wrong.length === 0) {
+      list.innerHTML = '<div class="review-empty">🎉 오답이 없습니다!</div>';
+      return;
+    }
+    wrong.slice().reverse().forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'review-row';
+      row.innerHTML = `
+        <div class="review-problem">
+          ${fractionSVG(entry.a.n, entry.a.d, { color: '#4cc9f0', size: 32 })}
+          <span class="frac"><span class="num">${entry.a.n}</span><span class="den">${entry.a.d}</span></span>
+          <span class="op">${entry.op}</span>
+          ${fractionSVG(entry.b.n, entry.b.d, { color: '#ff77bb', size: 32 })}
+          <span class="frac"><span class="num">${entry.b.n}</span><span class="den">${entry.b.d}</span></span>
+          <span class="op">=</span>
+          <span class="frac frac-sm"><span class="num">${entry.answer.n}</span><span class="den">${entry.answer.d}</span></span>
+        </div>
+        <button class="review-clear">✓ 이해함</button>
+      `;
+      row.querySelector('.review-clear').addEventListener('click', () => {
+        clearWrongOne(nickname, entry.key);
+        audio.coin();
+        this.renderReviewList();
+      });
+      list.appendChild(row);
+    });
   }
 
   spawnNpc(x, y, shopKey, spriteKey, name, colorHex) {

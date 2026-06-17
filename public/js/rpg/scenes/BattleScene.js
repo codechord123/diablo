@@ -2,7 +2,11 @@
 // BattleScene — 분수 전투 (DOM 오버레이 모달)
 // 분수 모양은 HTML이 가장 깔끔하므로 Phaser canvas 위에 DOM을 띄움
 // ============================================================
-import { generateProblem, checkAnswer, problemToHtml, CATEGORIES } from '../../fractionEngine.js';
+import { generateProblem, checkAnswer, problemToHtml, problemHint, adjustedLevel, CATEGORIES } from '../../fractionEngine.js';
+import { fractionWithVis, fractionSVG } from '../../fraction-vis.js';
+import { hasSeen, markSeen, showConcept } from '../../concepts.js';
+import { recordAnswer, recordWrong, getRecentAccuracy, clearWrongOne } from '../../storage.js';
+import { currentUser } from '../../auth.js';
 import { getClass } from '../../classes.js';
 import { ITEMS, useFirstPotion, getEquippedWeapon, totalPotions } from '../../items.js';
 import { toggleNotepad } from '../../notepad.js';
@@ -40,6 +44,9 @@ export class BattleScene extends Phaser.Scene {
     this._secsSinceLastAutoAttack = 0;
     // 같은 던전 내 문제 중복 방지용 풀 (DungeonScene 공유)
     this.problemPool = data.problemPool || null;
+    // 5B: 사용자 닉네임 (정답률 추적용)
+    this.nickname = currentUser()?.nickname || 'guest';
+    this.hintUsed = false; // 이 문제에서 힌트 사용했는지
   }
 
   create() {
@@ -51,7 +58,13 @@ export class BattleScene extends Phaser.Scene {
     const catLabel = (CATEGORIES[this.category] || {}).label || '분수';
     document.getElementById('bm-category').textContent = `📚 ${catLabel}`;
     this.renderEnemyHp();
-    this.nextProblem();
+    // 첫 전투면 intro 개념 카드 표시
+    if (!hasSeen(this.nickname, 'intro')) {
+      markSeen(this.nickname, 'intro');
+      showConcept('intro').then(() => this.nextProblem());
+    } else {
+      this.nextProblem();
+    }
 
     // 보스 타이머 UI
     const timerEl = document.getElementById('bm-timer');
@@ -85,6 +98,12 @@ export class BattleScene extends Phaser.Scene {
     if (noteBtn && !noteBtn._wired) {
       noteBtn.addEventListener('click', () => toggleNotepad());
       noteBtn._wired = true;
+    }
+    // 힌트 버튼
+    const hintBtn = document.getElementById('bm-hint');
+    if (hintBtn && !hintBtn._wired) {
+      hintBtn.addEventListener('click', () => this.useHint());
+      hintBtn._wired = true;
     }
     this.refreshPotionBtn();
   }
@@ -189,14 +208,38 @@ export class BattleScene extends Phaser.Scene {
     document.getElementById('bm-enemy-hp').textContent = `${this.enemyHp} / ${this.enemyMaxHp}`;
   }
 
-  nextProblem() {
-    // 카테고리(보스 lockCategory 적용) + 같은 던전 내 중복 방지
-    const cat = this.category;
-    this.problem = generateProblem(this.level, cat, {
+  async nextProblem() {
+    // 적응 난이도: 최근 정답률 기반 레벨 조정 (보스전은 적용 안 함)
+    const acc = getRecentAccuracy(this.nickname);
+    const effLevel = this.isBoss ? this.level : adjustedLevel(this.level, acc);
+    this.problem = generateProblem(effLevel, this.category, {
       exclude: this.problemPool,
     });
-    document.getElementById('bm-problem').innerHTML =
-      `${problemToHtml(this.problem)} <span class="op">=</span> <span class="q">?</span>`;
+    this.hintUsed = false;
+
+    // 첫 이분모 문제 시 통분 개념 카드
+    if (!hasSeen(this.nickname, 'lcm')) {
+      markSeen(this.nickname, 'lcm');
+      await showConcept('lcm');
+    }
+
+    // 문제 영역 — 분수 시각화 (a + b = ?)
+    const a = this.problem.a, b = this.problem.b;
+    document.getElementById('bm-problem').innerHTML = `
+      <span class="bm-frac-vis-wrap">
+        ${fractionSVG(a.n, a.d, { color: '#4cc9f0', size: 40 })}
+        <span class="frac"><span class="num">${a.n}</span><span class="den">${a.d}</span></span>
+      </span>
+      <span class="op">${this.problem.op}</span>
+      <span class="bm-frac-vis-wrap">
+        ${fractionSVG(b.n, b.d, { color: '#ff77bb', size: 40 })}
+        <span class="frac"><span class="num">${b.n}</span><span class="den">${b.d}</span></span>
+      </span>
+      <span class="op">=</span>
+      <span class="q">?</span>
+    `;
+
+    // 선택지 — 시각화 포함
     const box = document.getElementById('bm-choices');
     box.innerHTML = '';
     this.problem.choices.forEach((c, idx) => {
@@ -205,13 +248,37 @@ export class BattleScene extends Phaser.Scene {
       const [n, d] = c.split('/');
       btn.innerHTML = `
         <span class="bm-choice-key">${idx + 1}</span>
+        ${fractionSVG(+n, +d, { color: '#ffd700', size: 28 })}
         <span class="frac frac-sm"><span class="num">${n}</span><span class="den">${d}</span></span>
       `;
       btn.addEventListener('click', () => this.answer(c));
       box.appendChild(btn);
     });
     document.getElementById('bm-feedback').innerHTML = '';
+    document.getElementById('bm-hint-area').innerHTML = '';
+    this.refreshHintBtn();
     this.locked = false;
+  }
+
+  // 힌트 버튼 동작
+  refreshHintBtn() {
+    const btn = document.getElementById('bm-hint');
+    if (!btn) return;
+    btn.disabled = this.hintUsed;
+    btn.textContent = this.hintUsed ? '💡 힌트 사용됨' : '💡 힌트 (XP 절반)';
+  }
+
+  useHint() {
+    if (this.hintUsed) return;
+    this.hintUsed = true;
+    const h = problemHint(this.problem);
+    document.getElementById('bm-hint-area').innerHTML = `<div class="bm-hint-box">${h.html}</div>`;
+    this.refreshHintBtn();
+    // 첫 힌트 시 개념 카드
+    if (!hasSeen(this.nickname, 'hint')) {
+      markSeen(this.nickname, 'hint');
+      showConcept('hint');
+    }
   }
 
   answer(choice) {
@@ -220,6 +287,7 @@ export class BattleScene extends Phaser.Scene {
     const correct = checkAnswer(choice, this.problem.answer);
     const fb = document.getElementById('bm-feedback');
     if (correct) {
+      recordAnswer(this.nickname, true);
       // 무기 데미지 + 마법사 능력 (3회 연속마다 +1)
       let dmg = this.weapon.damage || 1;
       this.correctStreak += 1;
@@ -229,6 +297,8 @@ export class BattleScene extends Phaser.Scene {
       // 보스 방어막 — 최소 1 데미지는 보장
       const armor = this.bossAbilities.armor || 0;
       if (armor > 0) dmg = Math.max(1, dmg - armor);
+      // 힌트 사용 시 데미지 절반 (몬스터에 약함 = XP 적게)
+      if (this.hintUsed) dmg = Math.max(1, Math.floor(dmg / 2));
       this.enemyHp -= dmg;
       if (bonus) audio.magic(); else audio.hit();
       // 데미지 숫자 (DOM, 적 위에 떠오름) + 화면 흔들림
@@ -265,6 +335,8 @@ export class BattleScene extends Phaser.Scene {
         fb.className = 'bm-feedback miss';
         if (this.player.hp <= 0) { this.finish({ victory: false, defeated: true }); return; }
       } else {
+        recordAnswer(this.nickname, false);
+        recordWrong(this.nickname, this.problem);
         this.playerMistakes += 1;
         // HP 즉시 차감 (포션 사용 흐름과 일관성 유지)
         this.player.hp = Math.max(0, this.player.hp - 1);

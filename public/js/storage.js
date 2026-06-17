@@ -9,6 +9,8 @@ const KEYS = {
   session:   'fd:session',
   students:  'fd:students',
   progress:  (nick) => `fd:progress:${nick}`,
+  recent:    (nick) => `fd:recent:${nick}`,    // 최근 정답/오답 5개
+  wrong:     (nick) => `fd:wrong:${nick}`,     // 오답 기록 (오답 복습용)
 };
 
 // ----- 학생 목록 -----
@@ -78,6 +80,47 @@ export function listClasses() {
   const codes = new Set();
   listStudents().forEach(s => codes.add(s.classCode || 'default'));
   return [...codes];
+}
+
+// ----- 최근 정답률 추적 (적응 난이도용) -----
+const RECENT_LIMIT = 8;
+export function recordAnswer(nickname, isCorrect) {
+  const arr = JSON.parse(localStorage.getItem(KEYS.recent(nickname)) || '[]');
+  arr.push(isCorrect ? 1 : 0);
+  while (arr.length > RECENT_LIMIT) arr.shift();
+  localStorage.setItem(KEYS.recent(nickname), JSON.stringify(arr));
+}
+export function getRecentAccuracy(nickname) {
+  const arr = JSON.parse(localStorage.getItem(KEYS.recent(nickname)) || '[]');
+  if (arr.length < 3) return null; // 표본 부족
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+// ----- 오답 기록 (복습 NPC용) -----
+const WRONG_LIMIT = 20;
+export function recordWrong(nickname, problem) {
+  const arr = JSON.parse(localStorage.getItem(KEYS.wrong(nickname)) || '[]');
+  // problem 객체 → 직렬화 가능한 형태
+  const entry = {
+    key: problem.key,
+    a: { n: problem.a.n, d: problem.a.d },
+    b: { n: problem.b.n, d: problem.b.d },
+    op: problem.op,
+    answer: { n: problem.answer.n, d: problem.answer.d },
+    timestamp: Date.now(),
+  };
+  // 같은 key는 갱신
+  const filtered = arr.filter(x => x.key !== entry.key);
+  filtered.push(entry);
+  while (filtered.length > WRONG_LIMIT) filtered.shift();
+  localStorage.setItem(KEYS.wrong(nickname), JSON.stringify(filtered));
+}
+export function listWrong(nickname) {
+  return JSON.parse(localStorage.getItem(KEYS.wrong(nickname)) || '[]');
+}
+export function clearWrongOne(nickname, key) {
+  const arr = listWrong(nickname).filter(x => x.key !== key);
+  localStorage.setItem(KEYS.wrong(nickname), JSON.stringify(arr));
 }
 
 // ============================================================

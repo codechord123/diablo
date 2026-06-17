@@ -149,3 +149,27 @@ export function checkAnswer(userInput, correctFraction) {
 export function problemToHtml(problem) {
   return `${problem.a.toHtml()} <span class="op">${problem.op}</span> ${problem.b.toHtml()}`;
 }
+
+// 힌트: 두 분모의 최소공배수 + 통분 단계
+export function problemHint(problem) {
+  const { a, b, op } = problem;
+  const L = lcm(a.d, b.d);
+  const aN = a.n * (L / a.d);
+  const bN = b.n * (L / b.d);
+  return {
+    lcm: L,
+    text: `💡 두 분모(${a.d}, ${b.d})의 최소공배수는 ${L}입니다.\n` +
+          `${a.n}/${a.d} = ${aN}/${L},  ${b.n}/${b.d} = ${bN}/${L}\n` +
+          `이제 ${aN}/${L} ${op} ${bN}/${L} 를 계산하세요.`,
+    html: `💡 최소공배수: <strong>${L}</strong> &nbsp;|&nbsp; ${a.n}/${a.d} = <strong>${aN}/${L}</strong>, &nbsp;${b.n}/${b.d} = <strong>${bN}/${L}</strong>`,
+  };
+}
+
+// 적응 난이도: 최근 정답률 기반 분모 조정
+export function adjustedLevel(baseLevel, accuracy) {
+  if (accuracy === null || accuracy === undefined) return baseLevel;
+  if (accuracy < 0.4) return Math.max(1, baseLevel - 4);
+  if (accuracy < 0.6) return Math.max(1, baseLevel - 2);
+  if (accuracy > 0.9) return baseLevel + 2;
+  return baseLevel;
+}

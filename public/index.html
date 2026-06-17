@@ -61,9 +61,11 @@
       <div id="bm-problem" class="bm-problem"></div>
       <div id="bm-choices" class="bm-choices"></div>
       <div id="bm-feedback" class="bm-feedback"></div>
+      <div id="bm-hint-area"></div>
       <div class="bm-actions">
         <button id="bm-potion" class="bm-potion">🧪 포션 사용 (0)</button>
         <button id="bm-notepad" class="bm-notepad-btn">📝 풀이 노트 (N)</button>
+        <button id="bm-hint" class="bm-hint-btn">💡 힌트 (XP 절반)</button>
       </div>
       <div class="bm-hint">키보드 1~4 = 답 · H = 포션 · ESC = 도주</div>
     </div>
@@ -108,6 +110,27 @@
           🚪 입장 (처음이면 자동 등록)
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- 오답 복습 모달 -->
+  <div id="review-modal" class="review-modal">
+    <div class="review-card">
+      <div class="review-header">
+        <div class="review-title">📚 오답 복습 — 현자 메를린</div>
+        <button id="review-close" class="review-close-btn">✕</button>
+      </div>
+      <div class="review-intro">틀린 문제를 다시 보고, 이해했으면 ✓ 버튼을 누르세요.</div>
+      <div id="review-list" class="review-list"></div>
+    </div>
+  </div>
+
+  <!-- 개념 카드 모달 -->
+  <div id="concept-modal" class="concept-modal">
+    <div class="concept-card">
+      <div class="concept-title" id="concept-title">개념</div>
+      <div class="concept-body" id="concept-body"></div>
+      <button id="concept-close" class="concept-close">알겠어요! ➜</button>
     </div>
   </div>
 
