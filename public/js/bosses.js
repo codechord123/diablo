@@ -10,6 +10,7 @@ export const BOSSES = [
     unlockLevel: 5,
     color: 0xcfd2cf,
     category: 'sub-same',
+    dungeonTheme: 'graveyard',
     intro: '"무덤에서 일어선 자가, 너의 분수를 시험한다."',
     abilities: {
       autoAttackEverySec: 7,    // 7초마다 1 피해
@@ -28,6 +29,7 @@ export const BOSSES = [
     unlockLevel: 10,
     color: 0x8db580,
     category: 'add-diff',
+    dungeonTheme: 'swamp',
     intro: '"통분의 늪에 가라앉으리라..."',
     abilities: {
       autoAttackEverySec: 0,
@@ -46,6 +48,7 @@ export const BOSSES = [
     unlockLevel: 15,
     color: 0xd96459,
     category: 'sub-diff',
+    dungeonTheme: 'inferno',
     intro: '"지옥의 분수가 너를 찢어내리라!"',
     abilities: {
       autoAttackEverySec: 0,
@@ -64,6 +67,7 @@ export const BOSSES = [
     unlockLevel: 20,
     color: 0xf4a261,
     category: 'mixed',
+    dungeonTheme: 'volcano',
     intro: '"마지막 시험이다. 모든 분수를 정복하라!"',
     abilities: {
       autoAttackEverySec: 8,

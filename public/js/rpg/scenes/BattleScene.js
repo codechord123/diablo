@@ -7,6 +7,7 @@ import { getClass } from '../../classes.js';
 import { ITEMS, useFirstPotion, getEquippedWeapon, totalPotions } from '../../items.js';
 import { toggleNotepad } from '../../notepad.js';
 import { getBoss } from '../../bosses.js';
+import audio from '../../audio.js';
 
 export class BattleScene extends Phaser.Scene {
   constructor() { super('Battle'); }
@@ -36,6 +37,8 @@ export class BattleScene extends Phaser.Scene {
       ? (getBoss(this.bossId)?.abilities || {})
       : {};
     this._secsSinceLastAutoAttack = 0;
+    // 같은 던전 내 문제 중복 방지용 풀 (DungeonScene 공유)
+    this.problemPool = data.problemPool || null;
   }
 
   create() {
@@ -97,6 +100,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.player.hp >= this.player.maxHp) return;
     const usedId = useFirstPotion(this.player);
     if (!usedId) return;
+    audio.potion();
     const item = ITEMS[usedId];
     const fb = document.getElementById('bm-feedback');
     fb.innerHTML = `${item.icon} ${item.name} 사용! HP +${item.heal}`;
@@ -143,6 +147,7 @@ export class BattleScene extends Phaser.Scene {
     // 분노 — 시간 부족 시 데미지 2배
     const enrage = this.bossAbilities.enrageBelowSec || 0;
     if (enrage > 0 && this.timeLeft < enrage) dmg *= 2;
+    audio.bossHit();
     this.player.hp = Math.max(0, this.player.hp - dmg);
     document.getElementById('hud-hp').textContent = `${this.player.hp}/${this.player.maxHp}`;
     this.refreshPotionBtn();
@@ -181,9 +186,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   nextProblem() {
-    // 보스의 lockCategory가 켜져 있으면 카테고리 강제
-    const cat = (this.bossAbilities.lockCategory) ? this.category : this.category;
-    this.problem = generateProblem(this.level, cat);
+    // 카테고리(보스 lockCategory 적용) + 같은 던전 내 중복 방지
+    const cat = this.category;
+    this.problem = generateProblem(this.level, cat, {
+      exclude: this.problemPool,
+    });
     document.getElementById('bm-problem').innerHTML =
       `${problemToHtml(this.problem)} <span class="op">=</span> <span class="q">?</span>`;
     const box = document.getElementById('bm-choices');
@@ -219,6 +226,7 @@ export class BattleScene extends Phaser.Scene {
       const armor = this.bossAbilities.armor || 0;
       if (armor > 0) dmg = Math.max(1, dmg - armor);
       this.enemyHp -= dmg;
+      if (bonus) audio.magic(); else audio.hit();
       fb.innerHTML = bonus
         ? `🔮 마법의 일격! +${dmg} 데미지 (정답: ${this.problem.answer.toHtml()})`
         : `✨ 명중! 정답: ${this.problem.answer.toHtml()}`;
@@ -235,6 +243,7 @@ export class BattleScene extends Phaser.Scene {
       const evaded = !this.firstMistake && evadeChance > 0 && !pierce && Math.random() < evadeChance;
       this.firstMistake = false;
       if (evaded) {
+        audio.evade();
         fb.innerHTML = `🌀 회피! 데미지를 받지 않았다 (정답: ${this.problem.answer.toHtml()})`;
         fb.className = 'bm-feedback evade';
       } else if (pierce && evadeChance > 0 && Math.random() < evadeChance) {
@@ -251,6 +260,7 @@ export class BattleScene extends Phaser.Scene {
         this.player.hp = Math.max(0, this.player.hp - 1);
         document.getElementById('hud-hp').textContent = `${this.player.hp}/${this.player.maxHp}`;
         this.refreshPotionBtn(); // HP 변동 시 포션 버튼 재평가
+        audio.miss();
         fb.innerHTML = `💥 빗나감! 정답: ${this.problem.answer.toHtml()}`;
         fb.className = 'bm-feedback miss';
         if (this.player.hp <= 0) {

@@ -7,6 +7,7 @@ import { getClass, playerSpriteKey } from '../../classes.js';
 import { ITEMS, SHOPS, canAfford, ownsWeapon, addPotion } from '../../items.js';
 import { saveProgress } from '../../firebase-config.js';
 import { availableBosses, isBossDefeated } from '../../bosses.js';
+import audio from '../../audio.js';
 
 export class TownScene extends Phaser.Scene {
   constructor() { super('Town'); }
@@ -318,9 +319,10 @@ export class TownScene extends Phaser.Scene {
     this._leaving = true;
     this.cameras.main.fadeOut(300, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
+      // 보스 던전(테마 적용) 모드로 일반 DungeonScene 진입
       this.scene.start('Loading', {
-        target: 'BossArena', mode: 'enter',
-        data: { bossId, uid: this.uid, player: this.player },
+        target: 'Dungeon', mode: 'enter',
+        data: { uid: this.uid, player: this.player, dungeonMode: 'boss', bossId },
       });
     });
   }
@@ -576,9 +578,13 @@ export class TownScene extends Phaser.Scene {
   enterDungeon() {
     if (this._shopOpen || this._leaving) return;
     this._leaving = true;
+    audio.doorOpen();
     this.cameras.main.fadeOut(300, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('Loading', { target: 'Dungeon', mode: 'enter' });
+      this.scene.start('Loading', {
+        target: 'Dungeon', mode: 'enter',
+        data: { uid: this.uid, player: this.player, dungeonMode: 'normal' },
+      });
     });
   }
 
@@ -636,6 +642,7 @@ export class TownScene extends Phaser.Scene {
   async buy(itemId, row) {
     const item = ITEMS[itemId];
     if (!canAfford(this.player, item)) return;
+    audio.coin();
     this.player.gold -= item.price;
     if (item.type === 'potion') {
       addPotion(this.player, itemId);

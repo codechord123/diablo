@@ -1,15 +1,14 @@
 // ============================================================
-// fractionEngine.js — 분수 게임의 두뇌 (카테고리 기반 v2)
+// fractionEngine.js — 분수 게임 두뇌 v3
 // ============================================================
-// 카테고리:
-//   add-same  : 동분모 덧셈   (1레벨~)
-//   sub-same  : 동분모 뺄셈   (3레벨~)
-//   add-diff  : 이분모 덧셈   (8레벨~)
-//   sub-diff  : 이분모 뺄셈   (12레벨~)
-//   mixed     : 대/가분수 변환 (16레벨~)
+// 정책:
+// - 모든 문제는 이분모 (다른 분모) — 초5 핵심 학습 목표
+// - 통분된 공통분모(LCM) ≤ 99 — 두 자릿수 이내
+// - 같은 던전 내 같은 문제 중복 방지 (외부 Set 사용)
 // ============================================================
 
 const gcd = (a, b) => (b === 0 ? Math.abs(a) : gcd(b, a % b));
+const lcm = (a, b) => Math.abs(a * b) / gcd(a, b);
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 export class Fraction {
@@ -29,123 +28,95 @@ export class Fraction {
   }
 }
 
+// 카테고리 라벨 (HUD/모달용)
 export const CATEGORIES = {
-  'add-same': { minLevel: 1,  label: '동분모 덧셈' },
-  'sub-same': { minLevel: 3,  label: '동분모 뺄셈' },
-  'add-diff': { minLevel: 8,  label: '이분모 덧셈' },
-  'sub-diff': { minLevel: 12, label: '이분모 뺄셈' },
-  'mixed':    { minLevel: 16, label: '대분수' },
+  'add-same': { label: '이분모 덧셈' },
+  'sub-same': { label: '이분모 뺄셈' },
+  'add-diff': { label: '이분모 덧셈' },
+  'sub-diff': { label: '이분모 뺄셈' },
+  'mixed':    { label: '덧셈 + 뺄셈' },
 };
 
-// 레벨에 따라 분모/분자 범위가 함께 커지는 난이도 곡선
-function rangeFor(level) {
-  // level 1 → max 5, level 20 → max 12
-  const cap = Math.min(12, 4 + Math.floor(level * 0.5));
-  return { min: 2, max: cap };
+const isAdd = (c) => c?.startsWith('add');
+const isSub = (c) => c?.startsWith('sub');
+
+// 레벨별 분모 범위 (LCM ≤ 99 항상 보장)
+function denominatorRange(level) {
+  if (level >= 15) return { min: 2, max: 11 };  // 최대 LCM lcm(9,11)=99
+  if (level >= 10) return { min: 2, max: 9  };  // 최대 LCM lcm(8,9)=72
+  if (level >= 5)  return { min: 2, max: 7  };  // 최대 LCM lcm(6,7)=42
+  return { min: 2, max: 5 };                    // 최대 LCM lcm(4,5)=20
 }
 
-export function generateProblem(level, requestedCategory = null) {
-  const category = pickCategory(level, requestedCategory);
-  switch (category) {
-    case 'sub-same': return makeSubSame(level, category);
-    case 'add-diff': return makeAddDiff(level, category);
-    case 'sub-diff': return makeSubDiff(level, category);
-    case 'mixed':    return makeMixed(level, category);
-    case 'add-same':
-    default:         return makeAddSame(level, category);
+// 공개 API: opts.exclude = Set of "a/b op c/d" 키 (같은 던전 내 중복 방지)
+export function generateProblem(level, requestedCategory = 'mixed', opts = {}) {
+  let problem = null;
+  const exclude = opts.exclude;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const p = generateOne(level, requestedCategory);
+    if (!exclude || !exclude.has(p.key)) {
+      problem = p;
+      break;
+    }
   }
+  // 폴백 — 40번 시도해도 중복뿐이면 그냥 반환
+  if (!problem) problem = generateOne(level, requestedCategory);
+  if (exclude) exclude.add(problem.key);
+  return problem;
 }
 
-// 몬스터가 요청한 카테고리가 너무 어려우면 자동으로 가능한 가장 가까운 카테고리로 폴백
-function pickCategory(level, requested) {
-  const available = Object.entries(CATEGORIES)
-    .filter(([_, c]) => level >= c.minLevel)
-    .map(([k]) => k);
-  if (requested && available.includes(requested)) return requested;
-  if (requested) {
-    // 폴백: 가장 비슷한 (덧셈 ↔ 덧셈, 뺄셈 ↔ 뺄셈)
-    const isAdd = requested.startsWith('add');
-    const fallback = available.reverse().find(c => c.startsWith(isAdd ? 'add' : 'sub'));
-    if (fallback) return fallback;
+function generateOne(level, category) {
+  const r = denominatorRange(level);
+  // 연산 결정
+  const op = isAdd(category) ? '+' : isSub(category) ? '-' : (Math.random() < 0.5 ? '+' : '-');
+
+  // 두 분모 선택 — 다른 값 + LCM ≤ 99
+  let d1, d2, lcmVal;
+  for (let t = 0; t < 80; t++) {
+    d1 = randInt(r.min, r.max);
+    d2 = randInt(r.min, r.max);
+    if (d1 === d2) continue;
+    lcmVal = lcm(d1, d2);
+    if (lcmVal <= 99) break;
   }
-  return available[available.length - 1] || 'add-same';
-}
+  if (d1 === d2 || lcm(d1, d2) > 99) {
+    // 폴백 — 작은 안전한 쌍
+    d1 = 3; d2 = 4;
+  }
 
-// ---------- 카테고리별 문제 생성 ----------
-function makeAddSame(level, category) {
-  const r = rangeFor(level);
-  const c = randInt(Math.max(3, r.min), r.max);
-  const a = new Fraction(randInt(1, c - 2), c);
-  const b = new Fraction(randInt(1, c - a.n), c);
-  return pack(a, b, '+', category);
-}
-
-function makeSubSame(level, category) {
-  const r = rangeFor(level);
-  const c = randInt(Math.max(3, r.min), r.max);
-  const an = randInt(2, c - 1);
-  const a = new Fraction(an, c);
-  const b = new Fraction(randInt(1, an - 1), c);
-  return pack(a, b, '-', category);
-}
-
-function makeAddDiff(level, category) {
-  const r = rangeFor(level);
-  const d1 = randInt(r.min, Math.max(r.min + 1, r.max - 2));
-  let d2 = randInt(r.min, r.max);
-  while (d1 === d2) d2 = randInt(r.min, r.max);
-  const a = new Fraction(randInt(1, d1 - 1), d1);
-  const b = new Fraction(randInt(1, d2 - 1), d2);
-  return pack(a, b, '+', category);
-}
-
-function makeSubDiff(level, category) {
-  const r = rangeFor(level);
-  const d1 = randInt(r.min, Math.max(r.min + 1, r.max - 2));
-  let d2 = randInt(r.min, r.max);
-  while (d1 === d2) d2 = randInt(r.min, r.max);
+  // 분자: 1 ~ d-1 (진분수)
   let a = new Fraction(randInt(1, d1 - 1), d1);
   let b = new Fraction(randInt(1, d2 - 1), d2);
-  if (a.n / a.d < b.n / b.d) [a, b] = [b, a];
-  return pack(a, b, '-', category);
-}
 
-function makeMixed(level, category) {
-  // 대분수 문제: 1과 2/5 + 1/5 형태를 가분수로 변환 후 계산
-  const r = rangeFor(level);
-  const d = randInt(3, r.max);
-  const whole = randInt(1, 2);
-  const a = new Fraction(whole * d + randInt(1, d - 1), d);
-  const b = new Fraction(randInt(1, d - 1), d);
-  return pack(a, b, '+', category);
-}
+  // 뺄셈일 때 결과가 음수가 되지 않도록 보장
+  if (op === '-' && (a.n / a.d) < (b.n / b.d)) [a, b] = [b, a];
 
-function pack(a, b, op, category) {
   const answer = op === '+' ? a.add(b) : a.sub(b);
+  const text = `${a.toString()} ${op} ${b.toString()}`;
+  const key = `${a.n}/${a.d}|${op}|${b.n}/${b.d}`;
+
   return {
-    a, b, op, answer, category,
-    text: `${a.toString()} ${op} ${b.toString()}`,
+    a, b, op, answer, category, text, key,
     choices: buildChoices(answer),
   };
 }
 
-// 오답 3개 생성: 그럴듯한 실수 패턴 위주
+// 4지선다 — 정답 + 그럴듯한 오답 3개
 function buildChoices(correct) {
   const set = new Set([correct.toString()]);
-  // 정답에 가까운 분자/분모 변형
+  // 학생이 잘 하는 실수 패턴: 분자만 더함, 분모만 더함, 약분 실수
   const candidates = [
     [correct.n + 1, correct.d],
     [correct.n - 1, correct.d],
     [correct.n,     correct.d + 1],
-    [correct.n + 1, correct.d + 1],
-    [correct.n,     correct.d - 1],
+    [correct.n + 1, correct.d + 2],
     [correct.n * 2, correct.d * 2 + 1],
+    [correct.n,     correct.d - 1],
   ];
   for (const [n, d] of candidates) {
     if (n <= 0 || d <= 0) continue;
     try {
-      const s = new Fraction(n, d).toString();
-      set.add(s);
+      set.add(new Fraction(n, d).toString());
       if (set.size === 4) break;
     } catch (_) {}
   }
@@ -172,12 +143,9 @@ export function checkAnswer(userInput, correctFraction) {
   if (!m) return false;
   try {
     return new Fraction(+m[1], +m[2]).equals(correctFraction);
-  } catch (_) {
-    return false;
-  }
+  } catch (_) { return false; }
 }
 
 export function problemToHtml(problem) {
-  const opSpan = `<span class="op">${problem.op}</span>`;
-  return `${problem.a.toHtml()} ${opSpan} ${problem.b.toHtml()}`;
+  return `${problem.a.toHtml()} <span class="op">${problem.op}</span> ${problem.b.toHtml()}`;
 }

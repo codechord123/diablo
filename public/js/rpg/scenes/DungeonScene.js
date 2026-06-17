@@ -1,19 +1,31 @@
 // ============================================================
 // DungeonScene — 절차적 던전 + 클릭 이동 + 횃불 조명 + 몬스터 조우
 // ============================================================
-import { generateDungeon, TILE_SIZE, MAP_W, MAP_H } from '../dungeon.js';
+import { generateDungeon, TILE_SIZE, MAP_W, MAP_H, THEMES } from '../dungeon.js';
 import { findPath } from '../pathfinding.js';
 import { MONSTERS, pickMonster, xpToNext } from '../../monsters.js';
 import { loadProgress, saveProgress, getUser } from '../../firebase-config.js';
 import { CLASSES, getClass, playerSpriteKey, tierForLevel } from '../../classes.js';
 import { ITEMS, useFirstPotion, totalPotions, getEquippedWeapon } from '../../items.js';
+import { getBoss } from '../../bosses.js';
+import audio from '../../audio.js';
 
 export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
 
+  init(data) {
+    // 던전 모드: 'normal' (랜덤) | 'boss' (특정 보스의 던전)
+    this.dungeonMode = (data && data.dungeonMode) || 'normal';
+    this.bossId = (data && data.bossId) || null;
+    this.bossData = this.bossId ? getBoss(this.bossId) : null;
+    // 같은 던전 내 문제 중복 방지 풀
+    this.problemPool = new Set();
+  }
+
   async create() {
     this.ready = false;
     this._leaving = false;
+    this._bossDefeated = false;
     this.cameras.main.fadeIn(400, 0, 0, 0);
     try {
       this.uid = (await getUser()).uid;
@@ -25,6 +37,11 @@ export class DungeonScene extends Phaser.Scene {
         return;
       }
       this.classDef = getClass(this.player.class);
+
+      // 테마 결정
+      const themeKey = this.bossData ? this.bossData.dungeonTheme : 'default';
+      this.theme = THEMES[themeKey] || THEMES.default;
+      this.cameras.main.setBackgroundColor(this.theme.bgColor);
 
       const dungeon = generateDungeon();
       this.grid = dungeon.grid;
@@ -46,13 +63,15 @@ export class DungeonScene extends Phaser.Scene {
     }
   }
 
-  // ---------- 맵 그리기 ----------
+  // ---------- 맵 그리기 (테마 적용) ----------
   drawMap() {
     this.tiles = this.add.container(0, 0);
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
-        const key = this.grid[y][x] === 1 ? 'wall' : 'floor';
+        const isWall = this.grid[y][x] === 1;
+        const key = isWall ? 'wall' : 'floor';
         const t = this.add.image(x * TILE_SIZE + TILE_SIZE/2, y * TILE_SIZE + TILE_SIZE/2, key);
+        t.setTint(isWall ? this.theme.wallTint : this.theme.floorTint);
         this.tiles.add(t);
       }
     }
@@ -72,6 +91,7 @@ export class DungeonScene extends Phaser.Scene {
         const light = this.add.image(px, py, 'torch')
           .setBlendMode(Phaser.BlendModes.ADD)
           .setScale(1.2)
+          .setTint(this.theme.torchTint)
           .setDepth(10);
         // 깜박임 트윈
         this.tweens.add({
@@ -106,7 +126,11 @@ export class DungeonScene extends Phaser.Scene {
 
   spawnMonsters() {
     this.monsters = [];
-    // 시작 방 제외, 각 방에 1~2마리 배치
+    if (this.dungeonMode === 'boss') {
+      this.spawnBossDungeonMonsters();
+      return;
+    }
+    // 일반 던전: 시작 방 제외, 각 방에 1~2마리 배치
     for (let i = 1; i < this.rooms.length; i++) {
       const room = this.rooms[i];
       const count = 1 + Math.floor(Math.random() * 2);
@@ -135,6 +159,86 @@ export class DungeonScene extends Phaser.Scene {
         });
       }
     }
+  }
+
+  // 보스 던전: 부하 2~3마리 + 가장 먼 방에 보스
+  spawnBossDungeonMonsters() {
+    // 부하 = 약한 일반 몬스터 2~3마리 (방마다 1마리, 시작방 제외)
+    const minionCount = 3;
+    for (let i = 1; i <= Math.min(minionCount, this.rooms.length - 1); i++) {
+      const room = this.rooms[i];
+      const data = pickMonster(Math.max(1, this.player.level - 2));
+      const tx = room.cx, ty = room.cy;
+      if (!this.grid[ty] || this.grid[ty][tx] !== 0) continue;
+      const wx = tx * TILE_SIZE + TILE_SIZE/2;
+      const wy = ty * TILE_SIZE + TILE_SIZE/2;
+      const sprite = this.add.image(wx, wy + 4, `m-${data.id}`).setDepth(20);
+      const catIcon = this.categoryIcon(data.category);
+      const label = this.add.text(wx, wy - 30, catIcon, { fontSize: '14px' })
+        .setOrigin(0.5).setDepth(21).setAlpha(0.7);
+      this.monsters.push({ data, sprite, label, tile: { x: tx, y: ty } });
+      this.tweens.add({
+        targets: sprite, y: wy + 1,
+        duration: 800 + Math.random() * 400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    }
+
+    // 보스 — 가장 먼 방에 배치 (시작방으로부터 거리 최대)
+    const spawnRoom = this.rooms[0];
+    let bossRoom = this.rooms[this.rooms.length - 1];
+    let maxDist = 0;
+    for (const r of this.rooms) {
+      const d = Math.abs(r.cx - spawnRoom.cx) + Math.abs(r.cy - spawnRoom.cy);
+      if (d > maxDist) { maxDist = d; bossRoom = r; }
+    }
+    const bx = bossRoom.cx, by = bossRoom.cy;
+    const bwx = bx * TILE_SIZE + TILE_SIZE/2;
+    const bwy = by * TILE_SIZE + TILE_SIZE/2;
+    // 보스 글로우 (강조)
+    const bossGlow = this.add.image(bwx, bwy, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(2.5).setAlpha(0.7).setTint(0xff2222).setDepth(15);
+    this.tweens.add({
+      targets: bossGlow,
+      alpha: { from: 0.5, to: 0.9 }, scale: { from: 2.3, to: 2.8 },
+      duration: 800, yoyo: true, repeat: -1,
+    });
+    // 보스 스프라이트 (큰 이모지)
+    const bossSprite = this.add.text(bwx, bwy, this.bossData.emoji, { fontSize: '52px' })
+      .setOrigin(0.5).setDepth(22);
+    const bossLabel = this.add.text(bwx, bwy - 38, '⚠️ 보스', {
+      fontSize: '11px', color: '#ff3322',
+      backgroundColor: 'rgba(0,0,0,0.7)', padding: { left: 4, right: 4, top: 1, bottom: 1 },
+    }).setOrigin(0.5).setDepth(23);
+    this.tweens.add({
+      targets: bossSprite, y: bwy - 4,
+      duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    // 보스 몬스터 데이터 (특수 마커)
+    const bossMonsterData = {
+      id: this.bossData.id,
+      name: this.bossData.name,
+      hp: this.bossData.hp,
+      maxHp: this.bossData.hp,
+      currentHp: this.bossData.hp,
+      xp: this.bossData.xpReward,
+      gold: this.bossData.goldReward,
+      emoji: this.bossData.emoji,
+      color: this.bossData.color,
+      category: this.bossData.category,
+      isBoss: true,
+    };
+    this.monsters.push({
+      data: bossMonsterData,
+      sprite: bossSprite,
+      label: bossLabel,
+      glow: bossGlow,
+      tile: { x: bx, y: by },
+      isBoss: true,
+    });
+
+    // 보스 등장 사운드
+    audio.bossIntro();
   }
 
   categoryIcon(category) {
@@ -308,6 +412,7 @@ export class DungeonScene extends Phaser.Scene {
     if (enemy) { this.triggerBattle(enemy); return; }
 
     this.moving = true;
+    audio.step();
     this.tweens.add({
       targets: [this.playerSprite, this.playerLight],
       x: next.x * TILE_SIZE + TILE_SIZE/2,
@@ -403,7 +508,13 @@ export class DungeonScene extends Phaser.Scene {
       enemyHp: enemy.data.maxHp,
       category: enemy.data.category,
       playerClass: this.player.class,
-      player: this.player, // 인벤토리/HP 공유 (참조 전달)
+      player: this.player,
+      // 보스 전투 정보 — 보스면 타이머 활성
+      isBoss: !!enemy.isBoss,
+      timeLimitSec: enemy.isBoss ? this.bossData.timeSec : 0,
+      bossId: enemy.isBoss ? this.bossData.id : null,
+      // 같은 던전 내 문제 중복 방지 풀
+      problemPool: this.problemPool,
     });
   }
 
@@ -414,19 +525,31 @@ export class DungeonScene extends Phaser.Scene {
 
     if (result.victory) {
       // 처치 애니메이션
+      const targets = [enemy.sprite, enemy.label];
+      if (enemy.glow) targets.push(enemy.glow);
       this.tweens.add({
-        targets: [enemy.sprite, enemy.label],
+        targets,
         alpha: 0,
         scale: 0.2,
         duration: 300,
         onComplete: () => {
           enemy.sprite.destroy();
           enemy.label.destroy();
+          enemy.glow && enemy.glow.destroy();
         },
       });
       this.monsters = this.monsters.filter(m => m !== enemy);
       this.gainXp(enemy.data.xp);
       this.player.kills += 1;
+      // 보스 처치 시 — 사운드 + 처치 마킹
+      if (enemy.isBoss) {
+        audio.victory();
+        this._bossDefeated = true;
+        const { markBossDefeated } = await import('../../bosses.js');
+        markBossDefeated(this.player, this.bossData.id);
+      } else {
+        audio.killMonster();
+      }
     } else {
       // HP는 BattleScene에서 즉시 차감됨 → 이미 player.hp에 반영
       if (this.player.hp <= 0 || result.defeated) {
@@ -453,8 +576,13 @@ export class DungeonScene extends Phaser.Scene {
     this.setupHud();
     await saveProgress(this.uid, this.player);
 
-    // 모든 몬스터 처치 시 마을로 복귀 (로딩 경유)
-    if (this.monsters.length === 0) {
+    // 던전 클리어 조건:
+    //  - 일반 던전: 모든 몬스터 처치
+    //  - 보스 던전: 보스만 처치하면 클리어 (부하는 무시)
+    const cleared = (this.dungeonMode === 'boss')
+      ? this._bossDefeated
+      : this.monsters.length === 0;
+    if (cleared) {
       this._leaving = true;
       this.cameras.main.fadeOut(300, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => {
@@ -505,5 +633,6 @@ export class DungeonScene extends Phaser.Scene {
     banner.textContent = `LEVEL UP! → Lv.${this.player.level}`;
     banner.classList.add('show');
     setTimeout(() => banner.classList.remove('show'), 1500);
+    audio.levelUp();
   }
 }

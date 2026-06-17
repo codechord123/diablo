@@ -9,6 +9,7 @@ import { ClassSelectScene } from './scenes/ClassSelectScene.js';
 import { LoadingScene } from './scenes/LoadingScene.js';
 import { BossArenaScene } from './scenes/BossArenaScene.js';
 import { initNotepad, toggleNotepad } from '../notepad.js';
+import audio from '../audio.js';
 
 const computeSize = () => {
   // HUD(70px) + 헬프바(36px) 제외한 영역을 캔버스에 할당
@@ -46,6 +47,15 @@ window.addEventListener('keydown', (e) => {
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   toggleNotepad();
 });
+
+// 오디오 — 첫 사용자 제스처에서 AudioContext 활성화 (Chrome autoplay 정책)
+const gestureInit = () => {
+  audio.init();
+  window.removeEventListener('pointerdown', gestureInit);
+  window.removeEventListener('keydown', gestureInit);
+};
+window.addEventListener('pointerdown', gestureInit, { once: true });
+window.addEventListener('keydown', gestureInit, { once: true });
 
 // 창 크기 변경 시 캔버스 + 비네팅 갱신
 window.addEventListener('resize', () => {
