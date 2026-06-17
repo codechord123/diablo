@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📊 분수 던전 대시보드</title>
+  <link rel="stylesheet" href="css/fraction.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+</head>
+<body>
+  <header class="dash-header">
+    <h1>📊 분수 던전 대시보드</h1>
+    <div class="dash-controls">
+      <label>학급:
+        <select id="filter-class"><option value="">전체</option></select>
+      </label>
+      <label>정렬:
+        <select id="filter-sort">
+          <option value="level">레벨 ↓</option>
+          <option value="xp">XP ↓</option>
+          <option value="kills">처치 ↓</option>
+          <option value="bosses">보스 ↓</option>
+          <option value="name">이름</option>
+        </select>
+      </label>
+      <button id="dash-refresh">🔄 새로고침</button>
+      <a href="index.html" class="dash-back">⚔️ 게임으로</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="dash-stats">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-students">0</div>
+        <div class="stat-label">전체 학생</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-avg-level">0</div>
+        <div class="stat-label">평균 레벨</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-total-kills">0</div>
+        <div class="stat-label">총 처치</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-bosses">0</div>
+        <div class="stat-label">처치한 보스</div>
+      </div>
+    </section>
+
+    <section class="dash-leaderboard">
+      <h2>🏆 리더보드 Top 5</h2>
+      <ol id="leaderboard"></ol>
+    </section>
+
+    <section class="dash-students">
+      <h2>🧑‍🎓 학생 목록</h2>
+      <div id="student-grid" class="student-grid"></div>
+    </section>
+  </main>
+
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

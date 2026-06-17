@@ -8,8 +8,10 @@ import { TownScene } from './scenes/TownScene.js';
 import { ClassSelectScene } from './scenes/ClassSelectScene.js';
 import { LoadingScene } from './scenes/LoadingScene.js';
 import { BossArenaScene } from './scenes/BossArenaScene.js';
+import { LoginScene } from './scenes/LoginScene.js';
 import { initNotepad, toggleNotepad } from '../notepad.js';
 import audio from '../audio.js';
+import { currentUser, signOut } from '../auth.js';
 
 const computeSize = () => {
   // HUD(70px) + 헬프바(36px) 제외한 영역을 캔버스에 할당
@@ -27,7 +29,7 @@ const config = {
   height,
   backgroundColor: '#0d0908',
   pixelArt: false,
-  scene: [BootScene, ClassSelectScene, LoadingScene, DungeonScene, BattleScene, BossArenaScene, TownScene],
+  scene: [BootScene, LoginScene, ClassSelectScene, LoadingScene, DungeonScene, BattleScene, BossArenaScene, TownScene],
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -56,6 +58,24 @@ const gestureInit = () => {
 };
 window.addEventListener('pointerdown', gestureInit, { once: true });
 window.addEventListener('keydown', gestureInit, { once: true });
+
+// HUD 사용자명 갱신 + 로그아웃 버튼
+function refreshHudUser() {
+  const el = document.getElementById('hud-user');
+  if (!el) return;
+  const session = currentUser();
+  el.textContent = session ? `👤 ${session.nickname}` : '';
+}
+setInterval(refreshHudUser, 1000);
+
+const logoutBtn = document.getElementById('hud-logout');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', () => {
+    if (!confirm('로그아웃하시겠습니까? (진행도는 저장됩니다)')) return;
+    signOut();
+    location.reload();
+  });
+}
 
 // 창 크기 변경 시 캔버스 + 비네팅 갱신
 window.addEventListener('resize', () => {

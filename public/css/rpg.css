@@ -42,6 +42,23 @@ body {
   color: var(--gold);
   letter-spacing: 1px;
 }
+.hud-user {
+  font-size: 13px;
+  color: #ead7b7;
+  padding: 2px 8px;
+  background: rgba(212, 175, 55, 0.15);
+  border-radius: 4px;
+}
+.hud-logout {
+  background: transparent;
+  border: 1px solid #666;
+  color: #ccc;
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.hud-logout:hover { background: #441515; color: #fff; }
 .hud-key {
   font-size: 11px;
   color: var(--gold);
@@ -509,6 +526,147 @@ body.notepad-open .bm-card {
   margin-right: min(480px, 45vw);
   transition: margin 0.3s;
 }
+
+/* ============================================================
+   Login Modal
+   ============================================================ */
+.login-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.92);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+  backdrop-filter: blur(6px);
+}
+.login-modal.show { display: flex; }
+.login-card {
+  background: linear-gradient(180deg, #2a1814, #0d0706);
+  border: 3px solid var(--gold);
+  border-radius: 14px;
+  padding: 28px 32px;
+  min-width: 420px;
+  max-width: 92vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 60px rgba(212,175,55,0.5);
+}
+.login-title {
+  font-family: 'Cinzel', 'Noto Serif KR', serif;
+  font-size: 32px;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 4px;
+}
+.login-subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 22px;
+  font-style: italic;
+}
+.login-section-label {
+  font-size: 12px;
+  color: #d4af37;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.login-student-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 18px;
+  padding: 6px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 6px;
+}
+.login-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 13px;
+  color: #888;
+  padding: 16px;
+}
+.login-student-card {
+  background: linear-gradient(180deg, #3a2418, #1a0e08);
+  border: 1px solid var(--gold);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 10px 8px;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.login-student-card:hover {
+  background: linear-gradient(180deg, #5a3a24, #2a1810);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(212,175,55,0.4);
+}
+.ls-name { font-weight: bold; font-size: 14px; color: var(--gold); }
+.ls-meta { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid #443;
+  padding-top: 18px;
+}
+.login-label {
+  font-size: 11px;
+  color: #d4af37;
+  letter-spacing: 1px;
+  margin-top: 6px;
+}
+.login-input {
+  background: #0a0606;
+  border: 1px solid var(--gold);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+}
+.login-input:focus {
+  outline: none;
+  box-shadow: 0 0 8px rgba(212,175,55,0.6);
+}
+.login-error {
+  min-height: 20px;
+  font-size: 12px;
+  color: #ff6b6b;
+  margin: 6px 0;
+}
+.login-submit {
+  background: linear-gradient(180deg, #d4af37, #8b6914);
+  color: #0a0404;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.login-submit:hover {
+  background: linear-gradient(180deg, #f2d04e, #b08820);
+}
+.login-toggle {
+  background: transparent;
+  color: #888;
+  border: 1px solid #444;
+  padding: 6px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.login-toggle:hover { color: var(--gold); border-color: var(--gold); }
 
 /* 노트 토글 버튼 (배틀 모달 안) */
 .bm-notepad-btn {

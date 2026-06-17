@@ -1,0 +1,205 @@
+/* ============================================================
+   Dashboard — 학생 진도 시각화
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-0: #0d0908;
+  --bg-1: #1a110e;
+  --gold: #d4af37;
+  --blood: #a31621;
+  --text: #ead7b7;
+}
+
+body {
+  font-family: 'Cinzel', 'Noto Serif KR', Georgia, serif;
+  background:
+    radial-gradient(ellipse at top, #1a110e 0%, #0d0908 70%),
+    #000;
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--gold);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.dash-header h1 {
+  font-size: 28px;
+  color: var(--gold);
+  font-family: 'Cinzel', 'Noto Serif KR', serif;
+}
+.dash-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.dash-controls label { display: flex; gap: 6px; align-items: center; font-size: 13px; color: #aaa; }
+.dash-controls select {
+  background: #1a110e;
+  color: var(--text);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: inherit;
+}
+.dash-controls button, .dash-back {
+  background: linear-gradient(180deg, #3a2418, #1a0e08);
+  color: var(--text);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  font-size: 13px;
+}
+.dash-controls button:hover, .dash-back:hover {
+  background: linear-gradient(180deg, #5a3a24, #2a1810);
+}
+
+/* 통계 카드 */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 30px;
+}
+.stat-card {
+  background: linear-gradient(180deg, #2a1a14, #0d0706);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 18px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(212,175,55,0.2);
+}
+.stat-num {
+  font-size: 36px;
+  font-weight: bold;
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+}
+.stat-label {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+/* 리더보드 */
+.dash-leaderboard {
+  background: rgba(212, 175, 55, 0.05);
+  border: 1px solid #443;
+  border-radius: 8px;
+  padding: 18px;
+  margin-bottom: 30px;
+}
+.dash-leaderboard h2 {
+  font-size: 18px;
+  color: var(--gold);
+  margin-bottom: 14px;
+}
+#leaderboard {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lb-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.lb-rank-1 { background: linear-gradient(90deg, rgba(255,215,0,0.2), transparent); }
+.lb-rank-2 { background: linear-gradient(90deg, rgba(192,192,192,0.15), transparent); }
+.lb-rank-3 { background: linear-gradient(90deg, rgba(205,127,50,0.15), transparent); }
+.lb-rank { font-size: 20px; text-align: center; }
+.lb-name { font-weight: bold; color: var(--text); }
+.lb-class, .lb-level, .lb-xp { color: #aaa; font-size: 13px; }
+.lb-empty { color: #888; text-align: center; padding: 16px; list-style: none; }
+
+/* 학생 그리드 */
+.dash-students h2 {
+  font-size: 18px;
+  color: var(--gold);
+  margin-bottom: 14px;
+}
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #888;
+  padding: 30px;
+}
+.student-card {
+  background: linear-gradient(180deg, #2a1a14, #0d0706);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+.sc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.sc-icon { font-size: 30px; }
+.sc-name { font-size: 18px; font-weight: bold; color: var(--gold); flex: 1; }
+.sc-class { font-size: 12px; color: #aaa; }
+.sc-meta { font-size: 11px; color: #888; margin-bottom: 12px; }
+.sc-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sc-stat {
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  padding: 6px;
+  text-align: center;
+}
+.sc-stat-key { font-size: 10px; color: #888; }
+.sc-stat-val { font-size: 16px; font-weight: bold; color: var(--text); }
+
+.sc-bar-label {
+  font-size: 11px;
+  color: #888;
+  margin: 6px 0 2px;
+}
+.sc-bar {
+  background: #000;
+  border: 1px solid #443;
+  border-radius: 3px;
+  height: 8px;
+  overflow: hidden;
+}
+.sc-bar-fill { height: 100%; transition: width 0.3s; }
+.sc-bar-hp { background: linear-gradient(90deg, #5a0c0c, #d62828); }
+.sc-bar-xp { background: linear-gradient(90deg, #154360, #4cc9f0); }
+
+.sc-bosses {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #333;
+  font-size: 12px;
+  color: #d4af37;
+}
+
+@media (max-width: 600px) {
+  .lb-row { grid-template-columns: 30px 1fr auto; }
+  .lb-class, .lb-xp { display: none; }
+}

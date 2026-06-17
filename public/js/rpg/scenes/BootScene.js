@@ -6,6 +6,7 @@
 // ============================================================
 import { CLASSES } from '../../classes.js';
 import { getUser, loadProgress } from '../../firebase-config.js';
+import { currentUser } from '../../auth.js';
 
 // Phaser fillPoints는 {x,y} 객체 배열을 요구 → flat→object 변환 헬퍼
 const pts = (...coords) => {
@@ -43,8 +44,15 @@ export class BootScene extends Phaser.Scene {
     this.makeMerchant();
     this.makeBlacksmith();
 
-    // 라우팅: 직업 미선택 → ClassSelect / 있음 → Town 로딩
+    // 라우팅 흐름:
+    //   세션 없음 → LoginScene
+    //   세션 있음 + 직업 미선택 → ClassSelect
+    //   세션 있음 + 직업 있음 → Town (로딩 경유)
     try {
+      if (!currentUser()) {
+        this.scene.start('Login');
+        return;
+      }
       const user = await getUser();
       const player = await loadProgress(user.uid);
       if (!player.class) {
@@ -57,7 +65,7 @@ export class BootScene extends Phaser.Scene {
       }
     } catch (err) {
       console.error('[BootScene routing] failed:', err);
-      this.scene.start('ClassSelect');
+      this.scene.start('Login');
     }
   }
 
