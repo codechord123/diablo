@@ -83,6 +83,60 @@ if (settingsBtn) settingsBtn.addEventListener('click', () => openSettings());
 // 초기 설정 로드 (저장된 값 캐시)
 loadSettings();
 
+// 모바일 — 캔버스 핀치 줌 / 더블탭 줌 차단
+document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+
+// 가상 D-Pad — 키보드 이벤트로 변환 (Phaser가 키보드를 수신)
+function fireKey(key, type = 'keydown') {
+  const map = {
+    up: { key: 'ArrowUp', code: 'ArrowUp' },
+    down: { key: 'ArrowDown', code: 'ArrowDown' },
+    left: { key: 'ArrowLeft', code: 'ArrowLeft' },
+    right: { key: 'ArrowRight', code: 'ArrowRight' },
+    H: { key: 'h', code: 'KeyH' },
+    N: { key: 'n', code: 'KeyN' },
+    ESC: { key: 'Escape', code: 'Escape' },
+  };
+  const m = map[key];
+  if (!m) return;
+  const event = new KeyboardEvent(type, {
+    key: m.key, code: m.code, bubbles: true, cancelable: true,
+  });
+  window.dispatchEvent(event);
+}
+let dpadHoldTimer = null;
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+  const dir = btn.dataset.dir;
+  if (dir === 'center') return;
+  const start = (e) => {
+    e.preventDefault();
+    fireKey(dir, 'keydown');
+    // 홀드 지속 — 매 200ms 재발사 (Phaser DungeonScene update가 isDown 검사)
+    clearInterval(dpadHoldTimer);
+    dpadHoldTimer = setInterval(() => fireKey(dir, 'keydown'), 180);
+  };
+  const end = (e) => {
+    e.preventDefault();
+    clearInterval(dpadHoldTimer);
+    fireKey(dir, 'keyup');
+  };
+  btn.addEventListener('touchstart', start, { passive: false });
+  btn.addEventListener('touchend', end, { passive: false });
+  btn.addEventListener('touchcancel', end);
+  btn.addEventListener('mousedown', start);
+  btn.addEventListener('mouseup', end);
+  btn.addEventListener('mouseleave', end);
+});
+document.querySelectorAll('.vact-btn').forEach(btn => {
+  const act = btn.dataset.act;
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    fireKey(act, 'keydown');
+    setTimeout(() => fireKey(act, 'keyup'), 50);
+  });
+});
+
 // 창 크기 변경 시 캔버스 + 비네팅 갱신
 window.addEventListener('resize', () => {
   const s = computeSize();

@@ -36,6 +36,7 @@ export class DungeonScene extends Phaser.Scene {
     this._leaving = false;
     this._bossDefeated = false;
     this.cameras.main.resetFX();
+    document.body.classList.add('in-dungeon');
     try {
       this.uid = (await getUser()).uid;
       this.player = await loadProgress(this.uid);

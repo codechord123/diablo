@@ -36,6 +36,7 @@ export class TownScene extends Phaser.Scene {
     try {
       this.cameras.main.setScroll(0, 0).setZoom(1).setBackgroundColor('#1a0e1a');
       this.cameras.main.resetFX();
+      document.body.classList.remove('in-dungeon');
       try { audio.playBGM('town'); } catch (e) { console.warn('BGM 실패:', e); }
       this.drawSky();
       this.drawHorizon();

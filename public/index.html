@@ -2,7 +2,11 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#050810" />
   <title>프로젝트 헤일메리 — 분수 우주선</title>
   <link rel="stylesheet" href="css/fraction.css" />
   <link rel="stylesheet" href="css/rpg.css" />
@@ -77,6 +81,20 @@
   <footer class="help-bar">
     🖱️/⌨️ WASD = 이동 · 1~4 = 답 · H = 보급 · N = 노트 · M = 미니맵 · E = 게이트 · Q = 우주선 · ESC = 일시정지 · ⚙️ 설정
   </footer>
+
+  <!-- 모바일 가상 D-Pad (터치 디바이스만 표시) -->
+  <div id="virtual-dpad" class="virtual-dpad">
+    <button class="dpad-btn dpad-up" data-dir="up">▲</button>
+    <button class="dpad-btn dpad-left" data-dir="left">◀</button>
+    <button class="dpad-btn dpad-center" data-dir="center">·</button>
+    <button class="dpad-btn dpad-right" data-dir="right">▶</button>
+    <button class="dpad-btn dpad-down" data-dir="down">▼</button>
+  </div>
+  <div id="virtual-actions" class="virtual-actions">
+    <button class="vact-btn" data-act="H" title="포션">⚕</button>
+    <button class="vact-btn" data-act="N" title="노트">✎</button>
+    <button class="vact-btn vact-pause" data-act="ESC" title="일시정지">▤</button>
+  </div>
 
   <!-- 레벨업 배너 -->
   <div id="levelup-banner" class="levelup-banner"></div>
