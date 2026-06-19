@@ -984,14 +984,20 @@ export class TownScene extends Phaser.Scene {
     this.scene.start('ClassSelect', { uid: this.uid, player: this.player, reset: true });
   }
 
-  enterDungeon() {
+  async enterDungeon() {
     if (this._shopOpen || this._leaving) return;
-    // 임무 브리핑 모달 표시 → 확인 시 던전 출발
+    // 새 EVA 런 시작 (3섹터)
+    const { startRun, getCurrentRun, endRun } = await import('../../eva-missions.js');
+    const nick = currentUser()?.nickname || 'guest';
+    // 진행 중 런이 있으면 종료 (포기) — 새 런 시작
+    if (getCurrentRun(nick)) endRun(nick);
+    const run = startRun(nick, { type: 'patrol', totalSectors: 3 });
+
     this.showMissionBriefing({
-      type: 'PATROL',
-      sector: this.randomSector(),
+      type: 'PATROL × ' + run.totalSectors,
+      sector: run.sectorNames[0] + ' (등급 1/' + run.totalSectors + ')',
       hostiles: 'UNKNOWN MULTIPLE',
-      objective: '아스트로파지 변종을 발견하고 통신/중성화',
+      objective: `${run.totalSectors}개 섹터 통과 — 모든 변종 통신/중성화 후 귀환`,
     }, () => {
       this._leaving = true;
       audio.doorOpen();

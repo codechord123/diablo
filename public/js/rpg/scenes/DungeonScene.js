@@ -693,11 +693,73 @@ export class DungeonScene extends Phaser.Scene {
       : this.monsters.length === 0;
     if (cleared) {
       this._leaving = true;
+      // EVA 런 진행 — 다음 섹터 / 이벤트 / 마을 귀환
+      const nick = currentUser()?.nickname || 'guest';
+      const { getCurrentRun, saveRun, endRun } = await import('../../eva-missions.js');
+      const run = getCurrentRun(nick);
+      if (run && !this.bossData) {
+        run.sectorIcons[run.sector - 1] = '◉';  // 현재 섹터 클리어 표시
+        if (run.sector >= run.totalSectors) {
+          // 런 완료 — 보상 + 마을 귀환
+          this.applyRunRewards();
+          endRun(nick);
+          this.showRunDebrief(run, () => {
+            this.scene.start('Loading', {
+              target: 'Town', mode: 'return',
+              data: { uid: this.uid, player: this.player },
+            });
+          });
+          return;
+        }
+        // 다음 섹터로 — 이벤트 경유
+        run.sector += 1;
+        saveRun(nick, run);
+        await saveProgress(this.uid, this.player);
+        this.scene.start('EvaEvent', { uid: this.uid, player: this.player });
+        return;
+      }
+      // 보스 던전이거나 런 없음 → 일반 귀환
       this.scene.start('Loading', {
         target: 'Town', mode: 'return',
         data: { uid: this.uid, player: this.player },
       });
     }
+  }
+
+  // 런 완료 보상 (섹터 수에 비례)
+  applyRunRewards() {
+    const nick = currentUser()?.nickname || 'guest';
+    // import 중 (이미 위에서 로드되어 있음)
+    import('../../eva-missions.js').then(({ getCurrentRun }) => {
+      const run = getCurrentRun(nick);
+      if (!run) return;
+      const bonus = run.totalSectors * 50;
+      this.player.gold = (this.player.gold || 0) + bonus;
+      this.player.xp += run.totalSectors * 25;
+    });
+  }
+
+  // 런 디브리핑 모달
+  showRunDebrief(run, onContinue) {
+    const modal = document.getElementById('eva-debrief-modal');
+    if (!modal) { onContinue(); return; }
+    const elapsed = Math.floor((Date.now() - run.startTime) / 1000);
+    document.getElementById('debrief-sectors').textContent = `${run.totalSectors} / ${run.totalSectors}`;
+    document.getElementById('debrief-events').textContent = (run.eventsEncountered || []).length;
+    document.getElementById('debrief-time').textContent = `${Math.floor(elapsed/60)}m ${elapsed%60}s`;
+    document.getElementById('debrief-bonus').textContent =
+      `+${run.totalSectors * 50} CR / +${run.totalSectors * 25} XP`;
+    document.getElementById('debrief-callsign').textContent =
+      (currentUser()?.nickname || 'UNKNOWN').toUpperCase();
+    modal.classList.add('show');
+    audio.victory();
+    const btn = document.getElementById('debrief-continue');
+    const h = () => {
+      modal.classList.remove('show');
+      btn.removeEventListener('click', h);
+      onContinue();
+    };
+    btn.addEventListener('click', h);
   }
 
   gainXp(xp) {

@@ -1081,6 +1081,151 @@ body::before {
 }
 
 /* ============================================================
+   EVA Event + Debrief Modal
+   ============================================================ */
+.eva-event-modal, .eva-debrief-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.92);
+  display: none;
+  justify-content: center; align-items: center;
+  z-index: 270;
+  backdrop-filter: blur(6px);
+}
+.eva-event-modal.show, .eva-debrief-modal.show { display: flex; }
+
+.eve-card, .debrief-card {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-0));
+  border: 1px solid var(--primary);
+  padding: 24px 30px;
+  min-width: 460px;
+  max-width: 92vw;
+  text-align: center;
+  font-family: 'Orbitron', monospace;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+.eve-icon-wrap {
+  width: 80px; height: 80px;
+  margin: 8px auto 12px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  background: rgba(76, 201, 240, 0.08);
+  box-shadow: 0 0 20px rgba(76, 201, 240, 0.5),
+              inset 0 0 16px rgba(76, 201, 240, 0.1);
+  animation: eve-icon-pulse 2s ease-in-out infinite;
+}
+@keyframes eve-icon-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(76, 201, 240, 0.5), inset 0 0 16px rgba(76, 201, 240, 0.1); }
+  50%      { box-shadow: 0 0 40px rgba(76, 201, 240, 0.9), inset 0 0 24px rgba(76, 201, 240, 0.3); }
+}
+.eve-icon { font-size: 36px; }
+.eve-title {
+  font-size: 18px;
+  color: var(--primary);
+  letter-spacing: 4px;
+  margin-bottom: 6px;
+}
+.eve-sector {
+  font-size: 10px;
+  color: var(--accent-2);
+  letter-spacing: 2px;
+  margin-bottom: 18px;
+}
+.eve-desc {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.7;
+  margin-bottom: 16px;
+  white-space: pre-line;
+}
+.eve-effects {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.eve-effect-line {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 12px;
+  font-family: 'Orbitron', monospace;
+}
+.eve-eff-key { color: var(--text-dim); font-size: 9px; letter-spacing: 1px; }
+.eve-eff-val { font-weight: bold; letter-spacing: 1px; }
+.eve-effect-line.pos { border-color: var(--bio); }
+.eve-effect-line.pos .eve-eff-val { color: var(--bio); }
+.eve-effect-line.neg { border-color: var(--danger); }
+.eve-effect-line.neg .eve-eff-val { color: var(--danger); }
+
+.eve-continue, .debrief-continue {
+  background: linear-gradient(180deg, var(--primary), var(--primary-d));
+  color: var(--bg-0);
+  border: 1px solid var(--primary);
+  padding: 12px 28px;
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.eve-continue:hover, .debrief-continue:hover {
+  background: linear-gradient(180deg, #88ddff, var(--primary));
+  box-shadow: 0 0 16px var(--primary);
+}
+
+/* Debrief */
+.debrief-headline {
+  display: flex; justify-content: space-between;
+  border-bottom: 1px solid var(--primary);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+.debrief-stamp {
+  font-size: 18px;
+  color: var(--bio);
+  letter-spacing: 3px;
+  text-shadow: 0 0 12px rgba(136, 221, 85, 0.6);
+}
+.debrief-id {
+  font-size: 11px;
+  color: var(--accent-2);
+  padding: 3px 8px;
+  border: 1px solid var(--accent-2);
+}
+.debrief-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 22px;
+  margin-bottom: 20px;
+}
+.debrief-row { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.debrief-key {
+  font-size: 10px;
+  color: var(--primary);
+  letter-spacing: 2px;
+}
+.debrief-val {
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 4px;
+}
+.debrief-val.bonus {
+  color: var(--accent-2);
+  text-shadow: 0 0 8px rgba(255, 215, 107, 0.5);
+}
+
+@media (max-width: 720px) {
+  .eve-card, .debrief-card { min-width: auto; width: 96vw; padding: 16px; clip-path: none; }
+  .debrief-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
    Mission Briefing Modal (군사 명세서 스타일)
    ============================================================ */
 .briefing-modal {

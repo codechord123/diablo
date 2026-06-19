@@ -10,6 +10,7 @@ import { LoadingScene } from './scenes/LoadingScene.js';
 import { BossArenaScene } from './scenes/BossArenaScene.js';
 import { LoginScene } from './scenes/LoginScene.js';
 import { OpeningScene } from './scenes/OpeningScene.js';
+import { EvaEventScene } from './scenes/EvaEventScene.js';
 import { initNotepad, toggleNotepad } from '../notepad.js';
 import audio from '../audio.js';
 import { currentUser, signOut } from '../auth.js';
@@ -31,7 +32,7 @@ const config = {
   height,
   backgroundColor: '#0d0908',
   pixelArt: false,
-  scene: [BootScene, LoginScene, OpeningScene, ClassSelectScene, LoadingScene, DungeonScene, BattleScene, BossArenaScene, TownScene],
+  scene: [BootScene, LoginScene, OpeningScene, ClassSelectScene, LoadingScene, DungeonScene, BattleScene, BossArenaScene, TownScene, EvaEventScene],
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,

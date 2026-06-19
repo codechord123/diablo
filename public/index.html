@@ -226,6 +226,49 @@
     </div>
   </div>
 
+  <!-- EVA Inter-Sector Event 모달 -->
+  <div id="eva-event-modal" class="eva-event-modal">
+    <div class="eve-card terminal-modal">
+      <div class="term-header boot">EVENT DETECTED</div>
+      <div class="eve-icon-wrap"><span id="eve-icon" class="eve-icon">◇</span></div>
+      <div id="eve-title" class="eve-title">EVENT</div>
+      <div id="eve-sector" class="eve-sector">SECTOR 2 / 3</div>
+      <div id="eve-desc" class="eve-desc"></div>
+      <div id="eve-effects" class="eve-effects"></div>
+      <button id="eve-continue" class="eve-continue">▶ 계속 진행</button>
+    </div>
+  </div>
+
+  <!-- EVA Run Debrief (런 완료) 모달 -->
+  <div id="eva-debrief-modal" class="eva-debrief-modal">
+    <div class="debrief-card terminal-modal">
+      <div class="term-header boot">EVA COMPLETE — DEBRIEF</div>
+      <div class="debrief-headline">
+        <div class="debrief-stamp">MISSION SUCCESS</div>
+        <div class="debrief-id">EVA-<span id="debrief-callsign">—</span></div>
+      </div>
+      <div class="debrief-grid">
+        <div class="debrief-row">
+          <span class="debrief-key">SECTORS</span>
+          <span id="debrief-sectors" class="debrief-val">3 / 3</span>
+        </div>
+        <div class="debrief-row">
+          <span class="debrief-key">EVENTS</span>
+          <span id="debrief-events" class="debrief-val">0</span>
+        </div>
+        <div class="debrief-row">
+          <span class="debrief-key">TIME</span>
+          <span id="debrief-time" class="debrief-val">0m 0s</span>
+        </div>
+        <div class="debrief-row">
+          <span class="debrief-key">COMPLETION BONUS</span>
+          <span id="debrief-bonus" class="debrief-val bonus">+150 CR / +75 XP</span>
+        </div>
+      </div>
+      <button id="debrief-continue" class="debrief-continue">🚀 우주선 복귀</button>
+    </div>
+  </div>
+
   <!-- 임무 브리핑 모달 -->
   <div id="mission-briefing-modal" class="briefing-modal">
     <div class="briefing-card">
