@@ -207,8 +207,30 @@ export class BattleScene extends Phaser.Scene {
 
   renderEnemyHp() {
     const pct = (this.enemyHp / this.enemyMaxHp) * 100;
-    document.getElementById('bm-enemy-hpbar').style.width = `${pct}%`;
+    const bar = document.getElementById('bm-enemy-hpbar');
+    if (bar.tagName === 'rect') bar.setAttribute('width', pct);
+    else bar.style.width = `${pct}%`;
     document.getElementById('bm-enemy-hp').textContent = `${this.enemyHp} / ${this.enemyMaxHp}`;
+    // 플레이어 통합 게이지
+    const playerBar = document.getElementById('bm-player-bar');
+    const playerHpEl = document.getElementById('bm-player-hp');
+    if (playerBar && this.player) {
+      const ppct = (this.player.hp / this.player.maxHp) * 100;
+      if (playerBar.tagName === 'rect') playerBar.setAttribute('width', ppct);
+      else playerBar.style.width = `${ppct}%`;
+    }
+    if (playerHpEl && this.player) {
+      playerHpEl.textContent = `${this.player.hp}/${this.player.maxHp}`;
+    }
+    // 하모닉 미터 — streak에 따라 바늘 회전 (-90~+90도)
+    const needle = document.querySelector('.hm-needle');
+    if (needle) {
+      const streak = this.correctStreak || 0;
+      const angle = Math.min(135, streak * 18) - 135; // 처음 -135, 7+ 정답 = +90
+      needle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+    }
+    const streakEl = document.getElementById('bm-streak');
+    if (streakEl) streakEl.textContent = `STREAK ${this.correctStreak || 0}`;
   }
 
   async nextProblem() {
@@ -311,7 +333,8 @@ export class BattleScene extends Phaser.Scene {
       // 힌트 사용 시 데미지 절반 (몬스터에 약함 = XP 적게)
       if (this.hintUsed) dmg = Math.max(1, Math.floor(dmg / 2));
       this.enemyHp -= dmg;
-      if (bonus) audio.magic(); else audio.hit();
+      // 적응 사운드: streak에 따라 점점 고음 하모닉
+      if (bonus) audio.magic(); else audio.harmonic(this.correctStreak - 1);
       // 데미지 숫자 (DOM, 적 위에 떠오름) + 화면 흔들림
       const enemyEl = this.modal.querySelector('.bm-enemy');
       if (enemyEl) fx.damageNumberDOM(enemyEl, -dmg, { crit: bonus });

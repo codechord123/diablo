@@ -54,15 +54,168 @@ body::before {
   opacity: 0.5;
 }
 
-/* ---------- HUD Bar ---------- */
-.hud-bar {
-  display: flex;
-  gap: 16px;
-  padding: 8px 18px;
-  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
-  border-bottom: 1px solid var(--primary);
+/* ============================================================
+   Cockpit HUD — 우주선 콘솔 (Diegetic UI)
+   ============================================================ */
+.cockpit-hud {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 12px;
   align-items: center;
-  box-shadow: 0 2px 12px rgba(76, 201, 240, 0.15);
+  padding: 8px 18px;
+  background:
+    linear-gradient(180deg, rgba(20, 37, 64, 0.95), rgba(10, 20, 38, 0.85)),
+    repeating-linear-gradient(90deg, transparent 0, transparent 4px, rgba(76, 201, 240, 0.04) 4px, rgba(76, 201, 240, 0.04) 5px);
+  border-bottom: 1px solid var(--primary);
+  box-shadow: 0 2px 24px rgba(76, 201, 240, 0.2), inset 0 -1px 0 rgba(76, 201, 240, 0.3);
+  position: relative;
+  clip-path: polygon(
+    0 0, 100% 0,
+    100% calc(100% - 8px), calc(100% - 12px) 100%,
+    12px 100%, 0 calc(100% - 8px)
+  );
+}
+.ck-side { display: flex; flex-direction: column; gap: 6px; }
+.ck-left  .ck-status { display: flex; flex-direction: column; gap: 4px; }
+.ck-status-row {
+  display: flex; gap: 10px; align-items: baseline;
+  font-size: 12px;
+  border-left: 2px solid var(--primary);
+  padding-left: 8px;
+}
+.ck-label {
+  font-size: 9px;
+  color: var(--primary);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+.ck-callsign {
+  font-family: 'Orbitron', 'Noto Sans KR', monospace;
+  font-size: 14px;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.ck-role {
+  font-size: 13px;
+  color: var(--accent-2);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ck-center {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 14px;
+  align-items: center;
+}
+.ck-vital {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.ck-vital-key {
+  font-size: 9px;
+  color: var(--primary);
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+.ck-bar-wrap {
+  position: relative;
+  width: 100%;
+  height: 18px;
+}
+.ck-bar-wrap.small { height: 12px; }
+.ck-pulse-bar {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.ck-bar-bg { fill: rgba(0,0,0,0.6); stroke: var(--border); stroke-width: 0.5; }
+.ck-bar-fill { transition: width 0.4s ease-out; }
+.ck-bar-hull   { fill: url(#gradHull); }
+.ck-bar-xp     { fill: url(#gradXP); }
+.ck-bar-shield { fill: url(#gradShield); }
+/* SVG에 정의 필요 — 임시 단색 */
+.ck-bar-hull   { fill: #ff6655; filter: drop-shadow(0 0 4px rgba(255, 102, 85, 0.7)); }
+.ck-bar-xp     { fill: #4cc9f0; filter: drop-shadow(0 0 4px rgba(76, 201, 240, 0.7)); }
+.ck-bar-shield { fill: #ff8c42; filter: drop-shadow(0 0 4px rgba(255, 140, 66, 0.7)); }
+.ck-bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  color: var(--text);
+  text-shadow: 0 0 4px #000;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
+.ck-level {
+  display: flex; flex-direction: column;
+  align-items: center;
+  border-left: 1px solid var(--primary);
+  padding-left: 12px;
+}
+.ck-level-key {
+  font-size: 9px;
+  color: var(--primary);
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+.ck-level-val {
+  font-size: 28px;
+  color: var(--accent-2);
+  font-family: 'Orbitron', monospace;
+  font-weight: bold;
+  text-shadow: 0 0 12px var(--accent-2);
+  line-height: 1;
+}
+
+.ck-right { align-items: flex-end; }
+.ck-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 10px;
+  font-family: 'Orbitron', monospace;
+  font-size: 13px;
+  color: var(--text);
+}
+.ck-stat {
+  display: flex; flex-direction: column;
+  align-items: center;
+  padding: 2px 8px;
+  background: rgba(76, 201, 240, 0.05);
+  border: 1px solid rgba(76, 201, 240, 0.3);
+  border-radius: 2px;
+  min-width: 42px;
+}
+.ck-stat .ck-label { font-size: 8px; }
+.ck-actions {
+  display: flex; gap: 6px;
+  margin-top: 4px;
+}
+.ck-mini-btn {
+  background: rgba(76, 201, 240, 0.08);
+  border: 1px solid rgba(76, 201, 240, 0.4);
+  color: var(--primary);
+  width: 26px; height: 26px;
+  font-size: 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.ck-mini-btn:hover {
+  background: var(--primary);
+  color: var(--bg-0);
+}
+
+/* 기존 호환 — 비활성화 */
+.hud-bar {
+  display: none;
 }
 .hud-cell {
   display: flex;
@@ -321,6 +474,205 @@ body::before {
   0%,100% { transform: translate(0,0); }
   20%,60% { transform: translate(-8px, 2px); }
   40%,80% { transform: translate(8px, -2px); }
+}
+
+/* ============================================================
+   COMMS INTERFACE — 외계 신호 해독 UI
+   ============================================================ */
+.comms-card {
+  min-width: 720px;
+  padding: 22px 26px;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-0));
+}
+
+/* 상단 — 신호 식별 헤더 */
+.comms-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--primary);
+  margin-bottom: 16px;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.comms-status-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger), 0 0 16px var(--danger);
+  animation: pulse-dot 1s infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.8); }
+}
+.comms-label { color: var(--danger); font-weight: bold; }
+.comms-source { color: var(--text); flex: 1; font-size: 14px; }
+.comms-channel {
+  color: var(--accent);
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+}
+
+/* 시그널 영역 — ALIEN | HARMONIC METER | YOU */
+.comms-signal {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.comms-side {
+  display: flex; flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.comms-side-label {
+  font-size: 10px;
+  color: var(--primary);
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+.comms-pulse {
+  position: relative;
+  width: 90px; height: 90px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.comms-pulse::before, .comms-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid;
+}
+.alien-pulse::before {
+  border-color: var(--danger);
+  animation: ring 1.8s ease-out infinite;
+}
+.alien-pulse::after {
+  border-color: var(--danger);
+  animation: ring 1.8s ease-out infinite 0.6s;
+}
+.you-pulse::before {
+  border-color: var(--primary);
+  animation: ring 1.8s ease-out infinite 0.3s;
+}
+.you-pulse::after {
+  border-color: var(--primary);
+  animation: ring 1.8s ease-out infinite 0.9s;
+}
+@keyframes ring {
+  0%   { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.comms-emoji {
+  font-size: 50px;
+  z-index: 1;
+  filter: drop-shadow(0 0 12px currentColor);
+}
+.alien-pulse .comms-emoji { color: var(--danger); }
+.you-pulse .comms-emoji   { color: var(--primary); }
+
+.comms-side-meta {
+  width: 100%;
+  display: flex; flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.comms-side-meta .ck-label { font-size: 8px; }
+
+/* 가운데 — 하모닉 미터 */
+.comms-middle {
+  display: flex; flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+}
+.comms-harmonic-key {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  color: var(--primary);
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+.comms-harmonic-meter {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  background:
+    conic-gradient(
+      var(--danger) 0deg, var(--accent) 90deg,
+      var(--accent-2) 180deg, var(--bio) 270deg, var(--bio) 360deg
+    );
+  position: relative;
+  box-shadow: 0 0 16px rgba(76, 201, 240, 0.4),
+              inset 0 0 16px rgba(0,0,0,0.5);
+}
+.comms-harmonic-meter::after {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: var(--bg-0);
+}
+.hm-needle {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 2px; height: 32px;
+  background: var(--primary);
+  transform-origin: center top;
+  transform: translateX(-50%) rotate(0deg);
+  transition: transform 0.5s cubic-bezier(0.2, 1.8, 0.4, 1);
+  box-shadow: 0 0 8px var(--primary);
+  z-index: 1;
+}
+.comms-streak {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  color: var(--accent-2);
+  letter-spacing: 1px;
+}
+
+/* 수식 — 신호 디코딩 */
+.comms-equation-label, .comms-response-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  color: var(--primary);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.comms-equation-label::after, .comms-response-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+}
+.comms-problem {
+  background: rgba(76, 201, 240, 0.04);
+  border: 1px solid var(--primary-d);
+  border-radius: 4px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 720px) {
+  .comms-card { min-width: auto; }
+  .comms-signal { grid-template-columns: 1fr; gap: 12px; }
+  .comms-pulse { width: 60px; height: 60px; }
+  .comms-emoji { font-size: 32px; }
 }
 .bm-actions { display: flex; justify-content: center; margin-top: 12px; }
 .bm-potion {
@@ -977,7 +1329,85 @@ body::before {
 }
 .mission-claim:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ----- Trophy Grid ----- */
+/* ----- SHIP'S LOG (선장 일지 — 발견 로그) ----- */
+.log-card { background: linear-gradient(180deg, var(--bg-2), var(--bg-0)); }
+.log-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  color: var(--primary);
+  letter-spacing: 2px;
+  display: flex; align-items: center; gap: 10px;
+}
+.log-icon { color: var(--accent-2); }
+.log-counter {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+.log-intro {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--border);
+  text-align: center;
+}
+.log-grid { display: flex; flex-direction: column; gap: 10px; }
+.log-entry {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  gap: 14px;
+  align-items: start;
+  background: rgba(76, 201, 240, 0.03);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 14px;
+  transition: all 0.2s;
+}
+.log-entry.unlocked {
+  background: rgba(76, 201, 240, 0.08);
+  border-left-color: var(--primary);
+  box-shadow: inset 0 0 10px rgba(76, 201, 240, 0.05);
+}
+.log-entry.locked { opacity: 0.5; }
+.log-entry.locked .log-marker { color: var(--text-dim); }
+.log-marker {
+  font-size: 28px;
+  text-align: center;
+  color: var(--primary);
+  text-shadow: 0 0 8px currentColor;
+  font-family: 'Orbitron', monospace;
+}
+.log-body { display: flex; flex-direction: column; gap: 4px; }
+.log-meta {
+  display: flex;
+  gap: 12px;
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+.log-num { color: var(--primary); }
+.log-status { color: var(--accent-2); }
+.log-entry.locked .log-status { color: var(--danger); }
+.log-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.log-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  font-style: italic;
+}
+.log-entry.unlocked .log-desc { color: #b0c0d0; }
+
+/* ----- Trophy Grid (호환) ----- */
 .trophy-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

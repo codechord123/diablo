@@ -9,21 +9,64 @@
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 </head>
 <body>
-  <!-- 상단 HUD -->
-  <header class="hud-bar">
-    <div class="hud-cell hud-class-cell"><span id="hud-class">⚔️ 전사</span></div>
-    <div class="hud-cell"><span class="hud-key">Lv</span><span id="hud-lv">1</span></div>
-    <div class="hud-cell"><span class="hud-key">HP</span><span id="hud-hp">5/5</span></div>
-    <div class="hud-cell"><span class="hud-key">XP</span><span id="hud-xp">0/50</span></div>
-    <div class="hud-cell"><span class="hud-key">💰</span><span id="hud-gold">0</span></div>
-    <div class="hud-cell"><span class="hud-key">처치</span><span id="hud-kills">0</span></div>
-    <div class="hud-cell"><span id="hud-weapon">🗡️</span></div>
-    <div class="hud-cell"><span id="hud-potion">🧪0</span></div>
-    <div class="hud-cell hud-right">
-      <span id="hud-user" class="hud-user"></span>
-      <button id="hud-settings" class="hud-logout" title="설정">⚙️</button>
-      <button id="hud-logout" class="hud-logout" title="로그아웃">🚪</button>
-      <a href="dashboard.html" class="link-classic" target="_blank">📊 대시보드</a>
+  <!-- 콕핏 HUD — 우주선 콘솔 형태 -->
+  <header class="cockpit-hud">
+    <div class="ck-side ck-left">
+      <div class="ck-status">
+        <div class="ck-status-row">
+          <span class="ck-label">CALLSIGN</span>
+          <span id="hud-user" class="ck-callsign">—</span>
+        </div>
+        <div class="ck-status-row">
+          <span class="ck-label">ROLE</span>
+          <span id="hud-class" class="ck-role">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ck-center">
+      <!-- 선체 무결성 (HP) — 큰 펄스 바 -->
+      <div class="ck-vital">
+        <div class="ck-vital-key">HULL</div>
+        <div class="ck-bar-wrap">
+          <svg class="ck-pulse-bar" viewBox="0 0 200 24" preserveAspectRatio="none">
+            <rect class="ck-bar-bg" x="0" y="0" width="200" height="24" />
+            <rect id="hud-hull-bar" class="ck-bar-fill ck-bar-hull" x="0" y="0" width="200" height="24" />
+            <polyline id="hud-hull-pulse" class="ck-bar-pulse" points="" />
+          </svg>
+          <span id="hud-hp" class="ck-bar-text">5 / 5</span>
+        </div>
+      </div>
+      <!-- 데이터 코어 (XP) -->
+      <div class="ck-vital">
+        <div class="ck-vital-key">DATA</div>
+        <div class="ck-bar-wrap">
+          <svg class="ck-pulse-bar" viewBox="0 0 200 24" preserveAspectRatio="none">
+            <rect class="ck-bar-bg" x="0" y="0" width="200" height="24" />
+            <rect id="hud-xp-bar" class="ck-bar-fill ck-bar-xp" x="0" y="0" width="0" height="24" />
+          </svg>
+          <span id="hud-xp" class="ck-bar-text">0 / 50</span>
+        </div>
+      </div>
+      <!-- 레벨 큰 표시 -->
+      <div class="ck-level">
+        <div class="ck-level-key">CLR</div>
+        <div id="hud-lv" class="ck-level-val">1</div>
+      </div>
+    </div>
+
+    <div class="ck-side ck-right">
+      <div class="ck-stats-grid">
+        <div class="ck-stat"><span class="ck-label">CR</span><span id="hud-gold">0</span></div>
+        <div class="ck-stat"><span class="ck-label">EVA</span><span id="hud-kills">0</span></div>
+        <div class="ck-stat"><span class="ck-label">TOOL</span><span id="hud-weapon">🔧</span></div>
+        <div class="ck-stat"><span class="ck-label">O₂</span><span id="hud-potion">0</span></div>
+      </div>
+      <div class="ck-actions">
+        <button id="hud-settings" class="ck-mini-btn" title="설정">⚙</button>
+        <button id="hud-logout" class="ck-mini-btn" title="로그아웃">⏻</button>
+        <a href="dashboard.html" class="ck-mini-btn" target="_blank" title="대시보드">▤</a>
+      </div>
     </div>
   </header>
 
@@ -38,20 +81,64 @@
   <!-- 레벨업 배너 -->
   <div id="levelup-banner" class="levelup-banner"></div>
 
-  <!-- 전투 모달 (DOM 오버레이) -->
+  <!-- COMMS INTERFACE — 외계 신호 해독 인터페이스 -->
   <div id="battle-modal" class="battle-modal">
-    <div class="bm-card">
-      <div class="bm-enemy">
-        <span id="bm-enemy-emoji" class="bm-enemy-emoji">💀</span>
-        <div class="bm-enemy-info">
-          <div id="bm-enemy-name" class="bm-enemy-name">해골 전사</div>
-          <div id="bm-category" class="bm-category">📚 동분모 덧셈</div>
-          <div class="bm-hpbar"><div id="bm-enemy-hpbar" class="bm-hpbar-fill"></div></div>
-          <div id="bm-enemy-hp" class="bm-enemy-hp">2 / 2</div>
+    <div class="bm-card comms-card">
+      <!-- 상단: 신호 식별 -->
+      <div class="comms-header">
+        <span class="comms-status-dot"></span>
+        <span class="comms-label">INCOMING SIGNAL</span>
+        <span id="bm-enemy-name" class="comms-source">DRONE SENTRY</span>
+        <span id="bm-category" class="comms-channel">CH. SAME-DENOM</span>
+      </div>
+
+      <!-- 신호 패턴 시각화 (외계인 펄스) -->
+      <div class="comms-signal">
+        <div class="comms-side">
+          <div class="comms-side-label">ALIEN</div>
+          <div id="bm-signal-alien" class="comms-pulse alien-pulse">
+            <span id="bm-enemy-emoji" class="comms-emoji">🤖</span>
+          </div>
+          <div class="comms-side-meta">
+            <span class="ck-label">SHIELD</span>
+            <div class="ck-bar-wrap small">
+              <svg class="ck-pulse-bar" viewBox="0 0 100 12" preserveAspectRatio="none">
+                <rect class="ck-bar-bg" x="0" y="0" width="100" height="12" />
+                <rect id="bm-enemy-hpbar" class="ck-bar-fill ck-bar-shield" x="0" y="0" width="100" height="12" />
+              </svg>
+              <span id="bm-enemy-hp" class="ck-bar-text">2 / 2</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="comms-middle">
+          <!-- 펄스 매칭 미터 -->
+          <div class="comms-harmonic-key">HARMONIZE</div>
+          <div id="bm-harmonic-meter" class="comms-harmonic-meter">
+            <div class="hm-needle"></div>
+          </div>
+          <div id="bm-streak" class="comms-streak">STREAK 0</div>
+        </div>
+
+        <div class="comms-side">
+          <div class="comms-side-label">YOU</div>
+          <div class="comms-pulse you-pulse">
+            <span class="comms-emoji">👨‍🚀</span>
+          </div>
+          <div class="comms-side-meta">
+            <span class="ck-label">INTEGRITY</span>
+            <div class="ck-bar-wrap small">
+              <svg class="ck-pulse-bar" viewBox="0 0 100 12" preserveAspectRatio="none">
+                <rect class="ck-bar-bg" x="0" y="0" width="100" height="12" />
+                <rect id="bm-player-bar" class="ck-bar-fill ck-bar-hull" x="0" y="0" width="100" height="12" />
+              </svg>
+              <span id="bm-player-hp" class="ck-bar-text">5/5</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- 보스 타이머 (보스전에만 표시) -->
+      <!-- 타임어택 (보스만) -->
       <div id="bm-timer" class="bm-timer" style="display:none">
         <div id="bm-timer-text" class="bm-timer-text">⏱ 60초</div>
         <div class="bm-timer-bar-bg">
@@ -59,16 +146,22 @@
         </div>
       </div>
 
-      <div id="bm-problem" class="bm-problem"></div>
+      <!-- 신호 수식 -->
+      <div class="comms-equation-label">DECODE THE SIGNAL —</div>
+      <div id="bm-problem" class="bm-problem comms-problem"></div>
+
+      <!-- 응답 후보 -->
+      <div class="comms-response-label">SELECT RESPONSE</div>
       <div id="bm-choices" class="bm-choices"></div>
       <div id="bm-feedback" class="bm-feedback"></div>
       <div id="bm-hint-area"></div>
+
       <div class="bm-actions">
-        <button id="bm-potion" class="bm-potion">🧪 포션 사용 (0)</button>
-        <button id="bm-notepad" class="bm-notepad-btn">📝 풀이 노트 (N)</button>
-        <button id="bm-hint" class="bm-hint-btn">💡 힌트 (XP 절반)</button>
+        <button id="bm-potion" class="bm-potion">⚕ 산소 (0)</button>
+        <button id="bm-notepad" class="bm-notepad-btn">✎ 노트 (N)</button>
+        <button id="bm-hint" class="bm-hint-btn">⚡ 힌트 (-50% XP)</button>
       </div>
-      <div class="bm-hint">키보드 1~4 = 답 · H = 포션 · ESC = 도주</div>
+      <div class="bm-hint">1~4 = 응답 · H = 산소 · ESC = 통신 종료</div>
     </div>
   </div>
 
@@ -188,14 +281,18 @@
     </div>
   </div>
 
-  <!-- 트로피(도전과제) 모달 -->
+  <!-- SHIP'S LOG — 선장 일지 (발견 로그) -->
   <div id="trophy-modal" class="trophy-modal">
-    <div class="trophy-card">
-      <div class="trophy-header">
-        <div class="trophy-title">🏆 트로피 (<span id="trophy-count">0/0</span>)</div>
+    <div class="trophy-card log-card">
+      <div class="trophy-header log-header">
+        <div class="log-title">
+          <span class="log-icon">◇</span> SHIP'S LOG
+          <span class="log-counter">(<span id="trophy-count">0/0</span>)</span>
+        </div>
         <button id="trophy-close" class="trophy-close">✕</button>
       </div>
-      <div id="trophy-grid" class="trophy-grid"></div>
+      <div class="log-intro">— 선장 일지: 헤일메리 임무 발견 기록 —</div>
+      <div id="trophy-grid" class="log-grid"></div>
     </div>
   </div>
 

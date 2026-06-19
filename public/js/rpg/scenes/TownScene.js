@@ -639,16 +639,24 @@ export class TownScene extends Phaser.Scene {
     const modal = document.getElementById('trophy-modal');
     const grid = document.getElementById('trophy-grid');
     grid.innerHTML = '';
-    ACHIEVEMENTS.forEach(a => {
+    let entryNum = 1;
+    ACHIEVEMENTS.forEach((a) => {
       const got = unlocked.includes(a.id);
       const cell = document.createElement('div');
-      cell.className = 'trophy-cell ' + (got ? 'unlocked' : 'locked');
+      cell.className = 'log-entry ' + (got ? 'unlocked' : 'locked');
       cell.innerHTML = `
-        <div class="trophy-icon">${got ? a.icon : '🔒'}</div>
-        <div class="trophy-name">${got ? a.name : '???'}</div>
-        <div class="trophy-desc">${a.desc}</div>
+        <div class="log-marker">${got ? a.icon : '◌'}</div>
+        <div class="log-body">
+          <div class="log-meta">
+            <span class="log-num">ENTRY ${String(entryNum).padStart(3, '0')}</span>
+            <span class="log-status">${got ? 'DECRYPTED' : 'LOCKED'}</span>
+          </div>
+          <div class="log-name">${got ? a.name : '████████████'}</div>
+          <div class="log-desc">${got ? a.desc : '— 권한이 부족합니다 —'}</div>
+        </div>
       `;
       grid.appendChild(cell);
+      entryNum++;
     });
     document.getElementById('trophy-count').textContent = `${unlocked.length} / ${ACHIEVEMENTS.length}`;
     modal.classList.add('show');
@@ -832,21 +840,27 @@ export class TownScene extends Phaser.Scene {
 
   refreshHud() {
     const classDef = getClass(this.player.class);
-    document.getElementById('hud-hp').textContent = `${this.player.hp}/${this.player.maxHp}`;
+    const lvl = this.player.level;
+    document.getElementById('hud-hp').textContent = `${this.player.hp} / ${this.player.maxHp}`;
     document.getElementById('hud-gold').textContent = this.player.gold || 0;
-    document.getElementById('hud-lv').textContent = this.player.level;
-    document.getElementById('hud-xp').textContent = `${this.player.xp}/${xpToNext(this.player.level)}`;
+    document.getElementById('hud-lv').textContent = lvl;
+    document.getElementById('hud-xp').textContent = `${this.player.xp} / ${xpToNext(lvl)}`;
     document.getElementById('hud-kills').textContent = this.player.kills;
+    // SVG 바
+    const hullBar = document.getElementById('hud-hull-bar');
+    if (hullBar) hullBar.setAttribute('width', (this.player.hp / this.player.maxHp) * 200);
+    const xpBar = document.getElementById('hud-xp-bar');
+    if (xpBar) xpBar.setAttribute('width', Math.min(200, (this.player.xp / xpToNext(lvl)) * 200));
     const classEl = document.getElementById('hud-class');
     if (classEl) classEl.textContent = `${classDef.icon} ${classDef.name}`;
     const weapon = ITEMS[this.player.equippedWeapon || 'sword_basic'] || ITEMS.sword_basic;
     const wEl = document.getElementById('hud-weapon');
-    if (wEl) wEl.textContent = `${weapon.icon}`;
+    if (wEl) wEl.textContent = weapon.icon;
     const potionCount = Object.entries(this.player.inventory || {})
       .filter(([id]) => ITEMS[id]?.type === 'potion')
       .reduce((a, [, n]) => a + n, 0);
     const pEl = document.getElementById('hud-potion');
-    if (pEl) pEl.textContent = `🧪${potionCount}`;
+    if (pEl) pEl.textContent = potionCount;
   }
 
   changeClass() {

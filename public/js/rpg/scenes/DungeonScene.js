@@ -504,11 +504,23 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   setupHud() {
-    document.getElementById('hud-lv').textContent  = this.player.level;
-    document.getElementById('hud-hp').textContent  = `${this.player.hp}/${this.player.maxHp}`;
-    document.getElementById('hud-xp').textContent  = `${this.player.xp}/${xpToNext(this.player.level)}`;
+    const lvl = this.player.level;
+    document.getElementById('hud-lv').textContent  = lvl;
+    document.getElementById('hud-hp').textContent  = `${this.player.hp} / ${this.player.maxHp}`;
+    document.getElementById('hud-xp').textContent  = `${this.player.xp} / ${xpToNext(lvl)}`;
     document.getElementById('hud-kills').textContent = this.player.kills;
     document.getElementById('hud-gold').textContent  = this.player.gold || 0;
+    // SVG 바 갱신
+    const hullBar = document.getElementById('hud-hull-bar');
+    if (hullBar) {
+      const pct = (this.player.hp / this.player.maxHp) * 200;
+      hullBar.setAttribute('width', pct);
+    }
+    const xpBar = document.getElementById('hud-xp-bar');
+    if (xpBar) {
+      const pct = Math.min(200, (this.player.xp / xpToNext(lvl)) * 200);
+      xpBar.setAttribute('width', pct);
+    }
     const classEl = document.getElementById('hud-class');
     if (classEl && this.classDef) {
       classEl.textContent = `${this.classDef.icon} ${this.classDef.name}`;
@@ -517,7 +529,7 @@ export class DungeonScene extends Phaser.Scene {
     const wEl = document.getElementById('hud-weapon');
     if (wEl) wEl.textContent = `${weapon.icon}`;
     const pEl = document.getElementById('hud-potion');
-    if (pEl) pEl.textContent = `🧪${totalPotions(this.player)}`;
+    if (pEl) pEl.textContent = totalPotions(this.player);
   }
 
   // ---------- 이동 ----------

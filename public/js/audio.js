@@ -112,8 +112,19 @@ class AudioEngine {
   // 게임 이벤트 사운드
   // ============================================================
   hit() {
-    this.beep(880, 0.08, 'sine', 0.35);
-    this.beep(1320, 0.10, 'sine', 0.3, 0.05);
+    // 하모닉 매칭 — 완전 5도 화음 (C5 + G5) 으로 명확한 안정감
+    this.beep(523, 0.12, 'sine', 0.30);    // C5
+    this.beep(784, 0.14, 'sine', 0.28, 0.02); // G5
+    this.beep(1047, 0.10, 'triangle', 0.22, 0.04); // C6
+  }
+  // 정답 streak에 따라 점점 높아지는 하모닉
+  harmonic(streak) {
+    const baseFreqs = [261, 329, 392, 523, 659, 784, 1047];
+    const idx = Math.min(baseFreqs.length - 1, streak);
+    const f1 = baseFreqs[idx];
+    const f2 = f1 * 1.5;  // 완전 5도
+    this.beep(f1, 0.15, 'sine', 0.3);
+    this.beep(f2, 0.15, 'sine', 0.25, 0.03);
   }
 
   miss() {

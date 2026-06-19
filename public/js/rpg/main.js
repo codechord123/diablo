@@ -61,12 +61,12 @@ const gestureInit = () => {
 window.addEventListener('pointerdown', gestureInit, { once: true });
 window.addEventListener('keydown', gestureInit, { once: true });
 
-// HUD 사용자명 갱신 + 로그아웃 버튼
+// HUD 사용자명 갱신
 function refreshHudUser() {
   const el = document.getElementById('hud-user');
   if (!el) return;
   const session = currentUser();
-  el.textContent = session ? `👤 ${session.nickname}` : '';
+  el.textContent = session ? session.nickname.toUpperCase() : '—';
 }
 setInterval(refreshHudUser, 1000);
 
