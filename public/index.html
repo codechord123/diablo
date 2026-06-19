@@ -185,14 +185,15 @@
 
   <!-- 상점 모달 -->
   <div id="shop-modal" class="shop-modal">
-    <div class="shop-card">
+    <div class="shop-card terminal-modal">
+      <div class="term-header boot">CONSOLE ACCESS GRANTED</div>
       <div class="shop-header">
         <div id="shop-title" class="shop-title">상점</div>
-        <div class="shop-gold-bar">💰 <span id="shop-gold">0</span> G</div>
+        <div class="shop-gold-bar">CR <span id="shop-gold">0</span></div>
         <button id="shop-close" class="shop-close">✕</button>
       </div>
       <div id="shop-items" class="shop-items"></div>
-      <div class="shop-hint">ESC = 닫기</div>
+      <div class="shop-hint">ESC = TERMINATE</div>
     </div>
   </div>
 
@@ -280,9 +281,10 @@
 
   <!-- 스킬 트리 모달 -->
   <div id="skill-modal" class="skill-modal">
-    <div class="skill-card-wrap">
+    <div class="skill-card-wrap terminal-modal">
+      <div class="term-header boot">TERM-06 // SIMULATOR NEXUS</div>
       <div class="skill-header">
-        <div class="skill-title">🌟 수련 (사용 가능 SP: <span id="skill-sp">0</span>)</div>
+        <div class="skill-title">수련 모듈 (SP: <span id="skill-sp">0</span>)</div>
         <button id="skill-close" class="settings-close">✕</button>
       </div>
       <div id="skill-grid" class="skill-grid"></div>
@@ -291,9 +293,10 @@
 
   <!-- 설정 모달 -->
   <div id="settings-modal" class="settings-modal">
-    <div class="settings-card">
+    <div class="settings-card terminal-modal">
+      <div class="term-header boot">SYSTEM CONFIG</div>
       <div class="settings-header">
-        <div class="settings-title">⚙️ 설정</div>
+        <div class="settings-title">시스템 설정</div>
         <button id="s-close" class="settings-close">✕</button>
       </div>
       <div class="settings-row">
@@ -323,22 +326,24 @@
 
   <!-- 일일 미션 모달 -->
   <div id="mission-modal" class="mission-modal">
-    <div class="mission-card">
+    <div class="mission-card terminal-modal">
+      <div class="term-header boot">TERM-04 // DAILY OPS</div>
       <div class="mission-header">
-        <div class="mission-title">📋 오늘의 미션</div>
+        <div class="mission-title">OPS BOARD — 오늘의 임무</div>
         <button id="mission-close" class="mission-close">✕</button>
       </div>
-      <div class="mission-intro">매일 자정에 새 미션이 갱신됩니다.</div>
+      <div class="mission-intro">매일 자정 (UTC+9) 새 임무가 자동 갱신됩니다.</div>
       <div id="mission-list" class="mission-list"></div>
     </div>
   </div>
 
   <!-- SHIP'S LOG — 선장 일지 (발견 로그) -->
   <div id="trophy-modal" class="trophy-modal">
-    <div class="trophy-card log-card">
+    <div class="trophy-card log-card terminal-modal">
+      <div class="term-header boot">TERM-05 // SHIP'S LOG</div>
       <div class="trophy-header log-header">
         <div class="log-title">
-          <span class="log-icon">◇</span> SHIP'S LOG
+          <span class="log-icon">◇</span> 발견 기록
           <span class="log-counter">(<span id="trophy-count">0/0</span>)</span>
         </div>
         <button id="trophy-close" class="trophy-close">✕</button>
@@ -350,12 +355,13 @@
 
   <!-- 오답 복습 모달 -->
   <div id="review-modal" class="review-modal">
-    <div class="review-card">
+    <div class="review-card terminal-modal">
+      <div class="term-header boot">TERM-03 // PATTERN ANALYST</div>
       <div class="review-header">
-        <div class="review-title">📚 오답 복습 — 현자 메를린</div>
+        <div class="review-title">오답 패턴 분석</div>
         <button id="review-close" class="review-close-btn">✕</button>
       </div>
-      <div class="review-intro">틀린 문제를 다시 보고, 이해했으면 ✓ 버튼을 누르세요.</div>
+      <div class="review-intro">에러 데이터 점검 — 이해하면 ✓ 마킹하여 DB에서 제거</div>
       <div id="review-list" class="review-list"></div>
     </div>
   </div>

@@ -462,8 +462,12 @@ export class TownScene extends Phaser.Scene {
   // ---------- NPC ----------
   drawNpcs() {
     const W = this.scale.width, H = this.scale.height;
-    this.spawnNpc(W * 0.22, H * 0.62, 'merchant',   'npc-merchant',   '보급관 헬가-7',   '#88ddff');
-    this.spawnNpc(W * 0.78, H * 0.62, 'blacksmith', 'npc-blacksmith', '정비 군나르-X',   '#ff8855');
+    this.spawnNpc(W * 0.22, H * 0.62, 'merchant',   'npc-merchant',
+      'TERM-01 // SUPPLY', '#88ddff',
+      () => this.getSupplyHologram());
+    this.spawnNpc(W * 0.78, H * 0.62, 'blacksmith', 'npc-blacksmith',
+      'TERM-02 // FORGE', '#ff8855',
+      () => this.getForgeHologram());
     // 오답 복습 NPC — 가운데 살짝 위
     this.spawnReviewNpc(W * 0.50, H * 0.55);
     // 미션 보드 + 트로피 + 스킬 마스터
@@ -486,14 +490,17 @@ export class TownScene extends Phaser.Scene {
       targets: sprite, y: y - 4,
       duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
-    this.add.text(x, y + 36, '시뮬레이터 넥서스', {
-      fontSize: '13px', color: '#a3dfff',
-      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    this.add.text(x, y + 36, 'TERM-06 // NEXUS', {
+      fontSize: '11px', color: '#a3dfff',
+      fontFamily: 'Orbitron, monospace',
+      letterSpacing: 2,
     }).setOrigin(0.5).setDepth(6);
     const sp = getAvailablePoints(this.player);
-    this.add.text(x, y + 52, `🌟 SP ${sp}`, {
-      fontSize: '11px', color: sp > 0 ? '#ffd700' : '#888',
-    }).setOrigin(0.5).setDepth(6);
+    this.spawnHologram(x, y - 36, [
+      'SIMULATOR',
+      `SP AVAIL`,
+      `${sp}`,
+    ], sp > 0 ? 0xffd700 : 0xa3dfff);
     sprite.on('pointerover', () => sprite.setScale(1.1));
     sprite.on('pointerout',  () => sprite.setScale(1.0));
     sprite.on('pointerdown', () => this.openSkillModal());
@@ -557,10 +564,21 @@ export class TownScene extends Phaser.Scene {
       targets: sprite, y: y - 3,
       duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
-    this.add.text(x, y + 32, '일일 미션', {
-      fontSize: '12px', color: '#ffd700',
-      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    this.add.text(x, y + 32, 'TERM-04 // OPS', {
+      fontSize: '11px', color: '#ffd700',
+      fontFamily: 'Orbitron, monospace',
+      letterSpacing: 2,
     }).setOrigin(0.5).setDepth(6);
+    // 미션 진행도 홀로그램
+    const nick = currentUser()?.nickname || 'guest';
+    const md = getTodaysMissions(nick);
+    const done = md.missions.filter(m => m.progress >= m.target && !m.claimed).length;
+    const claimed = md.missions.filter(m => m.claimed).length;
+    this.spawnHologram(x, y - 36, [
+      'DAILY OPS',
+      `READY ${done}`,
+      `DONE  ${claimed}/3`,
+    ], 0xffd700);
     sprite.on('pointerover', () => sprite.setScale(1.1));
     sprite.on('pointerout',  () => sprite.setScale(1.0));
     sprite.on('pointerdown', () => this.openMissionModal());
@@ -578,10 +596,16 @@ export class TownScene extends Phaser.Scene {
     });
     const sprite = this.add.text(x, y, '🏆', { fontSize: '42px' })
       .setOrigin(0.5).setDepth(5).setInteractive({ useHandCursor: true });
-    this.add.text(x, y + 32, `트로피 ${count}/${ACHIEVEMENTS.length}`, {
-      fontSize: '12px', color: '#ffaa33',
-      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    this.add.text(x, y + 32, 'TERM-05 // LOG', {
+      fontSize: '11px', color: '#ffaa33',
+      fontFamily: 'Orbitron, monospace',
+      letterSpacing: 2,
     }).setOrigin(0.5).setDepth(6);
+    this.spawnHologram(x, y - 36, [
+      "SHIP'S LOG",
+      `DECRYPTED`,
+      `${count} / ${ACHIEVEMENTS.length}`,
+    ], 0xffaa33);
     sprite.on('pointerover', () => sprite.setScale(1.1));
     sprite.on('pointerout',  () => sprite.setScale(1.0));
     sprite.on('pointerdown', () => this.openTrophyModal());
@@ -687,13 +711,16 @@ export class TownScene extends Phaser.Scene {
       targets: sprite, y: y - 4,
       duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
-    this.add.text(x, y + 38, '분석 AI 메를린', {
-      fontSize: '13px', color: '#ddaa88',
-      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    this.add.text(x, y + 38, 'TERM-03 // ANALYST', {
+      fontSize: '11px', color: '#ddaa88',
+      fontFamily: 'Orbitron, monospace',
+      letterSpacing: 2,
     }).setOrigin(0.5).setDepth(6);
-    this.add.text(x, y + 55, `📊 오답 데이터 (${wrongCount})`, {
-      fontSize: '11px', color: '#d4af37',
-    }).setOrigin(0.5).setDepth(6);
+    this.spawnHologram(x, y - 50, [
+      'PATTERN LOG',
+      `ERROR ENTRIES`,
+      `${wrongCount} / 20`,
+    ], 0xddaa88);
 
     sprite.on('pointerover', () => sprite.setScale(1.1));
     sprite.on('pointerout',  () => sprite.setScale(1.0));
@@ -748,7 +775,7 @@ export class TownScene extends Phaser.Scene {
     });
   }
 
-  spawnNpc(x, y, shopKey, spriteKey, name, colorHex) {
+  spawnNpc(x, y, shopKey, spriteKey, terminalId, colorHex, getHologramFn) {
     const colorNum = parseInt(colorHex.slice(1), 16);
     const glow = this.add.image(x, y + 4, 'torch')
       .setBlendMode(Phaser.BlendModes.ADD)
@@ -760,28 +787,116 @@ export class TownScene extends Phaser.Scene {
       duration: 1100, yoyo: true, repeat: -1,
     });
 
-    // 절차적 NPC 스프라이트
+    // 절차적 NPC 스프라이트 (콘솔)
     const sprite = this.add.image(x, y, spriteKey).setScale(1.8).setDepth(5)
       .setInteractive({ useHandCursor: true });
-    // 살랑살랑 idle
     this.tweens.add({
       targets: sprite,
       y: y - 3,
       duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
 
-    this.add.text(x, y + 60, name, {
-      fontSize: '14px', color: colorHex,
-      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    // 터미널 ID 라벨 (콘솔 아래)
+    this.add.text(x, y + 60, terminalId, {
+      fontSize: '11px', color: colorHex,
+      fontFamily: 'Orbitron, monospace',
+      letterSpacing: 2,
     }).setOrigin(0.5).setDepth(6);
 
-    this.add.text(x, y + 78, shopKey === 'merchant' ? '🧪 보급품 지급' : '🔧 장비 정비', {
-      fontSize: '11px', color: '#d4af37',
-    }).setOrigin(0.5).setDepth(6);
+    // 홀로그램 디스플레이 (콘솔 위 떠다님)
+    if (getHologramFn) {
+      this.spawnHologram(x, y - 50, getHologramFn(), colorNum);
+    }
 
     sprite.on('pointerover', () => sprite.setScale(1.95));
     sprite.on('pointerout',  () => sprite.setScale(1.8));
-    sprite.on('pointerdown', () => this.openShop(shopKey, name));
+    sprite.on('pointerdown', () => {
+      audio.click();
+      this.openShop(shopKey, terminalId);
+    });
+  }
+
+  // 홀로그램 디스플레이 (Phaser 컨테이너 — 떠다니는 SVG 풍 패널)
+  spawnHologram(x, y, lines, color) {
+    const w = 88, h = 42;
+    const container = this.add.container(x, y).setDepth(8);
+
+    // 1. 연결선 (콘솔 위에서 홀로그램으로)
+    const wire = this.add.graphics();
+    wire.lineStyle(1, color, 0.4);
+    wire.lineBetween(0, h/2, 0, h/2 + 24);
+    container.add(wire);
+
+    // 2. 홀로그램 본체 (반투명 사각)
+    const bg = this.add.rectangle(0, 0, w, h, color, 0.12)
+      .setStrokeStyle(1, color, 0.7);
+    container.add(bg);
+
+    // 3. 코너 마커 (4귀)
+    const corner = this.add.graphics();
+    corner.lineStyle(1.5, color, 1);
+    [[-w/2, -h/2, 1, 1], [w/2, -h/2, -1, 1], [-w/2, h/2, 1, -1], [w/2, h/2, -1, -1]]
+      .forEach(([cx, cy, dx, dy]) => {
+        corner.lineBetween(cx, cy, cx + dx * 6, cy);
+        corner.lineBetween(cx, cy, cx, cy + dy * 6);
+      });
+    container.add(corner);
+
+    // 4. 스캔라인 (위→아래 흐름)
+    const scanline = this.add.rectangle(0, -h/2, w - 4, 1, color, 0.85);
+    container.add(scanline);
+    this.tweens.add({
+      targets: scanline,
+      y: h/2,
+      duration: 2400, repeat: -1, ease: 'Linear',
+    });
+
+    // 5. 텍스트 라인들
+    const lineH = (h - 8) / Math.max(1, lines.length);
+    lines.forEach((line, i) => {
+      const t = this.add.text(0, -h/2 + 4 + i * lineH + lineH/2, line, {
+        fontSize: '9px', color: '#' + color.toString(16).padStart(6, '0'),
+        fontFamily: 'Orbitron, monospace',
+        letterSpacing: 1,
+      }).setOrigin(0.5);
+      container.add(t);
+    });
+
+    // 6. 떠다님 + 펄스
+    this.tweens.add({
+      targets: container,
+      y: y - 6,
+      duration: 2400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    this.tweens.add({
+      targets: bg,
+      alpha: { from: 0.10, to: 0.20 },
+      duration: 1500, yoyo: true, repeat: -1,
+    });
+
+    return container;
+  }
+
+  // 콘솔별 라이브 데이터
+  getSupplyHologram() {
+    const inv = this.player.inventory || {};
+    const p1 = inv.potion_small || 0;
+    const p2 = inv.potion_large || 0;
+    return [
+      'STOCK STATUS',
+      `O2-CAPSULE ${p1}`,
+      `NANO-KIT  ${p2}`,
+    ];
+  }
+  getForgeHologram() {
+    const w = ITEMS[this.player.equippedWeapon || 'sword_basic'] || ITEMS.sword_basic;
+    const wCount = (this.player.weapons || []).length;
+    const hCount = (this.player.helmets || []).length;
+    return [
+      'FORGE ACTIVE',
+      `TOOL ${w.icon} LV.${w.damage}`,
+      `INV  W:${wCount} H:${hCount}`,
+    ];
   }
 
   // ---------- UI 오버레이 ----------

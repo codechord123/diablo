@@ -1008,6 +1008,79 @@ body::before {
 }
 
 /* ============================================================
+   Terminal Effect — 모든 콘솔 모달 공통 스캔라인 + 부팅
+   ============================================================ */
+.terminal-modal {
+  position: relative;
+  overflow: hidden;
+}
+.terminal-modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(76, 201, 240, 0.04) 50%,
+    transparent 100%
+  );
+  background-size: 100% 6px;
+  pointer-events: none;
+  animation: scanline-sweep 4s linear infinite;
+  z-index: 1;
+}
+@keyframes scanline-sweep {
+  from { background-position: 0 -100vh; }
+  to   { background-position: 0  100vh; }
+}
+.terminal-modal > * { position: relative; z-index: 2; }
+
+.term-header {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  color: var(--primary);
+  letter-spacing: 2px;
+  background: rgba(76, 201, 240, 0.08);
+  border-left: 3px solid var(--primary);
+  padding: 6px 10px;
+  margin: -22px -26px 16px;
+  position: relative;
+}
+.term-header::before { content: '> '; color: var(--accent-2); }
+.term-header.boot::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* 모달 열릴 때 슬라이드+페이드 인 */
+.battle-modal.show .bm-card,
+.shop-modal.show .shop-card,
+.mission-modal.show .mission-card,
+.trophy-modal.show .trophy-card,
+.skill-modal.show .skill-card-wrap,
+.review-modal.show .review-card,
+.settings-modal.show .settings-card,
+.briefing-modal.show .briefing-card {
+  animation: modal-boot 0.35s cubic-bezier(0.2, 1, 0.4, 1);
+}
+@keyframes modal-boot {
+  from {
+    transform: scale(0.92) translateY(20px);
+    opacity: 0;
+    filter: blur(4px) hue-rotate(20deg);
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    filter: blur(0) hue-rotate(0);
+  }
+}
+
+/* ============================================================
    Mission Briefing Modal (군사 명세서 스타일)
    ============================================================ */
 .briefing-modal {
