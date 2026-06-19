@@ -7,6 +7,7 @@
 import { CLASSES } from '../../classes.js';
 import { getUser, loadProgress } from '../../firebase-config.js';
 import { currentUser } from '../../auth.js';
+import { hasSeenStory } from '../../story.js';
 
 // Phaser fillPoints는 {x,y} 객체 배열을 요구 → flat→object 변환 헬퍼
 const pts = (...coords) => {
@@ -57,6 +58,15 @@ export class BootScene extends Phaser.Scene {
       }
       const user = await getUser();
       const player = await loadProgress(user.uid);
+      // 프롤로그 — 첫 진입 시 1회만 표시
+      if (!hasSeenStory(user.nickname, 'prologue')) {
+        const next = player.class ? 'Loading' : 'ClassSelect';
+        const nextData = player.class
+          ? { target: 'Town', mode: 'return', data: { uid: user.uid, player } }
+          : { uid: user.uid, player };
+        this.scene.start('Opening', { next, nextData });
+        return;
+      }
       if (!player.class) {
         this.scene.start('ClassSelect', { uid: user.uid, player });
       } else {

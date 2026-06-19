@@ -4,7 +4,8 @@
 import { TILE_SIZE } from '../dungeon.js';
 import { xpToNext } from '../../monsters.js';
 import { getClass, playerSpriteKey } from '../../classes.js';
-import { ITEMS, SHOPS, canAfford, ownsWeapon, addPotion } from '../../items.js';
+import { ITEMS, SHOPS, canAfford, ownsWeapon, ownsHelmet, addPotion } from '../../items.js';
+import { SKILLS, getAvailablePoints, getRank, upgrade as upgradeSkill } from '../../skills.js';
 import { saveProgress } from '../../firebase-config.js';
 import { availableBosses, isBossDefeated } from '../../bosses.js';
 import { listWrong, clearWrongOne } from '../../storage.js';
@@ -468,9 +469,81 @@ export class TownScene extends Phaser.Scene {
     this.spawnNpc(W * 0.78, H * 0.62, 'blacksmith', 'npc-blacksmith', '대장장이 군나르', '#ff8855');
     // 오답 복습 NPC — 가운데 살짝 위
     this.spawnReviewNpc(W * 0.50, H * 0.55);
-    // 미션 보드 + 트로피
-    this.spawnMissionBoard(W * 0.38, H * 0.62);
-    this.spawnTrophyBoard(W * 0.62, H * 0.62);
+    // 미션 보드 + 트로피 + 스킬 마스터
+    this.spawnMissionBoard(W * 0.35, H * 0.62);
+    this.spawnTrophyBoard(W * 0.50, H * 0.45);
+    this.spawnSkillMaster(W * 0.65, H * 0.62);
+  }
+
+  spawnSkillMaster(x, y) {
+    const glow = this.add.image(x, y, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(1.1).setAlpha(0.55).setTint(0xa3dfff).setDepth(4);
+    this.tweens.add({
+      targets: glow,
+      alpha: { from: 0.4, to: 0.7 }, duration: 1200, yoyo: true, repeat: -1,
+    });
+    const sprite = this.add.text(x, y, '🧝', { fontSize: '44px' })
+      .setOrigin(0.5).setDepth(5).setInteractive({ useHandCursor: true });
+    this.tweens.add({
+      targets: sprite, y: y - 4,
+      duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    this.add.text(x, y + 36, '수련 마스터', {
+      fontSize: '13px', color: '#a3dfff',
+      fontFamily: 'Cinzel, Noto Serif KR, serif',
+    }).setOrigin(0.5).setDepth(6);
+    const sp = getAvailablePoints(this.player);
+    this.add.text(x, y + 52, `🌟 SP ${sp}`, {
+      fontSize: '11px', color: sp > 0 ? '#ffd700' : '#888',
+    }).setOrigin(0.5).setDepth(6);
+    sprite.on('pointerover', () => sprite.setScale(1.1));
+    sprite.on('pointerout',  () => sprite.setScale(1.0));
+    sprite.on('pointerdown', () => this.openSkillModal());
+  }
+
+  openSkillModal() {
+    audio.click();
+    const cls = this.player.class || 'warrior';
+    const list = SKILLS[cls] || [];
+    const modal = document.getElementById('skill-modal');
+    const grid = document.getElementById('skill-grid');
+    grid.innerHTML = '';
+    list.forEach(sk => {
+      const rank = getRank(this.player, sk.id);
+      const max = sk.maxRank;
+      const sp = getAvailablePoints(this.player);
+      const canUp = rank < max && sp >= 1;
+      const card = document.createElement('div');
+      card.className = 'skill-card';
+      card.innerHTML = `
+        <div class="skill-icon">${sk.icon}</div>
+        <div class="skill-name">${sk.name}</div>
+        <div class="skill-desc">${sk.desc}</div>
+        <div class="skill-rank">${'★'.repeat(rank)}${'☆'.repeat(max - rank)}</div>
+        <button class="skill-up" ${canUp ? '' : 'disabled'}>
+          ${rank >= max ? '최대' : '⬆ 강화 (1 SP)'}
+        </button>
+      `;
+      const btn = card.querySelector('.skill-up');
+      if (canUp) {
+        btn.addEventListener('click', () => {
+          const r = upgradeSkill(this.player, cls, sk.id);
+          if (r.ok) {
+            audio.levelUp();
+            saveProgress(this.uid, this.player);
+            this.openSkillModal();
+          }
+        });
+      }
+      grid.appendChild(card);
+    });
+    document.getElementById('skill-sp').textContent = getAvailablePoints(this.player);
+    modal.classList.add('show');
+    if (!modal._wired) {
+      modal._wired = true;
+      document.getElementById('skill-close').addEventListener('click', () => modal.classList.remove('show'));
+    }
   }
 
   spawnMissionBoard(x, y) {
@@ -827,7 +900,9 @@ export class TownScene extends Phaser.Scene {
     const item = ITEMS[itemId];
     const row = document.createElement('div');
     row.className = 'shop-row';
-    const owned = item.type === 'weapon' && ownsWeapon(this.player, itemId);
+    const owned =
+      (item.type === 'weapon' && ownsWeapon(this.player, itemId)) ||
+      (item.type === 'helmet' && ownsHelmet(this.player, itemId));
     const affordable = canAfford(this.player, item);
     const disabled = owned || !affordable;
     row.innerHTML = `
@@ -861,6 +936,16 @@ export class TownScene extends Phaser.Scene {
       this.player.weapons = this.player.weapons || ['sword_basic'];
       if (!this.player.weapons.includes(itemId)) this.player.weapons.push(itemId);
       this.player.equippedWeapon = itemId;
+    } else if (item.type === 'helmet') {
+      this.player.helmets = this.player.helmets || [];
+      if (!this.player.helmets.includes(itemId)) this.player.helmets.push(itemId);
+      this.player.equippedHelmet = itemId;
+      // 헬멧 hpBonus를 maxHp에 반영
+      const prevBonus = (this.player._helmetBonus || 0);
+      const newBonus = item.hpBonus || 0;
+      this.player.maxHp = (this.player.maxHp || 5) - prevBonus + newBonus;
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + (newBonus - prevBonus));
+      this.player._helmetBonus = newBonus;
     }
     await saveProgress(this.uid, this.player);
     row.classList.add('shop-row-bought');

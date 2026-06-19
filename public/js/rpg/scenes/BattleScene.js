@@ -8,6 +8,7 @@ import { hasSeen, markSeen, showConcept } from '../../concepts.js';
 import { recordAnswer, recordWrong, getRecentAccuracy, clearWrongOne } from '../../storage.js';
 import { currentUser } from '../../auth.js';
 import { trackEvent } from '../../missions.js';
+import { getBonuses as getSkillBonuses } from '../../skills.js';
 import { getClass } from '../../classes.js';
 import { ITEMS, useFirstPotion, getEquippedWeapon, totalPotions } from '../../items.js';
 import { toggleNotepad } from '../../notepad.js';
@@ -29,6 +30,7 @@ export class BattleScene extends Phaser.Scene {
     this.classDef = getClass(this.playerClass);
     this.player = data.player;
     this.weapon = getEquippedWeapon(this.player);
+    this.skillBonus = getSkillBonuses(this.player);
     this.playerMistakes = 0;
     this.correctStreak = 0;
     this.firstMistake = true;
@@ -292,12 +294,17 @@ export class BattleScene extends Phaser.Scene {
       trackEvent(this.nickname, 'corrects', 1);
       // 연속 정답 최대치 갱신 (도전과제용)
       this.player.correctStreakMax = Math.max(this.player.correctStreakMax || 0, this.correctStreak + 1);
-      // 무기 데미지 + 마법사 능력 (3회 연속마다 +1)
+      // 무기 데미지 + 마법사 능력 + 스킬 보너스
       let dmg = this.weapon.damage || 1;
       this.correctStreak += 1;
-      const everyN = this.classDef.extraDamageEveryN || 0;
-      const bonus = (everyN > 0 && this.correctStreak % everyN === 0);
+      // 콤보 주기 단축 (마법사 스킬)
+      const everyN = Math.max(1, (this.classDef.extraDamageEveryN || 0) - (this.skillBonus.comboShorten || 0));
+      const bonus = (this.classDef.extraDamageEveryN > 0 && this.correctStreak % everyN === 0);
       if (bonus) dmg += 1;
+      // 강타/정확성 — 확률 추가 데미지
+      if (this.skillBonus.bonusDmgChance && Math.random() < this.skillBonus.bonusDmgChance) {
+        dmg += this.skillBonus.bonusDmg || 1;
+      }
       // 보스 방어막 — 최소 1 데미지는 보장
       const armor = this.bossAbilities.armor || 0;
       if (armor > 0) dmg = Math.max(1, dmg - armor);
@@ -320,7 +327,7 @@ export class BattleScene extends Phaser.Scene {
       }
     } else {
       // 도적 회피 — 첫 오답 제외, 20% 확률 (보스의 pierceEvade가 막을 수 있음)
-      const evadeChance = this.classDef.evadeChance || 0;
+      const evadeChance = (this.classDef.evadeChance || 0) + (this.skillBonus.extraEvade || 0);
       const pierce = this.bossAbilities.pierceEvade;
       const evaded = !this.firstMistake && evadeChance > 0 && !pierce && Math.random() < evadeChance;
       this.firstMistake = false;

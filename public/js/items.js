@@ -51,12 +51,42 @@ export const ITEMS = {
     price: 200,
     icon: '🌟',
   },
+
+  // ---------- 투구 (방어구) ----------
+  helmet_leather: {
+    id: 'helmet_leather',
+    type: 'helmet',
+    name: '가죽 모자',
+    desc: '최대 HP +1',
+    hpBonus: 1,
+    price: 50,
+    icon: '🪖',
+  },
+  helmet_steel: {
+    id: 'helmet_steel',
+    type: 'helmet',
+    name: '강철 투구',
+    desc: '최대 HP +2',
+    hpBonus: 2,
+    price: 120,
+    icon: '⛑️',
+  },
+  helmet_magic: {
+    id: 'helmet_magic',
+    type: 'helmet',
+    name: '마법 투구',
+    desc: '최대 HP +3 · 정답 XP +5%',
+    hpBonus: 3,
+    xpBonus: 0.05,
+    price: 280,
+    icon: '👑',
+  },
 };
 
 // 카탈로그 (NPC별 판매 목록)
 export const SHOPS = {
-  merchant:    ['potion_small', 'potion_large'],     // 상인
-  blacksmith:  ['sword_steel', 'sword_magic'],       // 대장장이
+  merchant:    ['potion_small', 'potion_large'],                              // 상인
+  blacksmith:  ['sword_steel', 'sword_magic', 'helmet_leather', 'helmet_steel', 'helmet_magic'], // 대장장이 (검 + 투구)
 };
 
 export const POTION_CAP = 99;
@@ -108,4 +138,17 @@ export function canAfford(player, item) {
 
 export function ownsWeapon(player, itemId) {
   return !!(player.weapons && player.weapons.includes(itemId));
+}
+
+export function ownsHelmet(player, itemId) {
+  return !!(player.helmets && player.helmets.includes(itemId));
+}
+
+export function getEquippedHelmet(player) {
+  return ITEMS[player.equippedHelmet] || null;
+}
+
+export function helmetHpBonus(player) {
+  const h = getEquippedHelmet(player);
+  return h?.hpBonus || 0;
 }

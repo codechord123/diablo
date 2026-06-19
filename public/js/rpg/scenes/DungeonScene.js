@@ -15,6 +15,9 @@ import { checkAchievements } from '../../achievements.js';
 import { trackEvent } from '../../missions.js';
 import { Minimap } from '../../minimap.js';
 import { openSettings } from '../../settings.js';
+import { STORY } from '../../story.js';
+import { getBonuses as getSkillBonuses } from '../../skills.js';
+import { helmetHpBonus } from '../../items.js';
 
 export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
@@ -65,6 +68,11 @@ export class DungeonScene extends Phaser.Scene {
       this.minimap = new Minimap(this, this.grid);
       this.minimap.reveal(dungeon.spawn.x, dungeon.spawn.y, 5);
       this.minimap.redraw(this.playerSprite.tile, this.monsters, this.exitTile);
+
+      // 보스 던전이면 인트로 모달
+      if (this.bossData && STORY.bossIntros[this.bossData.id]) {
+        this.showBossIntro(this.bossData.id);
+      }
       this.setupCamera();
       this.setupLighting();
       this.setupInput();
@@ -252,6 +260,38 @@ export class DungeonScene extends Phaser.Scene {
 
     // 보스 등장 사운드
     audio.bossIntro();
+  }
+
+  showBossIntro(bossId) {
+    const intro = STORY.bossIntros[bossId];
+    if (!intro) return;
+    const modal = document.getElementById('boss-intro-modal');
+    if (!modal) return;
+    document.getElementById('bi-title').textContent = intro.title;
+    document.getElementById('bi-subtitle').textContent = intro.subtitle;
+    document.getElementById('bi-lines').innerHTML = intro.lines
+      .map(l => `<div class="bi-line">${l || '&nbsp;'}</div>`).join('');
+    modal.classList.add('show');
+    try { audio.bossIntro(); } catch (_) {}
+    const closeBtn = document.getElementById('bi-close');
+    if (closeBtn && !closeBtn._wired) {
+      closeBtn._wired = true;
+      closeBtn.addEventListener('click', () => modal.classList.remove('show'));
+    }
+  }
+
+  showBossVictory(bossId) {
+    const text = STORY.bossVictory[bossId];
+    if (!text) return;
+    const modal = document.getElementById('boss-victory-modal');
+    if (!modal) return;
+    document.getElementById('bv-text').innerHTML = text.replace(/\n/g, '<br>');
+    modal.classList.add('show');
+    const closeBtn = document.getElementById('bv-close');
+    if (closeBtn && !closeBtn._wired) {
+      closeBtn._wired = true;
+      closeBtn.addEventListener('click', () => modal.classList.remove('show'));
+    }
   }
 
   categoryIcon(category) {
@@ -598,12 +638,13 @@ export class DungeonScene extends Phaser.Scene {
         trackEvent(nick, 'perfectBattles', 1);
       }
       checkAchievements(this.player, nick, { noMistakeBattle: (result.mistakes || 0) === 0 });
-      // 보스 처치 시 — 사운드 + 처치 마킹
+      // 보스 처치 시 — 사운드 + 처치 마킹 + 빅토리 시네마틱
       if (enemy.isBoss) {
         audio.victory();
         this._bossDefeated = true;
         const { markBossDefeated } = await import('../../bosses.js');
         markBossDefeated(this.player, this.bossData.id);
+        this.showBossVictory(this.bossData.id);
       } else {
         audio.killMonster();
       }
@@ -623,8 +664,9 @@ export class DungeonScene extends Phaser.Scene {
     }
     this.player.mistakes += result.mistakes || 0;
     if (result.victory) {
-      // 도적 골드 보너스 적용
-      const goldGain = Math.round(enemy.data.gold * (this.classDef.goldMul || 1));
+      // 도적 골드 보너스 + 스킬 보너스
+      const sk = getSkillBonuses(this.player);
+      const goldGain = Math.round(enemy.data.gold * (this.classDef.goldMul || 1) * (sk.goldMul || 1));
       this.player.gold = (this.player.gold || 0) + goldGain;
     }
     this.setupHud();
@@ -646,7 +688,8 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   gainXp(xp) {
-    this.player.xp += xp;
+    const sk = getSkillBonuses(this.player);
+    this.player.xp += Math.round(xp * (sk.xpMul || 1));
     let leveledUp = false;
     while (this.player.xp >= xpToNext(this.player.level)) {
       this.player.xp -= xpToNext(this.player.level);

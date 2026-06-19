@@ -31,6 +31,9 @@ export function migrateProgress(p) {
     inventory:        p.inventory       ?? {},
     weapons:          p.weapons         ?? ['sword_basic'],
     equippedWeapon:   p.equippedWeapon  ?? 'sword_basic',
+    helmets:          p.helmets         ?? [],
+    equippedHelmet:   p.equippedHelmet  ?? null,
+    skills:           p.skills          ?? {},
     defeatedBosses:   p.defeatedBosses  ?? [],
   };
 }

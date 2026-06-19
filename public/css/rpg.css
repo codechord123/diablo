@@ -560,6 +560,164 @@ body {
 }
 
 /* ============================================================
+   Boss Intro Cinematic
+   ============================================================ */
+.boss-intro-modal, .boss-victory-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.95);
+  display: none;
+  justify-content: center; align-items: center;
+  z-index: 280;
+}
+.boss-intro-modal.show, .boss-victory-modal.show { display: flex; }
+.bi-card {
+  background: linear-gradient(180deg, #2a0608, #0a0204);
+  border: 3px solid #ff2222;
+  border-radius: 14px;
+  padding: 36px 44px;
+  min-width: 480px; max-width: 92vw;
+  box-shadow: 0 0 80px rgba(255, 34, 34, 0.6);
+  text-align: center;
+  animation: bi-rise 0.5s ease-out;
+}
+@keyframes bi-rise {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+.bi-title {
+  font-size: 32px;
+  color: #ff5544;
+  font-family: 'Cinzel', 'Noto Serif KR', serif;
+  text-shadow: 0 0 12px #ff2222;
+  margin-bottom: 8px;
+}
+.bi-subtitle {
+  font-size: 14px;
+  color: #ffaa88;
+  font-style: italic;
+  margin-bottom: 24px;
+}
+.bi-lines { margin: 16px 0 24px; }
+.bi-line {
+  font-size: 16px;
+  color: #ead7b7;
+  line-height: 1.8;
+  font-style: italic;
+}
+.bi-close {
+  background: linear-gradient(180deg, #a31621, #5a0c0c);
+  color: #fff;
+  border: 1px solid #ff5544;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+}
+.bi-close:hover {
+  background: linear-gradient(180deg, #c41e1e, #7a1414);
+  box-shadow: 0 0 16px rgba(255, 34, 34, 0.6);
+}
+
+/* Boss Victory */
+.bv-card {
+  background: linear-gradient(180deg, #2a1a08, #0a0604);
+  border: 3px solid var(--gold);
+  border-radius: 14px;
+  padding: 36px 44px;
+  min-width: 460px; max-width: 92vw;
+  box-shadow: 0 0 80px rgba(212, 175, 55, 0.6);
+  text-align: center;
+}
+.bv-title {
+  font-size: 32px;
+  color: var(--gold);
+  font-family: 'Cinzel', 'Noto Serif KR', serif;
+  text-shadow: 0 0 12px var(--gold);
+  margin-bottom: 18px;
+}
+.bv-text {
+  font-size: 16px;
+  color: #ead7b7;
+  line-height: 1.8;
+  margin-bottom: 24px;
+  font-style: italic;
+}
+.bv-close {
+  background: linear-gradient(180deg, var(--gold), #8b6914);
+  color: #0a0404;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ============================================================
+   Skill Tree Modal
+   ============================================================ */
+.skill-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  justify-content: center; align-items: center;
+  z-index: 240;
+  backdrop-filter: blur(4px);
+}
+.skill-modal.show { display: flex; }
+.skill-card-wrap {
+  background: linear-gradient(180deg, #2a1814, #0d0706);
+  border: 3px solid var(--gold);
+  border-radius: 12px;
+  padding: 22px 26px;
+  min-width: 540px; max-width: 92vw;
+  max-height: 88vh; overflow-y: auto;
+}
+.skill-header {
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid #443;
+  padding-bottom: 10px; margin-bottom: 16px;
+}
+.skill-title {
+  font-size: 20px; color: var(--gold);
+  font-family: 'Cinzel', 'Noto Serif KR', serif;
+}
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.skill-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 14px 12px;
+  text-align: center;
+}
+.skill-icon { font-size: 32px; margin-bottom: 4px; }
+.skill-name { font-size: 14px; color: var(--gold); font-weight: bold; }
+.skill-desc { font-size: 12px; color: #ccc; margin: 8px 0; min-height: 36px; }
+.skill-rank { font-size: 14px; color: #ffd700; margin-bottom: 8px; }
+.skill-up {
+  background: linear-gradient(180deg, #3a2418, #1a0e08);
+  color: var(--text);
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+}
+.skill-up:hover:not(:disabled) {
+  background: linear-gradient(180deg, #5a3a24, #2a1810);
+}
+.skill-up:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ============================================================
    Settings Modal
    ============================================================ */
 .settings-modal, .pause-modal {
