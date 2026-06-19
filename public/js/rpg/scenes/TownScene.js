@@ -57,193 +57,184 @@ export class TownScene extends Phaser.Scene {
   // ---------- 배경 레이어 ----------
   drawSky() {
     const W = this.scale.width, H = this.scale.height;
-    // 일몰 그라데이션 (Canvas)
-    const key = `town-sky-${W}x${H}`;
+    const key = `town-space-${W}x${H}`;
     if (!this.textures.exists(key)) {
       const c = this.textures.createCanvas(key, W, H);
       const ctx = c.getContext();
+      // 우주 그라데이션 (위는 진청, 아래는 우주선 갑판 어두움)
       const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0,    '#1a0a3a');  // 보랏빛 밤
-      grad.addColorStop(0.35, '#6a1a3a');  // 진홍 노을
-      grad.addColorStop(0.55, '#c84a1a');  // 주황 노을
-      grad.addColorStop(0.72, '#8a3a18');  // 흙빛 지평선
-      grad.addColorStop(1,    '#2a1408');  // 어두운 땅
+      grad.addColorStop(0,    '#050810');
+      grad.addColorStop(0.30, '#0a1830');
+      grad.addColorStop(0.55, '#142540');
+      grad.addColorStop(0.70, '#1a2540');
+      grad.addColorStop(1,    '#0a1426');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
-      // 별 (위쪽에만)
-      for (let i = 0; i < 40; i++) {
-        ctx.fillStyle = `rgba(255,230,180,${0.4 + Math.random() * 0.5})`;
+      // 별 (위쪽 60%에만)
+      for (let i = 0; i < 120; i++) {
         const x = Math.random() * W;
-        const y = Math.random() * H * 0.35;
+        const y = Math.random() * H * 0.55;
+        const r = Math.random();
+        ctx.fillStyle = r < 0.7
+          ? `rgba(255, 255, 255, ${0.3 + Math.random() * 0.5})`
+          : (r < 0.9
+            ? `rgba(76, 201, 240, ${0.3 + Math.random() * 0.5})`
+            : `rgba(255, 215, 107, ${0.4 + Math.random() * 0.4})`);
         ctx.fillRect(x, y, 1.5, 1.5);
       }
+      // 멀리 떠 있는 행성 (오른쪽 위)
+      const px = W * 0.78, py = H * 0.28;
+      const planet = ctx.createRadialGradient(px - 8, py - 8, 4, px, py, 38);
+      planet.addColorStop(0,   'rgba(140, 90, 60, 0.95)');
+      planet.addColorStop(0.7, 'rgba(80, 50, 30, 0.85)');
+      planet.addColorStop(1,   'rgba(20, 15, 10, 0.4)');
+      ctx.fillStyle = planet;
+      ctx.beginPath();
+      ctx.arc(px, py, 38, 0, Math.PI * 2);
+      ctx.fill();
       c.refresh();
     }
     this.add.image(W/2, H/2, key).setDepth(-30);
 
-    // 떠다니는 태양 (일몰 디스크)
-    const sun = this.add.circle(W * 0.78, H * 0.4, 36, 0xffd17a, 0.9).setDepth(-25);
-    this.add.circle(W * 0.78, H * 0.4, 28, 0xffe9c0, 1).setDepth(-25);
-    // 태양 글로우
-    this.add.image(W * 0.78, H * 0.4, 'torch')
-      .setScale(2.2).setAlpha(0.5).setBlendMode(Phaser.BlendModes.ADD)
-      .setTint(0xffb060).setDepth(-26);
+    // 떠다니는 시안 광원 (헤일메리호 작동 표시)
+    const sun = this.add.image(W * 0.78, H * 0.28, 'torch')
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setScale(1.4).setAlpha(0.45).setTint(0x88aaff).setDepth(-26);
+    this.tweens.add({
+      targets: sun,
+      alpha: { from: 0.35, to: 0.55 }, duration: 3500, yoyo: true, repeat: -1,
+    });
   }
 
   drawHorizon() {
     const W = this.scale.width, H = this.scale.height;
-    // 먼 산 실루엣 (어두운 보라/갈색)
-    const horizonY = H * 0.5;
-    const mountains = this.add.graphics().setDepth(-20);
-    mountains.fillStyle(0x2a1830, 1);
-    mountains.beginPath();
-    mountains.moveTo(0, horizonY + 60);
-    const peaks = 8;
-    for (let i = 0; i <= peaks; i++) {
-      const x = (W / peaks) * i;
-      const y = horizonY + (Math.sin(i * 1.7) * 30) - 20;
-      mountains.lineTo(x, y);
+    // 헤일메리호 선내 천장 (위 50~70% 지점에 갑판 라인)
+    const ceilY = H * 0.5;
+    const g = this.add.graphics().setDepth(-20);
+    // 천장 어두운 띠
+    g.fillStyle(0x0a1426, 0.95).fillRect(0, ceilY, W, 14);
+    g.lineStyle(2, 0x4cc9f0, 0.5).lineBetween(0, ceilY + 14, W, ceilY + 14);
+    // 우주선 창문들 (시안 글로우)
+    const winY = ceilY + 22;
+    for (let x = W * 0.05; x < W * 0.95; x += 90) {
+      g.fillStyle(0x4cc9f0, 0.45).fillRect(x, winY, 30, 10);
+      g.fillStyle(0xffffff, 0.7).fillRect(x + 1, winY + 1, 28, 1);
     }
-    mountains.lineTo(W, horizonY + 60);
-    mountains.closePath();
-    mountains.fillPath();
-
-    // 더 가까운 작은 언덕
-    mountains.fillStyle(0x180810, 1);
-    mountains.beginPath();
-    mountains.moveTo(0, horizonY + 80);
-    for (let i = 0; i <= peaks * 1.5; i++) {
-      const x = (W / (peaks * 1.5)) * i;
-      const y = horizonY + 50 + Math.sin(i * 2.3) * 15;
-      mountains.lineTo(x, y);
+    // 수직 갑판 지지대
+    for (let x = W * 0.1; x < W; x += 200) {
+      g.fillStyle(0x1a2540, 0.85).fillRect(x, ceilY, 6, H * 0.45);
+      g.fillStyle(0x4cc9f0, 0.4).fillRect(x + 2, ceilY, 2, H * 0.45);
     }
-    mountains.lineTo(W, horizonY + 80);
-    mountains.closePath();
-    mountains.fillPath();
   }
 
   drawGround() {
     const W = this.scale.width, H = this.scale.height;
-    // 돌바닥 그라데이션 (어두운 흙)
-    const ground = this.add.graphics().setDepth(-15);
-    ground.fillStyle(0x1a0a05, 1).fillRect(0, H * 0.7, W, H * 0.3);
-    // 돌 텍스처 점 산포
-    for (let i = 0; i < 60; i++) {
-      const x = Math.random() * W;
-      const y = H * 0.7 + Math.random() * H * 0.3;
-      const c = 0x3a2010 + Math.floor(Math.random() * 0x111111);
-      ground.fillStyle(c, 0.6).fillRect(x, y, 2 + Math.random() * 3, 1 + Math.random() * 2);
+    const groundY = H * 0.74;
+    const g = this.add.graphics().setDepth(-15);
+    // 갑판 베이스 (어두운 청흑)
+    g.fillStyle(0x0a1426, 1).fillRect(0, groundY, W, H * 0.26);
+    // 그리드 패턴 (시안 가로/세로 라인)
+    g.lineStyle(1, 0x4cc9f0, 0.15);
+    for (let x = 0; x < W; x += 32) {
+      g.lineBetween(x, groundY, x, H);
     }
+    for (let y = groundY; y < H; y += 24) {
+      g.lineBetween(0, y, W, y);
+    }
+    // 갑판 위 가로 광원 (LED 스트립)
+    g.fillStyle(0x4cc9f0, 0.65).fillRect(0, groundY - 1, W, 1.5);
   }
 
-  // ---------- 건물 ----------
+  // ---------- 우주선 내부 모듈 (좌/우 보급 + 정비 구역) ----------
   drawBuildings() {
     const W = this.scale.width, H = this.scale.height;
     const groundY = H * 0.74;
-
-    // 왼쪽 큰 집 (상인 집)
-    this.drawHouse(W * 0.12, groundY, 110, 90, 0x3a2018, 0xff9933);
-    // 왼쪽 작은 집
-    this.drawHouse(W * 0.30, groundY + 8, 70, 60, 0x2a1810, 0xffaa44);
-
-    // 오른쪽 큰 집 (대장간 — 더 검고 굴뚝 있음)
-    this.drawHouse(W * 0.88, groundY, 110, 90, 0x2a1410, 0xff4400, true);
-    // 오른쪽 작은 집
-    this.drawHouse(W * 0.70, groundY + 8, 70, 60, 0x2a1810, 0xffaa44);
+    // 왼쪽: 보급 모듈 (시안 광)
+    this.drawModule(W * 0.12, groundY, 110, 110, 0x4cc9f0);
+    this.drawModule(W * 0.30, groundY + 4, 75, 80, 0x4cc9f0);
+    // 오른쪽: 정비 모듈 (오렌지 광)
+    this.drawModule(W * 0.88, groundY, 110, 110, 0xff8c42);
+    this.drawModule(W * 0.70, groundY + 4, 75, 80, 0xff8c42);
   }
 
-  drawHouse(cx, baseY, w, h, bodyColor, windowColor, isForge) {
+  drawModule(cx, baseY, w, h, accentColor) {
     const top = baseY - h;
     const g = this.add.graphics().setDepth(-5);
-    // 본체
-    g.fillStyle(bodyColor, 1).fillRect(cx - w/2, top, w, h);
-    // 본체 외곽
-    g.lineStyle(1, 0x000000, 0.6).strokeRect(cx - w/2, top, w, h);
-    // 지붕 삼각형
-    g.fillStyle(0x1a0c08, 1);
-    g.fillTriangle(cx - w/2 - 6, top, cx + w/2 + 6, top, cx, top - h * 0.55);
-    // 지붕 그림자
-    g.fillStyle(0x000000, 0.4);
-    g.fillTriangle(cx, top, cx + w/2 + 6, top, cx, top - h * 0.55);
-
-    // 문
-    g.fillStyle(0x0a0606, 1);
-    g.fillRect(cx - w * 0.12, top + h * 0.55, w * 0.24, h * 0.45);
-    // 문 손잡이
-    g.fillStyle(0xd4af37, 1);
-    g.fillCircle(cx + w * 0.06, top + h * 0.78, 1.5);
-
-    // 창문 (빛나는 노란빛)
-    const winW = w * 0.18, winH = h * 0.22;
-    const winY = top + h * 0.18;
-    [-1, 1].forEach(side => {
-      const wx = cx + side * w * 0.25 - winW/2;
-      g.fillStyle(0x000000, 1).fillRect(wx, winY, winW, winH);
-      g.fillStyle(windowColor, 0.85).fillRect(wx + 1, winY + 1, winW - 2, winH - 2);
-      // 십자 창살
-      g.lineStyle(1, 0x000000, 0.7);
-      g.lineBetween(wx + winW/2, winY, wx + winW/2, winY + winH);
-      g.lineBetween(wx, winY + winH/2, wx + winW, winY + winH/2);
-    });
-
-    // 창문 빛 (글로우)
-    this.add.image(cx - w * 0.25, winY + winH/2, 'torch')
-      .setScale(0.5).setAlpha(0.6)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setTint(windowColor).setDepth(-4);
-    this.add.image(cx + w * 0.25, winY + winH/2, 'torch')
-      .setScale(0.5).setAlpha(0.6)
-      .setBlendMode(Phaser.BlendModes.ADD)
-      .setTint(windowColor).setDepth(-4);
-
-    if (isForge) {
-      // 굴뚝
-      g.fillStyle(0x1a0a05, 1).fillRect(cx + w * 0.25, top - h * 0.7, 12, 22);
-      // 연기/불꽃 (애니메이션)
-      const smoke = this.add.image(cx + w * 0.25 + 6, top - h * 0.75, 'torch')
-        .setScale(0.8).setAlpha(0.5)
-        .setBlendMode(Phaser.BlendModes.ADD)
-        .setTint(0xff4400).setDepth(-3);
-      this.tweens.add({
-        targets: smoke,
-        alpha: { from: 0.4, to: 0.7 },
-        scale: { from: 0.7, to: 0.95 },
-        duration: 600, yoyo: true, repeat: -1,
-      });
+    // 모듈 본체 (둥근 모서리 사각)
+    g.fillStyle(0x142540, 1).fillRect(cx - w/2, top, w, h);
+    g.fillStyle(0x1a2540, 1).fillRect(cx - w/2 + 2, top + 2, w - 4, h - 4);
+    // 모듈 외곽
+    g.lineStyle(1, accentColor, 0.8).strokeRect(cx - w/2, top, w, h);
+    // 상단 라이트 스트립
+    g.fillStyle(accentColor, 0.9).fillRect(cx - w/2 + 2, top + 2, w - 4, 1.5);
+    // 표시창 (홀로그램 디스플레이)
+    const winW = w * 0.55, winH = h * 0.22;
+    const winY = top + h * 0.15;
+    g.fillStyle(0x000000, 1).fillRect(cx - winW/2, winY, winW, winH);
+    g.fillStyle(accentColor, 0.85).fillRect(cx - winW/2 + 1, winY + 1, winW - 2, winH - 2);
+    // 표시창 위 텍스트 라인 (스캔라인)
+    g.fillStyle(0x000000, 0.6);
+    for (let y = winY + 2; y < winY + winH - 2; y += 2) {
+      g.fillRect(cx - winW/2 + 2, y, winW - 4, 0.5);
     }
+    // 액세스 패널 (가운데 어두운 라인)
+    g.fillStyle(0x000000, 0.8).fillRect(cx - w * 0.18, top + h * 0.55, w * 0.36, h * 0.30);
+    g.lineStyle(1, accentColor, 0.6).strokeRect(cx - w * 0.18, top + h * 0.55, w * 0.36, h * 0.30);
+    // 패널 내 4분할 인디케이터
+    g.fillStyle(accentColor, 0.7);
+    g.fillRect(cx - w * 0.10, top + h * 0.62, 3, 3);
+    g.fillRect(cx + w * 0.07, top + h * 0.62, 3, 3);
+    g.fillRect(cx - w * 0.10, top + h * 0.74, 3, 3);
+    g.fillRect(cx + w * 0.07, top + h * 0.74, 3, 3);
+    // 모듈 외곽 코너 점 (4개)
+    g.fillStyle(accentColor, 1);
+    [[cx-w/2+3, top+3], [cx+w/2-3, top+3], [cx-w/2+3, top+h-3], [cx+w/2-3, top+h-3]].forEach(([x, y]) => {
+      g.fillRect(x, y, 1.5, 1.5);
+    });
+    // 모듈 빛 (광원)
+    this.add.image(cx, winY + winH/2, 'torch')
+      .setScale(0.7).setAlpha(0.5)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setTint(accentColor).setDepth(-4);
   }
 
-  // ---------- 제단 (중앙) ----------
+  // ---------- 중앙 — 명령 콘솔 (홀로그램) ----------
   drawAltar() {
     const W = this.scale.width, H = this.scale.height;
     const cx = W/2, cy = H * 0.7;
     const g = this.add.graphics().setDepth(0);
-    // 받침
-    g.fillStyle(0x3a2a20, 1).fillRect(cx - 30, cy + 12, 60, 8);
-    g.fillStyle(0x1a0e08, 1).fillRect(cx - 30, cy + 20, 60, 5);
-    // 기둥
-    g.fillStyle(0x4a3a30, 1).fillRect(cx - 20, cy - 10, 40, 22);
-    g.fillStyle(0x2a1a10, 1).fillRect(cx + 8, cy - 10, 12, 22);
-    // 상부
-    g.fillStyle(0x5a4a40, 1).fillRect(cx - 24, cy - 14, 48, 6);
+    // 받침대 (어두운 패널)
+    g.fillStyle(0x142540, 1).fillRect(cx - 30, cy + 12, 60, 8);
+    g.fillStyle(0x0a1426, 1).fillRect(cx - 30, cy + 20, 60, 4);
+    g.lineStyle(1, 0x4cc9f0, 0.6).strokeRect(cx - 30, cy + 12, 60, 8);
+    // 콘솔 본체
+    g.fillStyle(0x1a2540, 1).fillRect(cx - 22, cy - 12, 44, 24);
+    g.lineStyle(1.5, 0x4cc9f0, 0.85).strokeRect(cx - 22, cy - 12, 44, 24);
+    // 화면 (밝은 시안)
+    g.fillStyle(0x000000, 1).fillRect(cx - 18, cy - 9, 36, 12);
+    g.fillStyle(0x4cc9f0, 0.9).fillRect(cx - 17, cy - 8, 34, 10);
+    // 데이터 라인 (검정 가로 줄)
+    g.fillStyle(0x000000, 0.85);
+    g.fillRect(cx - 16, cy - 6, 32, 0.8);
+    g.fillRect(cx - 16, cy - 3, 24, 0.8);
+    g.fillRect(cx - 16, cy,    28, 0.8);
+    // 버튼 (4개)
+    g.fillStyle(0xff8c42, 1).fillCircle(cx - 14, cy + 7, 1.5);
+    g.fillStyle(0xffd76b, 1).fillCircle(cx - 6, cy + 7, 1.5);
+    g.fillStyle(0x4cc9f0, 1).fillCircle(cx + 2, cy + 7, 1.5);
+    g.fillStyle(0x88dd55, 1).fillCircle(cx + 10, cy + 7, 1.5);
 
-    // 룬 글로우 (가운데)
-    const rune = this.add.image(cx, cy - 22, 'torch')
-      .setScale(1.0).setAlpha(0.7)
+    // 홀로그램 빔 (위로 뻗는 시안)
+    const beam = this.add.image(cx, cy - 26, 'torch')
+      .setScale(1.0).setAlpha(0.65)
       .setBlendMode(Phaser.BlendModes.ADD)
-      .setTint(0xd4af37).setDepth(1);
+      .setTint(0x4cc9f0).setDepth(1);
     this.tweens.add({
-      targets: rune,
-      alpha: { from: 0.5, to: 0.9 },
-      scale: { from: 0.9, to: 1.1 },
+      targets: beam,
+      alpha: { from: 0.5, to: 0.85 },
+      scale: { from: 0.9, to: 1.15 },
       duration: 1200, yoyo: true, repeat: -1,
     });
-    // 룬 마크 (작은 황금 점 4개)
-    g.fillStyle(0xffd700, 1);
-    g.fillCircle(cx - 6, cy - 22, 1.5);
-    g.fillCircle(cx + 6, cy - 22, 1.5);
-    g.fillCircle(cx, cy - 28, 1.5);
-    g.fillCircle(cx, cy - 16, 1.5);
   }
 
   // ---------- 보스 포털 (해금된 보스 선택) ----------
@@ -426,18 +417,23 @@ export class TownScene extends Phaser.Scene {
     const positions = [W * 0.06, W * 0.94];
     positions.forEach(x => {
       const g = this.add.graphics().setDepth(-1);
-      g.fillStyle(0x2a1810, 1).fillRect(x - 2, groundY - 60, 4, 60);
-      g.fillStyle(0x4a2810, 1).fillRect(x - 5, groundY - 65, 10, 6);
-      // 불꽃 광원
-      const flame = this.add.image(x, groundY - 70, 'torch')
-        .setScale(1.4).setAlpha(0.85)
+      // 메탈 기둥
+      g.fillStyle(0x1a2540, 1).fillRect(x - 2, groundY - 65, 4, 65);
+      g.lineStyle(1, 0x4cc9f0, 0.5).strokeRect(x - 2, groundY - 65, 4, 65);
+      // 상단 LED 헤드
+      g.fillStyle(0x142540, 1).fillRect(x - 6, groundY - 72, 12, 7);
+      g.fillStyle(0x4cc9f0, 0.95).fillRect(x - 5, groundY - 71, 10, 5);
+      g.fillStyle(0xffffff, 0.85).fillRect(x - 4, groundY - 70, 8, 1);
+      // 광원
+      const lamp = this.add.image(x, groundY - 70, 'torch')
+        .setScale(1.5).setAlpha(0.85)
         .setBlendMode(Phaser.BlendModes.ADD)
-        .setTint(0xff7733);
+        .setTint(0x4cc9f0);
       this.tweens.add({
-        targets: flame,
+        targets: lamp,
         alpha: { from: 0.7, to: 1.0 },
-        scale: { from: 1.3, to: 1.5 },
-        duration: 500 + Math.random() * 300,
+        scale: { from: 1.4, to: 1.6 },
+        duration: 1200 + Math.random() * 600,
         yoyo: true, repeat: -1,
       });
     });
