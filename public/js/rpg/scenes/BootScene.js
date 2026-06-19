@@ -139,106 +139,143 @@ export class BootScene extends Phaser.Scene {
   }
 
   // ============================================================
-  // 우주비행사 — 헬멧 + 우주복
+  // 우주비행사 — 큰 헬멧 + 흰 우주복 + 백팩 (NASA 스타일)
   // ============================================================
   makeAstronaut(cls, tier) {
-    const W = 40, H = 56;
+    const W = 48, H = 64;
     const cx = W/2;
     const g = this.add.graphics();
 
-    // 발광 (베이스)
-    g.fillStyle(cls.glowColor, 0.15).fillCircle(cx, H - 4, 14);
+    // 1. 발광 (베이스)
+    g.fillStyle(cls.glowColor, 0.18).fillCircle(cx, H - 4, 18);
+    // 2. 발 그림자
+    g.fillStyle(0x000000, 0.5).fillEllipse(cx, H - 2, 20, 5);
 
-    // 그림자 발 (어두운 타원)
-    g.fillStyle(0x000000, 0.4).fillEllipse(cx, H - 2, 16, 4);
+    // 3. 부츠 (어두운 회색)
+    g.fillStyle(0x1a2030, 1).fillRect(cx - 8, H - 12, 7, 8);
+    g.fillStyle(0x1a2030, 1).fillRect(cx + 1, H - 12, 7, 8);
+    g.fillStyle(0xcccccc, 1).fillRect(cx - 8, H - 12, 7, 1.5);
+    g.fillStyle(0xcccccc, 1).fillRect(cx + 1, H - 12, 7, 1.5);
 
-    // 우주복 본체 (사다리꼴, 위는 좁고 아래는 약간 넓음)
+    // 4. 우주복 본체 (흰색/회색 베이스 — NASA EMU 풍)
+    const bodyTop = 28, bodyBot = H - 12;
+    // 다리 두 개 (회색 흰)
+    g.fillStyle(0xd5dae0, 1).fillRect(cx - 8, bodyBot - 12, 7, 12);
+    g.fillStyle(0xd5dae0, 1).fillRect(cx + 1, bodyBot - 12, 7, 12);
+    g.fillStyle(0xa0a8b5, 0.5);
+    g.fillRect(cx - 1, bodyBot - 12, 2, 12);   // 가운데 분할선
+    // 몸통 (흰 사다리꼴)
     const body = pts(
-      cx - 9, 22,
-      cx + 9, 22,
-      cx + 11, H - 5,
-      cx - 11, H - 5,
+      cx - 11, bodyTop,
+      cx + 11, bodyTop,
+      cx + 12, bodyBot,
+      cx - 12, bodyBot
     );
-    // 어두운 베이스
-    g.fillStyle(0x0a1426, 1).fillPoints(body, true);
-    // 직업색 본체
-    g.fillStyle(cls.color, 1).fillPoints(body, true);
-    // 가운데 어두운 세로 라인 (지퍼)
-    g.fillStyle(0x000000, 0.5).fillRect(cx - 1, 24, 2, H - 32);
+    g.fillStyle(0xe5eaf0, 1).fillPoints(body, true);
+    // 어두운 외곽선 (입체감)
+    g.fillStyle(0x8a92a0, 0.45);
+    g.fillRect(cx - 12, bodyTop, 1.5, bodyBot - bodyTop);
+    g.fillRect(cx + 11, bodyTop, 1.5, bodyBot - bodyTop);
 
-    // 라이프 서포트 디스플레이 (가슴) — 발광 사각형
-    g.fillStyle(0x000000, 1).fillRect(cx - 6, 28, 12, 5);
-    g.fillStyle(cls.glowColor, 0.95).fillRect(cx - 5, 29, 10, 3);
-    g.fillStyle(0xffffff, 0.7).fillRect(cx - 5, 29, 3, 1);
+    // 5. 가슴 컨트롤 패널 (직업색)
+    g.fillStyle(0x080a14, 1).fillRect(cx - 8, 33, 16, 11);
+    g.fillStyle(cls.color, 0.9).fillRect(cx - 7, 34, 14, 9);
+    // 패널 디스플레이 라인
+    g.fillStyle(0x000000, 0.6);
+    g.fillRect(cx - 6, 36, 12, 0.8);
+    g.fillRect(cx - 6, 38, 8, 0.8);
+    // 패널 발광 인디케이터
+    g.fillStyle(cls.glowColor, 1).fillCircle(cx - 4, 41, 1.2);
+    g.fillStyle(0xffd76b, 1).fillCircle(cx, 41, 1.2);
+    g.fillStyle(0x88dd55, 1).fillCircle(cx + 4, 41, 1.2);
 
-    // 어깨 (둥근 두 원)
+    // 6. 어깨 패드 (둥근 흰색 + 직업색 라인)
+    g.fillStyle(0xd5dae0, 1).fillCircle(cx - 12, bodyTop + 2, 5);
+    g.fillStyle(0xd5dae0, 1).fillCircle(cx + 12, bodyTop + 2, 5);
     g.fillStyle(cls.color, 1);
-    g.fillCircle(cx - 10, 24, 4);
-    g.fillCircle(cx + 10, 24, 4);
-    g.fillStyle(0x000000, 0.3);
-    g.fillCircle(cx - 10, 25, 3.5);
-    g.fillCircle(cx + 10, 25, 3.5);
+    g.fillRect(cx - 15, bodyTop + 1, 6, 1.5);
+    g.fillRect(cx + 9, bodyTop + 1, 6, 1.5);
+    // 어깨 외곽
+    g.lineStyle(1, 0x8a92a0, 0.7).strokeCircle(cx - 12, bodyTop + 2, 5);
+    g.lineStyle(1, 0x8a92a0, 0.7).strokeCircle(cx + 12, bodyTop + 2, 5);
 
-    // Tier 2+: 견갑 강화 (시안 발광 라인)
-    if (tier >= 2) {
-      g.fillStyle(cls.glowColor, 0.85);
-      g.fillRect(cx - 13, 23, 3, 1.5);
-      g.fillRect(cx + 10, 23, 3, 1.5);
+    // 7. 백팩 (위에 살짝 보이는 부분 + Tier 4+ 크게)
+    const bpY = bodyTop - 2;
+    if (tier >= 4) {
+      // 큰 백팩
+      g.fillStyle(0xc0c5d0, 1).fillRect(cx - 7, bpY, 14, 4);
+      g.fillStyle(0xa0a5b0, 1).fillRect(cx - 7, bpY + 4, 14, 1);
+      g.fillStyle(cls.glowColor, 0.9).fillRect(cx - 5, bpY + 2, 3, 1);
+      g.fillStyle(cls.glowColor, 0.9).fillRect(cx + 2, bpY + 2, 3, 1);
+    } else {
+      // 작은 백팩 (위쪽으로 살짝)
+      g.fillStyle(0xa0a8b5, 1).fillRect(cx - 5, bpY, 10, 3);
     }
 
-    // 헬멧 (둥근 구체)
-    g.fillStyle(0x152030, 1).fillCircle(cx, 14, 11);          // 헬멧 베이스
-    g.fillStyle(cls.color, 0.6).fillCircle(cx, 14, 11);       // 직업색 오버레이
-    // 헬멧 외곽 (시안)
-    g.lineStyle(1.5, cls.glowColor, 0.9).strokeCircle(cx, 14, 11);
+    // 8. 헬멧 (큰 둥근 돔 — 흰색 + 직업색 약간)
+    const hCx = cx, hCy = 17;
+    const hR = 12;
+    // 헬멧 베이스 (흰색)
+    g.fillStyle(0xeef0f3, 1).fillCircle(hCx, hCy, hR);
+    // 헬멧 외곽 (어두운 라인)
+    g.lineStyle(2, 0x8a92a0, 1).strokeCircle(hCx, hCy, hR);
+    // 헬멧 직업색 라인 (가로 띠)
+    g.fillStyle(cls.color, 0.8).fillRect(hCx - hR, hCy + hR - 4, hR * 2, 2);
+    // 헬멧 윗부분 하이라이트
+    g.fillStyle(0xffffff, 0.5);
+    g.fillEllipse(hCx - 3, hCy - 6, 5, 3);
 
-    // 바이저 (앞면 어두운 곡면)
-    g.fillStyle(0x000000, 0.9);
-    g.fillEllipse(cx, 14, 16, 9);
-
-    // 바이저 발광 (눈처럼 보이는 가로 슬릿)
-    g.fillStyle(cls.glowColor, 1);
-    g.fillRect(cx - 5, 13, 10, 1.5);
+    // 9. 바이저 (큰 검은 곡면 — 헬멧 거의 채움)
+    g.fillStyle(0x080a14, 1);
+    g.fillEllipse(hCx, hCy + 1, 18, 11);
+    // 바이저 위쪽 광택 (직업색 발광 라인)
+    g.fillStyle(cls.glowColor, 0.9);
+    g.fillEllipse(hCx, hCy - 1, 16, 3);
     g.fillStyle(0xffffff, 0.7);
-    g.fillRect(cx - 4, 13, 8, 0.8);
+    g.fillEllipse(hCx - 3, hCy - 1.5, 7, 1.5);
+    // 바이저 반사광 (오른쪽 위 큰 흰 반점)
+    g.fillStyle(0xffffff, 0.35);
+    g.fillEllipse(hCx + 4, hCy - 2, 5, 3);
+    // 바이저 외곽선
+    g.lineStyle(1, 0x000000, 0.6).strokeEllipse(hCx, hCy + 1, 18, 11);
 
-    // 바이저 반사광 (오른쪽 위 흰 반점)
-    g.fillStyle(0xffffff, 0.25);
-    g.fillEllipse(cx + 4, 11, 4, 2);
-
-    // Tier 3+: 헬멧 안테나/장식
+    // 10. Tier 3+: 헬멧 위 안테나/장식
     if (tier >= 3) {
       if (cls.id === 'mage') {
-        // 과학자: 스캐너 안테나 (위쪽 막대)
-        g.fillStyle(0xcccccc, 1).fillRect(cx - 0.5, 0, 1, 5);
-        g.fillStyle(cls.glowColor, 1).fillCircle(cx, 0, 1.5);
+        // 과학자: 머리 위 스캐너 안테나
+        g.fillStyle(0xcccccc, 1).fillRect(hCx - 0.5, 2, 1, 4);
+        g.fillStyle(cls.glowColor, 1).fillCircle(hCx, 2, 1.8);
+        g.fillStyle(0xffffff, 0.8).fillCircle(hCx, 2, 0.8);
       } else if (cls.id === 'warrior') {
-        // 엔지니어: 보호용 보강대 (두 개 가로뿔)
+        // 엔지니어: 양쪽 작은 헤드램프
         g.fillStyle(0xcccccc, 1);
-        g.fillRect(cx - 11, 5, 3, 1.5);
-        g.fillRect(cx + 8, 5, 3, 1.5);
+        g.fillRect(hCx - 11, 8, 3, 2);
+        g.fillRect(hCx + 8, 8, 3, 2);
+        g.fillStyle(0xffd76b, 0.9);
+        g.fillCircle(hCx - 9.5, 9, 1);
+        g.fillCircle(hCx + 9.5, 9, 1);
       } else if (cls.id === 'rogue') {
-        // 생물학자: 표본 채취기 (헬멧 위 작은 캔)
-        g.fillStyle(0x222233, 1).fillRect(cx - 2, 2, 4, 4);
-        g.fillStyle(cls.glowColor, 0.9).fillRect(cx - 1.5, 3, 3, 1);
+        // 생물학자: 위에 작은 표본 캡슐
+        g.fillStyle(0x222233, 1).fillRect(hCx - 2.5, 1, 5, 4);
+        g.fillStyle(cls.glowColor, 0.9).fillRect(hCx - 2, 2, 4, 2);
       }
     }
 
-    // 손에 든 도구 (직업별)
+    // 11. 팔 (어깨에서 내려오는 짧은 흰 라인 양쪽)
+    g.fillStyle(0xd5dae0, 1);
+    g.fillRect(cx - 14, bodyTop + 4, 5, 12);
+    g.fillRect(cx + 9, bodyTop + 4, 5, 12);
+    g.lineStyle(1, 0x8a92a0, 0.5);
+    g.strokeRect(cx - 14, bodyTop + 4, 5, 12);
+    g.strokeRect(cx + 9, bodyTop + 4, 5, 12);
+
+    // 12. 손에 든 도구
     this.drawTool(g, cls, cx, tier);
 
-    // Tier 4+: 백팩 (산소통 등 뒷쪽 라인)
-    if (tier >= 4) {
-      g.fillStyle(0x152030, 1).fillRect(cx - 4, 30, 8, 14);
-      g.fillStyle(cls.color, 0.6).fillRect(cx - 4, 30, 8, 14);
-      g.fillStyle(cls.glowColor, 0.95).fillRect(cx - 3, 32, 6, 1);
-      g.fillStyle(cls.glowColor, 0.95).fillRect(cx - 3, 35, 6, 1);
-    }
-
-    // Tier 5+: 마법 오라 (방사형 빛 링)
+    // 13. Tier 5+: 마법 오라
     if (tier >= 5) {
-      g.lineStyle(1.5, cls.glowColor, 0.6).strokeCircle(cx, H/2, 20);
-      g.lineStyle(1, cls.glowColor, 0.3).strokeCircle(cx, H/2, 24);
+      g.lineStyle(1.5, cls.glowColor, 0.7).strokeCircle(cx, H/2, 24);
+      g.lineStyle(1, cls.glowColor, 0.4).strokeCircle(cx, H/2, 28);
     }
 
     g.generateTexture(`player-${cls.id}-${tier}`, W, H);
@@ -247,31 +284,25 @@ export class BootScene extends Phaser.Scene {
 
   drawTool(g, cls, cx, tier) {
     if (cls.id === 'warrior') {
-      // 엔지니어: 다목적 도구 (오른쪽에 든 스패너 같은 도구)
-      const x = cx + 14;
-      g.fillStyle(0xcccccc, 1).fillRect(x - 1, 30, 2, 18);
-      g.fillStyle(cls.glowColor, 0.9).fillRect(x - 2, 28, 4, 3);
-      if (tier >= 3) {
-        g.fillStyle(cls.glowColor, 0.6).fillRect(x - 3, 29, 1, 1);
-        g.fillStyle(cls.glowColor, 0.6).fillRect(x + 2, 29, 1, 1);
-      }
+      // 엔지니어: 다목적 도구 (오른손)
+      const x = cx + 16;
+      g.fillStyle(0xcccccc, 1).fillRect(x - 1, 38, 2, 14);
+      g.fillStyle(0xff8c42, 0.95).fillRect(x - 2.5, 36, 5, 3);
+      if (tier >= 3) g.fillStyle(cls.glowColor, 0.9).fillCircle(x, 35, 1.5);
     } else if (cls.id === 'mage') {
-      // 과학자: 스캐너 패드 (왼쪽 작은 사각형)
-      const x = cx - 13;
-      g.fillStyle(0x222233, 1).fillRect(x - 3, 32, 5, 8);
-      g.fillStyle(cls.glowColor, 0.9).fillRect(x - 2, 33, 3, 1);
-      g.fillStyle(cls.glowColor, 0.9).fillRect(x - 2, 35, 3, 1);
-      if (tier >= 3) {
-        g.fillStyle(cls.glowColor, 0.6).strokeCircle(x, 32, 3);
-      }
+      // 과학자: 스캐너 패드 (왼손)
+      const x = cx - 15;
+      g.fillStyle(0x222233, 1).fillRect(x - 2.5, 40, 5, 7);
+      g.fillStyle(cls.glowColor, 0.9).fillRect(x - 2, 41, 4, 5);
+      g.fillStyle(0xffffff, 0.6).fillRect(x - 1.5, 41.5, 3, 1);
     } else if (cls.id === 'rogue') {
-      // 생물학자: 시료 바이알 (양쪽 작은 캔)
+      // 생물학자: 양쪽 시료 바이알
       g.fillStyle(0x222233, 1);
-      g.fillRect(cx - 16, 32, 3, 6);
-      g.fillRect(cx + 13, 32, 3, 6);
-      g.fillStyle(cls.glowColor, 0.9);
-      g.fillRect(cx - 15.5, 34, 2, 2);
-      g.fillRect(cx + 13.5, 34, 2, 2);
+      g.fillRect(cx - 17, 40, 3, 6);
+      g.fillRect(cx + 14, 40, 3, 6);
+      g.fillStyle(cls.glowColor, 0.95);
+      g.fillRect(cx - 16.5, 41, 2, 4);
+      g.fillRect(cx + 14.5, 41, 2, 4);
     }
   }
 

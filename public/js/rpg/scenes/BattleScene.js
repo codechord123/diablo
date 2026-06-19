@@ -248,16 +248,19 @@ export class BattleScene extends Phaser.Scene {
       await showConcept('lcm');
     }
 
+    // 외계 펄스 = 분수 시각화 (적의 펄스 안에 a, b 신호 패턴 표시)
+    this.updateAlienSignal();
+
     // 문제 영역 — 분수 시각화 (a + b = ?)
     const a = this.problem.a, b = this.problem.b;
     document.getElementById('bm-problem').innerHTML = `
       <span class="bm-frac-vis-wrap">
-        ${fractionSVG(a.n, a.d, { color: '#4cc9f0', size: 40 })}
+        ${fractionSVG(a.n, a.d, { color: '#4cc9f0', size: 44 })}
         <span class="frac"><span class="num">${a.n}</span><span class="den">${a.d}</span></span>
       </span>
       <span class="op">${this.problem.op}</span>
       <span class="bm-frac-vis-wrap">
-        ${fractionSVG(b.n, b.d, { color: '#ff77bb', size: 40 })}
+        ${fractionSVG(b.n, b.d, { color: '#ff77bb', size: 44 })}
         <span class="frac"><span class="num">${b.n}</span><span class="den">${b.d}</span></span>
       </span>
       <span class="op">=</span>
@@ -286,6 +289,41 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // 힌트 버튼 동작
+  // 외계 펄스 영역 = 현재 신호의 분수 패턴을 시각화
+  updateAlienSignal() {
+    const el = document.getElementById('bm-signal-alien');
+    if (!el) return;
+    const a = this.problem.a, b = this.problem.b;
+    // 두 펄스 패턴 합성 (외부 = a, 내부 = b)
+    el.innerHTML = `
+      <svg class="alien-frac-overlay" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+        ${this.fracRingSVG(50, 50, 44, a.n, a.d, '#ff4466')}
+        ${this.fracRingSVG(50, 50, 28, b.n, b.d, '#ff8c42')}
+      </svg>
+      <span class="comms-emoji">${this.enemyEmoji}</span>
+    `;
+  }
+
+  // SVG 분수 링 — 분모 개의 호 중 분자 개를 색칠
+  fracRingSVG(cx, cy, r, n, d, color) {
+    const segs = [];
+    const ringThick = 6;
+    for (let i = 0; i < d; i++) {
+      const startA = (i / d) * Math.PI * 2 - Math.PI / 2;
+      const endA   = ((i + 1) / d) * Math.PI * 2 - Math.PI / 2;
+      const x1 = cx + Math.cos(startA) * r;
+      const y1 = cy + Math.sin(startA) * r;
+      const x2 = cx + Math.cos(endA) * r;
+      const y2 = cy + Math.sin(endA) * r;
+      const fill = i < n ? color : 'rgba(255,255,255,0.06)';
+      const large = (endA - startA) > Math.PI ? 1 : 0;
+      segs.push(`<path d="M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}"
+                       fill="none" stroke="${fill}" stroke-width="${ringThick}"
+                       stroke-linecap="butt" />`);
+    }
+    return segs.join('');
+  }
+
   refreshHintBtn() {
     const btn = document.getElementById('bm-hint');
     if (!btn) return;

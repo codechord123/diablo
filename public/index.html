@@ -207,6 +207,40 @@
     </div>
   </div>
 
+  <!-- 임무 브리핑 모달 -->
+  <div id="mission-briefing-modal" class="briefing-modal">
+    <div class="briefing-card">
+      <div class="briefing-classified">▒▒ CLASSIFIED ▒▒</div>
+      <div class="briefing-header">
+        <div class="briefing-stamp">MISSION BRIEF</div>
+        <div class="briefing-id">EVA-<span id="mb-callsign">—</span></div>
+      </div>
+      <div class="briefing-grid">
+        <div class="briefing-row">
+          <span class="briefing-key">TYPE</span>
+          <span id="mb-type" class="briefing-val">PATROL</span>
+        </div>
+        <div class="briefing-row">
+          <span class="briefing-key">SECTOR</span>
+          <span id="mb-sector" class="briefing-val">ZETA-7</span>
+        </div>
+        <div class="briefing-row">
+          <span class="briefing-key">HOSTILES</span>
+          <span id="mb-hostiles" class="briefing-val danger">UNKNOWN MULTIPLE</span>
+        </div>
+        <div class="briefing-row briefing-row-full">
+          <span class="briefing-key">OBJECTIVE</span>
+          <span id="mb-objective" class="briefing-val">—</span>
+        </div>
+      </div>
+      <div class="briefing-warning">⚠ EVA 출격 시 산호 사용 권장. 위험 등급: 변종 미식별.</div>
+      <div class="briefing-actions">
+        <button id="mb-cancel" class="briefing-cancel">취소 (RTB)</button>
+        <button id="mb-accept" class="briefing-accept">▶ EVA 승인</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 보스 인트로 모달 -->
   <div id="boss-intro-modal" class="boss-intro-modal">
     <div class="bi-card">

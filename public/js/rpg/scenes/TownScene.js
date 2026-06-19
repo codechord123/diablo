@@ -870,12 +870,49 @@ export class TownScene extends Phaser.Scene {
 
   enterDungeon() {
     if (this._shopOpen || this._leaving) return;
-    this._leaving = true;
-    audio.doorOpen();
-    this.scene.start('Loading', {
-      target: 'Dungeon', mode: 'enter',
-      data: { uid: this.uid, player: this.player, dungeonMode: 'normal' },
+    // 임무 브리핑 모달 표시 → 확인 시 던전 출발
+    this.showMissionBriefing({
+      type: 'PATROL',
+      sector: this.randomSector(),
+      hostiles: 'UNKNOWN MULTIPLE',
+      objective: '아스트로파지 변종을 발견하고 통신/중성화',
+    }, () => {
+      this._leaving = true;
+      audio.doorOpen();
+      this.scene.start('Loading', {
+        target: 'Dungeon', mode: 'enter',
+        data: { uid: this.uid, player: this.player, dungeonMode: 'normal' },
+      });
     });
+  }
+
+  randomSector() {
+    const sectors = ['ZETA-7', 'KEPLER-22', 'ORION-4', 'ANDROMEDA-11', 'CASSIOPEIA-3', 'LYRA-9'];
+    return sectors[Math.floor(Math.random() * sectors.length)];
+  }
+
+  showMissionBriefing(meta, onConfirm) {
+    const modal = document.getElementById('mission-briefing-modal');
+    if (!modal) { onConfirm(); return; }
+    document.getElementById('mb-type').textContent     = meta.type;
+    document.getElementById('mb-sector').textContent   = meta.sector;
+    document.getElementById('mb-hostiles').textContent = meta.hostiles;
+    document.getElementById('mb-objective').textContent = meta.objective;
+    document.getElementById('mb-callsign').textContent  =
+      (currentUser()?.nickname || 'UNKNOWN').toUpperCase();
+    modal.classList.add('show');
+    audio.click();
+    const accept = document.getElementById('mb-accept');
+    const cancel = document.getElementById('mb-cancel');
+    const cleanup = () => {
+      modal.classList.remove('show');
+      accept.removeEventListener('click', acceptHandler);
+      cancel.removeEventListener('click', cancelHandler);
+    };
+    const acceptHandler = () => { cleanup(); audio.coin(); onConfirm(); };
+    const cancelHandler = () => cleanup();
+    accept.addEventListener('click', acceptHandler);
+    cancel.addEventListener('click', cancelHandler);
   }
 
   // ============================================================
