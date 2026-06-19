@@ -21,11 +21,11 @@ export class LoginScene extends Phaser.Scene {
         .setScale(5).setAlpha(0.25).setTint(0xaa5522);
 
       // 타이틀 (Phaser 텍스트 — 모달이 가리지 않는 상단)
-      this.add.text(W/2, H * 0.10, '⚔️ 분수 던전', {
+      this.add.text(W/2, H * 0.10, '🚀 프로젝트 헤일메리', {
         fontSize: '48px', color: '#d4af37',
         fontFamily: 'Cinzel, Noto Serif KR, serif',
       }).setOrigin(0.5);
-      this.add.text(W/2, H * 0.16, '— Fraction Dungeon —', {
+      this.add.text(W/2, H * 0.16, '— Hail Mary, Fraction Edition —', {
         fontSize: '14px', color: '#888', fontStyle: 'italic',
       }).setOrigin(0.5);
 

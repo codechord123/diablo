@@ -33,8 +33,8 @@ export class OpeningScene extends Phaser.Scene {
     });
 
     // 타이틀
-    this.add.text(W/2, H * 0.12, '⚔️ 트리스트람의 어둠', {
-      fontSize: '38px', color: '#a31621',
+    this.add.text(W/2, H * 0.12, '🚀 프로젝트 헤일메리', {
+      fontSize: '38px', color: '#4cc9f0',
       fontFamily: 'Cinzel, Noto Serif KR, serif',
     }).setOrigin(0.5);
 

@@ -5,18 +5,19 @@
 // 종류로 어떤 문제가 나올지 예측 가능 → 전략적 사냥)
 // ============================================================
 
+// 아스트로파지 변종 (작은 위협)
 export const MONSTERS = [
-  { id: 'skeleton', name: '해골 전사',  hp: 2, xp: 10, gold: 5,
+  { id: 'skeleton', name: '드론 보초',     hp: 2, xp: 10, gold: 5,
     emoji: '💀', color: '#cfd2cf', category: 'add-same' },
-  { id: 'zombie',   name: '좀비',       hp: 2, xp: 14, gold: 7,
+  { id: 'zombie',   name: '변종 미생물',   hp: 2, xp: 14, gold: 7,
     emoji: '🧟', color: '#8db580', category: 'sub-same' },
-  { id: 'imp',      name: '꼬마 악마',  hp: 3, xp: 22, gold: 12,
+  { id: 'imp',      name: '미니 아스트로', hp: 3, xp: 22, gold: 12,
     emoji: '👹', color: '#d96459', category: 'add-same' },
-  { id: 'wraith',   name: '망령',       hp: 3, xp: 30, gold: 18,
+  { id: 'wraith',   name: '에너지 잔재',   hp: 3, xp: 30, gold: 18,
     emoji: '👻', color: '#a3c4f3', category: 'add-diff' },
-  { id: 'golem',    name: '돌 골렘',    hp: 4, xp: 45, gold: 28,
+  { id: 'golem',    name: '운석 골렘',     hp: 4, xp: 45, gold: 28,
     emoji: '🗿', color: '#9a8c98', category: 'sub-diff' },
-  { id: 'dragon',   name: '새끼 드래곤', hp: 5, xp: 70, gold: 50,
+  { id: 'dragon',   name: '아스트로 변이체', hp: 5, xp: 70, gold: 50,
     emoji: '🐲', color: '#f4a261', category: 'mixed' },
 ];
 

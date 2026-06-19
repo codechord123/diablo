@@ -3,15 +3,15 @@
 // ============================================================
 export const BOSSES = [
   {
-    id: 'skeleton-king', name: '해골 군주',
-    emoji: '💀', subEmoji: '👑',
+    id: 'skeleton-king', name: '달의 아스트로파지',
+    emoji: '🌑', subEmoji: '☢️',
     hp: 8, timeSec: 60,
     goldReward: 100, xpReward: 80,
     unlockLevel: 5,
     color: 0xcfd2cf,
     category: 'sub-same',
     dungeonTheme: 'graveyard',
-    intro: '"무덤에서 일어선 자가, 너의 분수를 시험한다."',
+    intro: '"이 별의 기본 수학을 모두 갉아먹었다."',
     abilities: {
       autoAttackEverySec: 7,    // 7초마다 1 피해
       autoAttackDamage: 1,
@@ -22,15 +22,15 @@ export const BOSSES = [
     },
   },
   {
-    id: 'necro-captain', name: '부활한 사령관',
-    emoji: '🧟', subEmoji: '⚔️',
+    id: 'necro-captain', name: '소행성 군집체',
+    emoji: '🛰️', subEmoji: '☢️',
     hp: 12, timeSec: 75,
     goldReward: 200, xpReward: 150,
     unlockLevel: 10,
     color: 0x8db580,
     category: 'add-diff',
     dungeonTheme: 'swamp',
-    intro: '"통분의 늪에 가라앉으리라..."',
+    intro: '"통분이라는 개념을 흩어버렸다."',
     abilities: {
       autoAttackEverySec: 0,
       autoAttackDamage: 0,
@@ -41,15 +41,15 @@ export const BOSSES = [
     },
   },
   {
-    id: 'demon-knight', name: '악마 기사',
-    emoji: '👹', subEmoji: '🗡️',
+    id: 'demon-knight', name: '플라즈마 폭풍 핵',
+    emoji: '🌋', subEmoji: '⚡',
     hp: 16, timeSec: 90,
     goldReward: 350, xpReward: 250,
     unlockLevel: 15,
     color: 0xd96459,
     category: 'sub-diff',
     dungeonTheme: 'inferno',
-    intro: '"지옥의 분수가 너를 찢어내리라!"',
+    intro: '"분수의 차이는 내 에너지 속에 녹았다."',
     abilities: {
       autoAttackEverySec: 0,
       autoAttackDamage: 0,
@@ -60,15 +60,15 @@ export const BOSSES = [
     },
   },
   {
-    id: 'dragon-lord', name: '드래곤 군주',
-    emoji: '🐲', subEmoji: '👑',
+    id: 'dragon-lord', name: '아스트로파지 여왕',
+    emoji: '🌟', subEmoji: '☢️',
     hp: 24, timeSec: 120,
     goldReward: 500, xpReward: 400,
     unlockLevel: 20,
     color: 0xf4a261,
     category: 'mixed',
     dungeonTheme: 'volcano',
-    intro: '"마지막 시험이다. 모든 분수를 정복하라!"',
+    intro: '"마지막 시험이다. 모든 분수의 답이 내 안에 있다."',
     abilities: {
       autoAttackEverySec: 8,
       autoAttackDamage: 1,

@@ -12,7 +12,7 @@ export const MAP_H = 28;
 // 던전 테마 — 보스마다 다른 분위기
 export const THEMES = {
   default: {
-    name: '일반 던전',
+    name: '우주 구역',
     bgColor: '#0d0908',
     floorTint: 0xffffff,
     wallTint:  0xffffff,
@@ -20,7 +20,7 @@ export const THEMES = {
     ambientGlow: 0x4a2810,
   },
   graveyard: {
-    name: '죽음의 묘지',
+    name: '달 표면',
     bgColor: '#0a0c14',
     floorTint: 0x9ba0b0,    // 회녹빛 돌
     wallTint:  0x6a7080,    // 어두운 청회색
@@ -28,7 +28,7 @@ export const THEMES = {
     ambientGlow: 0x1a2030,
   },
   swamp: {
-    name: '저주받은 늪',
+    name: '소행성대',
     bgColor: '#050a05',
     floorTint: 0x6a8a4a,    // 이끼 녹색
     wallTint:  0x3a5a2a,    // 어두운 녹
@@ -36,7 +36,7 @@ export const THEMES = {
     ambientGlow: 0x0a1a05,
   },
   inferno: {
-    name: '불타는 동굴',
+    name: '항성 코로나',
     bgColor: '#100404',
     floorTint: 0xd06040,    // 붉은 돌
     wallTint:  0x803020,    // 진홍
@@ -44,7 +44,7 @@ export const THEMES = {
     ambientGlow: 0x2a0808,
   },
   volcano: {
-    name: '화산 정상',
+    name: '항성 핵',
     bgColor: '#0a0604',
     floorTint: 0x5a4030,    // 식은 용암
     wallTint:  0x2a1a10,    // 검은 화산암

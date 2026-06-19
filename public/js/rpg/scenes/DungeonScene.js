@@ -418,7 +418,7 @@ export class DungeonScene extends Phaser.Scene {
     });
 
     // 라벨
-    this.exitLabel = this.add.text(wx, wy - 32, '🏰 마을 (E)', {
+    this.exitLabel = this.add.text(wx, wy - 32, '🚀 우주선 (E)', {
       fontSize: '12px', color: '#ffd700',
       backgroundColor: 'rgba(0,0,0,0.6)',
       padding: { left: 4, right: 4, top: 2, bottom: 2 },

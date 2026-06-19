@@ -405,7 +405,7 @@ export class TownScene extends Phaser.Scene {
     });
 
     // "던전 입장" 라벨 + 안내
-    this.add.text(cx, cy + 50, '⚔️ 던전 입구', {
+    this.add.text(cx, cy + 50, '🚀 EVA 출격', {
       fontSize: '15px', color: '#ff8855',
       fontFamily: 'Cinzel, Noto Serif KR, serif',
     }).setOrigin(0.5).setDepth(20);
@@ -465,8 +465,8 @@ export class TownScene extends Phaser.Scene {
   // ---------- NPC ----------
   drawNpcs() {
     const W = this.scale.width, H = this.scale.height;
-    this.spawnNpc(W * 0.22, H * 0.62, 'merchant',   'npc-merchant',   '상인 헬가',     '#88ddff');
-    this.spawnNpc(W * 0.78, H * 0.62, 'blacksmith', 'npc-blacksmith', '대장장이 군나르', '#ff8855');
+    this.spawnNpc(W * 0.22, H * 0.62, 'merchant',   'npc-merchant',   '보급관 헬가-7',   '#88ddff');
+    this.spawnNpc(W * 0.78, H * 0.62, 'blacksmith', 'npc-blacksmith', '정비 군나르-X',   '#ff8855');
     // 오답 복습 NPC — 가운데 살짝 위
     this.spawnReviewNpc(W * 0.50, H * 0.55);
     // 미션 보드 + 트로피 + 스킬 마스터
@@ -489,7 +489,7 @@ export class TownScene extends Phaser.Scene {
       targets: sprite, y: y - 4,
       duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
-    this.add.text(x, y + 36, '수련 마스터', {
+    this.add.text(x, y + 36, '시뮬레이터 넥서스', {
       fontSize: '13px', color: '#a3dfff',
       fontFamily: 'Cinzel, Noto Serif KR, serif',
     }).setOrigin(0.5).setDepth(6);
@@ -682,11 +682,11 @@ export class TownScene extends Phaser.Scene {
       targets: sprite, y: y - 4,
       duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
-    this.add.text(x, y + 38, '현자 메를린', {
+    this.add.text(x, y + 38, '분석 AI 메를린', {
       fontSize: '13px', color: '#ddaa88',
       fontFamily: 'Cinzel, Noto Serif KR, serif',
     }).setOrigin(0.5).setDepth(6);
-    this.add.text(x, y + 55, `📚 오답 복습 (${wrongCount})`, {
+    this.add.text(x, y + 55, `📊 오답 데이터 (${wrongCount})`, {
       fontSize: '11px', color: '#d4af37',
     }).setOrigin(0.5).setDepth(6);
 
@@ -770,7 +770,7 @@ export class TownScene extends Phaser.Scene {
       fontFamily: 'Cinzel, Noto Serif KR, serif',
     }).setOrigin(0.5).setDepth(6);
 
-    this.add.text(x, y + 78, shopKey === 'merchant' ? '🏪 포션 판매' : '🔨 무기 제작', {
+    this.add.text(x, y + 78, shopKey === 'merchant' ? '🧪 보급품 지급' : '🔧 장비 정비', {
       fontSize: '11px', color: '#d4af37',
     }).setOrigin(0.5).setDepth(6);
 
@@ -785,7 +785,7 @@ export class TownScene extends Phaser.Scene {
     const classDef = getClass(this.player.class);
 
     // 타이틀
-    this.add.text(W/2, H * 0.07, '🏰 트리스트람 마을', {
+    this.add.text(W/2, H * 0.07, '🚀 헤일메리호', {
       fontSize: '36px',
       fontFamily: 'Cinzel, Noto Serif KR, serif',
       color: '#ffd700',
@@ -808,7 +808,7 @@ export class TownScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(20);
 
     // 입장 버튼
-    const btn = this.add.text(W/2, H * 0.88, '⚔️  던전 입장 (Enter)', {
+    const btn = this.add.text(W/2, H * 0.88, '🚀  EVA 출격 (Enter)', {
       fontSize: '22px',
       color: '#ead7b7',
       backgroundColor: '#3a1818',
