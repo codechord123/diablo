@@ -35,6 +35,7 @@ export function migrateProgress(p) {
     equippedHelmet:   p.equippedHelmet  ?? null,
     skills:           p.skills          ?? {},
     defeatedBosses:   p.defeatedBosses  ?? [],
+    cards:            p.cards           ?? null,  // null = 초기 덱 시드 필요
   };
 }
 

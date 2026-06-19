@@ -9,6 +9,7 @@ import { recordAnswer, recordWrong, getRecentAccuracy, clearWrongOne } from '../
 import { currentUser } from '../../auth.js';
 import { trackEvent } from '../../missions.js';
 import { getBonuses as getSkillBonuses } from '../../skills.js';
+import { CARDS, getDeck, useCard, seedStarterDeck } from '../../cards.js';
 import { getClass } from '../../classes.js';
 import { ITEMS, useFirstPotion, getEquippedWeapon, totalPotions } from '../../items.js';
 import { toggleNotepad } from '../../notepad.js';
@@ -31,6 +32,16 @@ export class BattleScene extends Phaser.Scene {
     this.player = data.player;
     this.weapon = getEquippedWeapon(this.player);
     this.skillBonus = getSkillBonuses(this.player);
+    // 신규 학생 — 시드 덱 부여
+    if (this.player.cards === null || this.player.cards === undefined) {
+      seedStarterDeck(this.player);
+    }
+    // 카드 활성 효과 (전투 중 일시 효과)
+    this.cardFx = {
+      nextDmgBonus: 0,
+      nextDmgMul: 1,
+      evadeNextMiss: false,
+    };
     this.playerMistakes = 0;
     this.correctStreak = 0;
     this.firstMistake = true;
@@ -109,6 +120,86 @@ export class BattleScene extends Phaser.Scene {
       hintBtn._wired = true;
     }
     this.refreshPotionBtn();
+    this.renderCardHand();
+  }
+
+  // ----- 카드 핸드 렌더 -----
+  renderCardHand() {
+    const hand = document.getElementById('bm-card-hand');
+    if (!hand) return;
+    const deck = getDeck(this.player);
+    if (deck.length === 0) { hand.style.display = 'none'; return; }
+    hand.style.display = 'flex';
+    hand.innerHTML = '';
+    deck.forEach(card => {
+      const btn = document.createElement('button');
+      btn.className = 'bm-card-btn';
+      btn.style.borderColor = card.color;
+      btn.innerHTML = `
+        <span class="bm-card-icon" style="color:${card.color}">${card.icon}</span>
+        <span class="bm-card-name">${card.name}</span>
+        <span class="bm-card-count">×${card.count}</span>
+      `;
+      btn.title = card.desc;
+      btn.addEventListener('click', () => this.playCard(card));
+      hand.appendChild(btn);
+    });
+    // 활성 효과 인디케이터
+    this.renderActiveFx();
+  }
+
+  renderActiveFx() {
+    const fxEl = document.getElementById('bm-card-fx');
+    if (!fxEl) return;
+    const active = [];
+    if (this.cardFx.nextDmgBonus > 0) active.push(`⚡+${this.cardFx.nextDmgBonus}`);
+    if (this.cardFx.nextDmgMul > 1)   active.push(`🎯×${this.cardFx.nextDmgMul}`);
+    if (this.cardFx.evadeNextMiss)    active.push('🛡 SHIELD');
+    fxEl.innerHTML = active.map(t => `<span class="bm-fx-tag">${t}</span>`).join('');
+  }
+
+  playCard(card) {
+    if (this.locked && card.timing === 'pre') return;
+    if (!useCard(this.player, card.id)) return;
+    audio.click();
+
+    const e = card.effect;
+    let msg = `${card.icon} ${card.name}`;
+    if (e.heal) {
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + e.heal);
+      document.getElementById('hud-hp').textContent = `${this.player.hp}/${this.player.maxHp}`;
+      this.refreshPotionBtn();
+      msg += ` — HP +${e.heal}`;
+      audio.potion();
+    }
+    if (e.timeBonus && this.isBoss) {
+      this.timeLeft += e.timeBonus;
+      this.updateTimerDisplay();
+      msg += ` — 시간 +${e.timeBonus}s`;
+    }
+    if (e.streakBoost) {
+      this.correctStreak += e.streakBoost;
+      msg += ` — STREAK +${e.streakBoost}`;
+      this.renderEnemyHp(); // streak 인디케이터 갱신
+    }
+    if (e.revealAnswer) {
+      // 정답 선택지 강조
+      const ans = this.problem.answer.toString();
+      document.querySelectorAll('.bm-choice').forEach(btn => {
+        if (btn.textContent.includes(ans)) btn.classList.add('revealed');
+      });
+      msg += ` — 정답 강조`;
+    }
+    if (e.nextDmgBonus) this.cardFx.nextDmgBonus += e.nextDmgBonus;
+    if (e.nextDmgMul)   this.cardFx.nextDmgMul = Math.max(this.cardFx.nextDmgMul, e.nextDmgMul);
+    if (e.evadeNextMiss) this.cardFx.evadeNextMiss = true;
+
+    // 플레이백 메시지
+    const fb = document.getElementById('bm-feedback');
+    fb.innerHTML = msg;
+    fb.className = 'bm-feedback hit';
+
+    this.renderCardHand();
   }
 
   refreshPotionBtn() {
@@ -285,6 +376,7 @@ export class BattleScene extends Phaser.Scene {
     document.getElementById('bm-feedback').innerHTML = '';
     document.getElementById('bm-hint-area').innerHTML = '';
     this.refreshHintBtn();
+    this.renderCardHand();
     this.locked = false;
   }
 
@@ -370,6 +462,15 @@ export class BattleScene extends Phaser.Scene {
       if (armor > 0) dmg = Math.max(1, dmg - armor);
       // 힌트 사용 시 데미지 절반 (몬스터에 약함 = XP 적게)
       if (this.hintUsed) dmg = Math.max(1, Math.floor(dmg / 2));
+      // 카드 효과: AMPLIFIER / DOUBLE TAP
+      if (this.cardFx.nextDmgBonus > 0) {
+        dmg += this.cardFx.nextDmgBonus;
+        this.cardFx.nextDmgBonus = 0;
+      }
+      if (this.cardFx.nextDmgMul > 1) {
+        dmg = Math.floor(dmg * this.cardFx.nextDmgMul);
+        this.cardFx.nextDmgMul = 1;
+      }
       this.enemyHp -= dmg;
       // 적응 사운드: streak에 따라 점점 고음 하모닉
       if (bonus) audio.magic(); else audio.harmonic(this.correctStreak - 1);
@@ -406,6 +507,14 @@ export class BattleScene extends Phaser.Scene {
         fb.innerHTML = `🛡️ 회피 무효! 보스의 마법이 회피를 뚫었다 (정답: ${this.problem.answer.toHtml()})`;
         fb.className = 'bm-feedback miss';
         if (this.player.hp <= 0) { this.finish({ victory: false, defeated: true }); return; }
+      } else if (this.cardFx.evadeNextMiss) {
+        // PHASE SHIELD 카드 — 오답 무효화
+        this.cardFx.evadeNextMiss = false;
+        audio.evade();
+        const playerEl = document.getElementById('hud-hp');
+        if (playerEl) fx.damageNumberDOM(playerEl.parentElement, 0, { miss: true, text: 'SHIELD' });
+        fb.innerHTML = `🛡 PHASE SHIELD 발동! 오답 무효화 (정답: ${this.problem.answer.toHtml()})`;
+        fb.className = 'bm-feedback evade';
       } else {
         recordAnswer(this.nickname, false);
         recordWrong(this.nickname, this.problem);

@@ -1081,6 +1081,110 @@ body::before {
 }
 
 /* ============================================================
+   Card Hand — 전투 중 카드 핸드 + 활성 효과 인디케이터
+   ============================================================ */
+.bm-card-hand {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 8px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  justify-content: center;
+}
+.bm-card-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  background: rgba(76, 201, 240, 0.05);
+  border: 1px solid;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Orbitron', monospace;
+  transition: all 0.15s;
+  min-width: 78px;
+}
+.bm-card-btn:hover {
+  background: rgba(76, 201, 240, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.bm-card-icon { font-size: 22px; filter: drop-shadow(0 0 4px currentColor); }
+.bm-card-name {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text);
+}
+.bm-card-count {
+  font-size: 10px;
+  color: var(--accent-2);
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+.bm-card-fx {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  min-height: 22px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.bm-fx-tag {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  padding: 3px 8px;
+  background: rgba(76, 201, 240, 0.15);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  border-radius: 2px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 4px currentColor;
+}
+.bm-choice.revealed {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 16px var(--accent-2), inset 0 0 8px rgba(255, 215, 107, 0.2);
+  animation: reveal-pulse 1s ease-in-out infinite;
+}
+@keyframes reveal-pulse {
+  0%, 100% { box-shadow: 0 0 16px var(--accent-2), inset 0 0 8px rgba(255, 215, 107, 0.2); }
+  50%      { box-shadow: 0 0 28px var(--accent-2), inset 0 0 14px rgba(255, 215, 107, 0.4); }
+}
+
+/* ----- 카드 드롭 알림 (보스/레벨업) ----- */
+.card-drop-banner {
+  position: fixed;
+  top: 110px; left: 50%;
+  transform: translate(-50%, -20px);
+  display: flex; flex-direction: column;
+  align-items: center;
+  background: linear-gradient(180deg, rgba(20, 37, 64, 0.95), rgba(10, 20, 38, 0.92));
+  border: 1px solid var(--primary);
+  padding: 10px 16px;
+  z-index: 300;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.2, 1, 0.4, 1);
+  box-shadow: 0 0 28px rgba(76, 201, 240, 0.5);
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  font-family: 'Orbitron', monospace;
+}
+.card-drop-banner.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.cdb-label {
+  font-size: 10px; color: var(--primary);
+  letter-spacing: 3px; margin-bottom: 4px;
+}
+.cdb-list { display: flex; gap: 12px; flex-wrap: wrap; }
+.card-drop-item {
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px currentColor;
+}
+
+/* ============================================================
    EVA Event + Debrief Modal
    ============================================================ */
 .eva-event-modal, .eva-debrief-modal {

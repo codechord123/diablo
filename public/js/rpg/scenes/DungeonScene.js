@@ -18,6 +18,7 @@ import { openSettings } from '../../settings.js';
 import { STORY } from '../../story.js';
 import { getBonuses as getSkillBonuses } from '../../skills.js';
 import { helmetHpBonus } from '../../items.js';
+import { grantRandomCard, CARDS } from '../../cards.js';
 
 export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
@@ -279,6 +280,23 @@ export class DungeonScene extends Phaser.Scene {
       closeBtn._wired = true;
       closeBtn.addEventListener('click', () => modal.classList.remove('show'));
     }
+  }
+
+  // 보스/레벨업 카드 드롭 알림
+  showCardDrop(cards) {
+    if (!cards || cards.length === 0) return;
+    const html = cards.map(c =>
+      `<span class="card-drop-item" style="color:${c.color}">${c.icon} ${c.name}</span>`
+    ).join('');
+    const banner = document.createElement('div');
+    banner.className = 'card-drop-banner';
+    banner.innerHTML = `<div class="cdb-label">+ CARDS</div><div class="cdb-list">${html}</div>`;
+    document.body.appendChild(banner);
+    setTimeout(() => banner.classList.add('show'), 50);
+    setTimeout(() => {
+      banner.classList.remove('show');
+      setTimeout(() => banner.remove(), 500);
+    }, 3000);
   }
 
   showBossVictory(bossId) {
@@ -651,13 +669,17 @@ export class DungeonScene extends Phaser.Scene {
         trackEvent(nick, 'perfectBattles', 1);
       }
       checkAchievements(this.player, nick, { noMistakeBattle: (result.mistakes || 0) === 0 });
-      // 보스 처치 시 — 사운드 + 처치 마킹 + 빅토리 시네마틱
+      // 보스 처치 시 — 사운드 + 처치 마킹 + 빅토리 시네마틱 + 카드 3장
       if (enemy.isBoss) {
         audio.victory();
         this._bossDefeated = true;
         const { markBossDefeated } = await import('../../bosses.js');
         markBossDefeated(this.player, this.bossData.id);
+        // 보스 보상: 카드 3장
+        const drops = [];
+        for (let i = 0; i < 3; i++) drops.push(grantRandomCard(this.player));
         this.showBossVictory(this.bossData.id);
+        this.showCardDrop(drops);
       } else {
         audio.killMonster();
       }
@@ -776,6 +798,9 @@ export class DungeonScene extends Phaser.Scene {
       const nick = currentUser()?.nickname || 'guest';
       trackEvent(nick, 'levelUps', 1);
       checkAchievements(this.player, nick);
+      // 레벨업 시 카드 1장 드롭
+      const drop = grantRandomCard(this.player);
+      this.showCardDrop([drop]);
     }
     if (leveledUp) this.maybeUpgradeAppearance();
   }
