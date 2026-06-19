@@ -12,6 +12,7 @@ import { LoginScene } from './scenes/LoginScene.js';
 import { initNotepad, toggleNotepad } from '../notepad.js';
 import audio from '../audio.js';
 import { currentUser, signOut } from '../auth.js';
+import { loadSettings, openSettings } from '../settings.js';
 
 const computeSize = () => {
   // HUD(70px) + 헬프바(36px) 제외한 영역을 캔버스에 할당
@@ -76,6 +77,10 @@ if (logoutBtn) {
     location.reload();
   });
 }
+const settingsBtn = document.getElementById('hud-settings');
+if (settingsBtn) settingsBtn.addEventListener('click', () => openSettings());
+// 초기 설정 로드 (저장된 값 캐시)
+loadSettings();
 
 // 창 크기 변경 시 캔버스 + 비네팅 갱신
 window.addEventListener('resize', () => {

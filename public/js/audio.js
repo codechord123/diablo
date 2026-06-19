@@ -21,7 +21,6 @@ class AudioEngine {
 
   init() {
     if (this.ctx) {
-      // 재호출 시 suspended라면 resume 시도 (탭 비활성 후 복귀 등)
       if (this.ctx.state === 'suspended') this.ctx.resume();
       return;
     }
@@ -38,6 +37,12 @@ class AudioEngine {
       this.bgmGain.gain.value = this.bgmVolume;
       this.bgmGain.connect(this.masterGain);
       console.log('[Audio] init, state =', this.ctx.state);
+      // 사용자 설정 적용
+      import('./settings.js').then(({ loadSettings }) => {
+        const s = loadSettings();
+        this.setVolume(s.sfxOn ? s.masterVol : 0);
+        this.setBgmVolume(s.bgmOn ? s.bgmVol : 0);
+      });
     } catch (e) {
       console.warn('AudioContext init failed', e);
       this.enabled = false;

@@ -13,6 +13,8 @@ import * as fx from '../../effects.js';
 import { currentUser } from '../../auth.js';
 import { checkAchievements } from '../../achievements.js';
 import { trackEvent } from '../../missions.js';
+import { Minimap } from '../../minimap.js';
+import { openSettings } from '../../settings.js';
 
 export class DungeonScene extends Phaser.Scene {
   constructor() { super('Dungeon'); }
@@ -57,8 +59,12 @@ export class DungeonScene extends Phaser.Scene {
       this.drawMap();
       this.spawnTorches();
       this.spawnPlayer(dungeon.spawn);
-      this.spawnExitStairs(dungeon.spawn);  // 마을로 돌아가는 계단
+      this.spawnExitStairs(dungeon.spawn);
       this.spawnMonsters();
+      // 미니맵
+      this.minimap = new Minimap(this, this.grid);
+      this.minimap.reveal(dungeon.spawn.x, dungeon.spawn.y, 5);
+      this.minimap.redraw(this.playerSprite.tile, this.monsters, this.exitTile);
       this.setupCamera();
       this.setupLighting();
       this.setupInput();
@@ -297,7 +303,31 @@ export class DungeonScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
     this.input.keyboard.on('keydown-H', () => this.usePotionInDungeon());
     this.input.keyboard.on('keydown-Q', () => this.returnToTown());
+    this.input.keyboard.on('keydown-ESC', () => this.togglePause());
+    this.input.keyboard.on('keydown-M', () => {
+      if (this.minimap) this.minimap.setVisible(!this.minimap.container.visible);
+    });
     this.lastMoveTime = 0;
+  }
+
+  togglePause() {
+    if (this.scene.isPaused()) return; // 전투 중엔 무시 (BattleScene이 ESC=도주 처리)
+    const modal = document.getElementById('pause-modal');
+    if (!modal) return;
+    if (modal.classList.contains('show')) {
+      modal.classList.remove('show');
+      return;
+    }
+    modal.classList.add('show');
+    if (!modal._wired) {
+      modal._wired = true;
+      document.getElementById('pause-resume').addEventListener('click', () => modal.classList.remove('show'));
+      document.getElementById('pause-settings').addEventListener('click', () => openSettings());
+      document.getElementById('pause-town').addEventListener('click', () => {
+        modal.classList.remove('show');
+        this.returnToTown();
+      });
+    }
   }
 
   async returnToTown() {
@@ -425,6 +455,10 @@ export class DungeonScene extends Phaser.Scene {
       onComplete: () => {
         this.playerSprite.tile = next;
         this.moving = false;
+        if (this.minimap) {
+          this.minimap.reveal(next.x, next.y, 5);
+          this.minimap.redraw(next, this.monsters, this.exitTile);
+        }
       },
     });
   }

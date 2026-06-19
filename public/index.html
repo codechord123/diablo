@@ -21,6 +21,7 @@
     <div class="hud-cell"><span id="hud-potion">🧪0</span></div>
     <div class="hud-cell hud-right">
       <span id="hud-user" class="hud-user"></span>
+      <button id="hud-settings" class="hud-logout" title="설정">⚙️</button>
       <button id="hud-logout" class="hud-logout" title="로그아웃">🚪</button>
       <a href="dashboard.html" class="link-classic" target="_blank">📊 대시보드</a>
     </div>
@@ -31,7 +32,7 @@
 
   <!-- 도움말 -->
   <footer class="help-bar">
-    🖱️/⌨️ WASD = 이동 · 1~4 = 답 · H = 포션 · N = 풀이노트 · E = 계단 · Q = 마을 · ESC = 도주 · R = 재생성 · 🔊 사운드
+    🖱️/⌨️ WASD = 이동 · 1~4 = 답 · H = 포션 · N = 노트 · M = 미니맵 · E = 계단 · Q = 마을 · ESC = 일시정지 · ⚙️ 설정
   </footer>
 
   <!-- 레벨업 배너 -->
@@ -110,6 +111,38 @@
           🚪 입장 (처음이면 자동 등록)
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- 설정 모달 -->
+  <div id="settings-modal" class="settings-modal">
+    <div class="settings-card">
+      <div class="settings-header">
+        <div class="settings-title">⚙️ 설정</div>
+        <button id="s-close" class="settings-close">✕</button>
+      </div>
+      <div class="settings-row">
+        <label>마스터 볼륨 <span id="s-master-val">60</span></label>
+        <input type="range" id="s-master-vol" min="0" max="100" value="60" />
+      </div>
+      <div class="settings-row">
+        <label>BGM 볼륨 <span id="s-bgm-val">80</span></label>
+        <input type="range" id="s-bgm-vol" min="0" max="100" value="80" />
+      </div>
+      <div class="settings-row toggle-row">
+        <label><input type="checkbox" id="s-sfx-on" checked /> 효과음 켜기</label>
+        <label><input type="checkbox" id="s-bgm-on" checked /> 배경음 켜기</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 일시정지 모달 -->
+  <div id="pause-modal" class="pause-modal">
+    <div class="pause-card">
+      <div class="pause-title">⏸ 일시정지</div>
+      <button id="pause-resume" class="pause-btn">▶ 재개 (ESC)</button>
+      <button id="pause-settings" class="pause-btn">⚙️ 설정</button>
+      <button id="pause-town" class="pause-btn">🏰 마을로 귀환</button>
     </div>
   </div>
 
