@@ -31,6 +31,10 @@ python mosaic.py photo.jpg --strength 30
 
 # 픽셀화 대신 블러 처리
 python mosaic.py photo.jpg --blur
+
+# 픽셀화 대신 이모지로 덮기 (얼굴 자동 감지와 함께 사용 가능)
+python mosaic.py photo.jpg --emoji 😀
+python mosaic.py photo.jpg --rect 100 50 200 200 --emoji 🙈
 ```
 
 ## 옵션 정리
@@ -42,6 +46,7 @@ python mosaic.py photo.jpg --blur
 | `--full` | 사진 전체를 모자이크 |
 | `--strength N` | 모자이크 강도 (기본 15) |
 | `--blur` | 픽셀화 대신 가우시안 블러 적용 |
+| `--emoji 😀` | 픽셀화 대신 이모지로 영역을 덮음 (`--blur`와 동시 사용 불가) |
 | `--margin N` | 얼굴 감지 시 영역을 확장하는 비율 (기본 0.1 = 10%) |
 
 ## 얼굴 감지 방식
@@ -52,3 +57,17 @@ python mosaic.py photo.jpg --blur
 
 얼굴을 찾지 못하면 종료 코드 2와 함께 안내 메시지를 출력하니,
 그 경우 `--rect`나 `--full` 옵션을 사용하세요.
+
+## 이모지 폰트
+
+`--emoji`는 시스템의 컬러 이모지 폰트로 렌더링합니다.
+
+- 리눅스: `sudo apt install fonts-noto-color-emoji` (Debian/Ubuntu)
+- macOS / Windows: 기본 내장 폰트를 자동으로 사용
+
+## 문제 해결
+
+- `ModuleNotFoundError: No module named 'cv2'` →
+  `pip install -r requirements.txt` 를 먼저 실행하세요.
+- 파이썬은 3.8 이상이 필요합니다 (`python --version`으로 확인).
+- 윈도우에서 `python`이 없다고 나오면 `py mosaic.py ...` 로 실행해 보세요.

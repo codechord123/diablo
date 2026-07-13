@@ -22,14 +22,25 @@
 
   # 모자이크 대신 블러 처리
   python mosaic.py photo.jpg --blur
+
+  # 모자이크 대신 이모지로 덮기
+  python mosaic.py photo.jpg --emoji 😀
 """
+
+from __future__ import annotations
 
 import argparse
 import sys
 from pathlib import Path
 
-import cv2
-import numpy as np
+try:
+    import cv2
+    import numpy as np
+except ImportError as e:
+    print(f"오류: 필요한 패키지가 설치되지 않았습니다 ({e.name}).\n"
+          "다음 명령으로 설치하세요:  pip install -r requirements.txt",
+          file=sys.stderr)
+    sys.exit(1)
 
 
 def pixelate(region: np.ndarray, strength: int) -> np.ndarray:
@@ -48,16 +59,73 @@ def blur(region: np.ndarray, strength: int) -> np.ndarray:
     return cv2.GaussianBlur(region, (k, k), 0)
 
 
+# 운영체제별 컬러 이모지 폰트 후보
+EMOJI_FONT_CANDIDATES = [
+    "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",   # Debian/Ubuntu
+    "/usr/share/fonts/noto-emoji/NotoColorEmoji.ttf",      # Fedora/Arch
+    "/System/Library/Fonts/Apple Color Emoji.ttc",         # macOS
+    "C:/Windows/Fonts/seguiemj.ttf",                       # Windows
+]
+
+
+def render_emoji(emoji: str) -> np.ndarray:
+    """이모지 문자를 투명 배경의 BGRA 이미지로 렌더링한다."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except ImportError:
+        print("오류: 이모지 기능에는 Pillow가 필요합니다: pip install Pillow",
+              file=sys.stderr)
+        sys.exit(1)
+
+    font_path = next((p for p in EMOJI_FONT_CANDIDATES if Path(p).exists()), None)
+    if font_path is None:
+        print("오류: 컬러 이모지 폰트를 찾지 못했습니다. "
+              "리눅스에서는 fonts-noto-color-emoji 패키지를 설치하세요.",
+              file=sys.stderr)
+        sys.exit(1)
+
+    # 비트맵 이모지 폰트는 정해진 크기로만 열린다 (Noto는 109)
+    font = None
+    for size in (109, 137, 160, 96, 64, 32):
+        try:
+            font = ImageFont.truetype(font_path, size)
+            break
+        except OSError:
+            continue
+    if font is None:
+        print(f"오류: 이모지 폰트를 열 수 없습니다: {font_path}", file=sys.stderr)
+        sys.exit(1)
+
+    canvas = Image.new("RGBA", (size * 2, size * 2), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(canvas)
+    draw.text((size, size), emoji, font=font, embedded_color=True, anchor="mm")
+    bbox = canvas.getbbox()
+    if bbox is None:
+        print(f"오류: 이모지를 렌더링하지 못했습니다: {emoji}", file=sys.stderr)
+        sys.exit(1)
+    rgba = np.array(canvas.crop(bbox))
+    return cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGRA)
+
+
 def apply_to_rect(image: np.ndarray, x: int, y: int, w: int, h: int,
-                  strength: int, use_blur: bool) -> None:
-    """이미지의 (x, y, w, h) 영역에 모자이크/블러를 적용한다 (in-place)."""
+                  strength: int, use_blur: bool,
+                  emoji_img: np.ndarray | None = None) -> None:
+    """이미지의 (x, y, w, h) 영역에 모자이크/블러/이모지를 적용한다 (in-place)."""
     ih, iw = image.shape[:2]
     x, y = max(0, x), max(0, y)
     w, h = min(w, iw - x), min(h, ih - y)
     if w <= 0 or h <= 0:
         return
     region = image[y:y + h, x:x + w]
-    image[y:y + h, x:x + w] = blur(region, strength) if use_blur else pixelate(region, strength)
+    if emoji_img is not None:
+        resized = cv2.resize(emoji_img, (w, h), interpolation=cv2.INTER_AREA)
+        alpha = resized[:, :, 3:4].astype(np.float32) / 255.0
+        blended = resized[:, :, :3] * alpha + region * (1.0 - alpha)
+        image[y:y + h, x:x + w] = blended.astype(np.uint8)
+    elif use_blur:
+        image[y:y + h, x:x + w] = blur(region, strength)
+    else:
+        image[y:y + h, x:x + w] = pixelate(region, strength)
 
 
 YUNET_MODEL = Path(__file__).parent / "models" / "face_detection_yunet_2023mar.onnx"
@@ -114,7 +182,10 @@ def main() -> int:
     parser.add_argument("--full", action="store_true", help="사진 전체를 모자이크")
     parser.add_argument("--strength", type=int, default=15,
                         help="모자이크 강도. 클수록 픽셀이 굵어짐 (기본: 15)")
-    parser.add_argument("--blur", action="store_true", help="픽셀화 대신 블러 처리")
+    effect = parser.add_mutually_exclusive_group()
+    effect.add_argument("--blur", action="store_true", help="픽셀화 대신 블러 처리")
+    effect.add_argument("--emoji", metavar="EMOJI",
+                        help="픽셀화 대신 이모지로 영역을 덮음 (예: --emoji 😀)")
     parser.add_argument("--margin", type=float, default=0.1,
                         help="얼굴 감지 시 영역을 확장할 비율 (기본: 0.1 = 10%%)")
     args = parser.parse_args()
@@ -130,14 +201,17 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
+    emoji_img = render_emoji(args.emoji) if args.emoji else None
+    effect = "이모지" if args.emoji else ("블러" if args.blur else "모자이크")
+
     if args.full:
         h, w = image.shape[:2]
-        apply_to_rect(image, 0, 0, w, h, args.strength, args.blur)
-        print("사진 전체에 모자이크를 적용했습니다.")
+        apply_to_rect(image, 0, 0, w, h, args.strength, args.blur, emoji_img)
+        print(f"사진 전체에 {effect}를 적용했습니다.")
     elif args.rect:
         for x, y, w, h in args.rect:
-            apply_to_rect(image, x, y, w, h, args.strength, args.blur)
-        print(f"{len(args.rect)}개 영역에 모자이크를 적용했습니다.")
+            apply_to_rect(image, x, y, w, h, args.strength, args.blur, emoji_img)
+        print(f"{len(args.rect)}개 영역에 {effect}를 적용했습니다.")
     else:
         faces = detect_faces(image)
         if not faces:
@@ -145,11 +219,11 @@ def main() -> int:
                   file=sys.stderr)
             return 2
         for x, y, w, h in faces:
-            # 얼굴 주변까지 조금 넓게 모자이크
+            # 얼굴 주변까지 조금 넓게 적용
             mx, my = int(w * args.margin), int(h * args.margin)
             apply_to_rect(image, x - mx, y - my, w + 2 * mx, h + 2 * my,
-                          args.strength, args.blur)
-        print(f"얼굴 {len(faces)}개를 찾아 모자이크를 적용했습니다.")
+                          args.strength, args.blur, emoji_img)
+        print(f"얼굴 {len(faces)}개를 찾아 {effect}를 적용했습니다.")
 
     if args.output:
         output_path = Path(args.output)
