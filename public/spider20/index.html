@@ -244,6 +244,12 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 @keyframes clearIn{0%{transform:scale(.3) rotate(-8deg);opacity:0}18%{transform:scale(1.08) rotate(2deg);opacity:1}30%{transform:scale(1) rotate(0)}80%{opacity:1}100%{transform:scale(1.04);opacity:0}}
 @media (prefers-reduced-motion:reduce){.clear div{animation:clearFade 1.4s both}}
 @keyframes clearFade{0%,80%{opacity:1}100%{opacity:0}}
+.setdone{width:100%;min-height:60px;border-radius:14px;border:2px solid var(--danger);background:var(--surface);color:var(--danger);
+  font-family:var(--f-display);font-size:1.3rem;letter-spacing:.02em;touch-action:manipulation;transition:transform .06s}
+.setdone:active{transform:scale(.98)}
+.setdone.ready{background:var(--danger);color:var(--on-accent);box-shadow:0 6px 18px color-mix(in srgb,var(--danger) 35%,transparent)}
+.setdone.on{border-style:dashed;color:var(--muted);border-color:var(--line);font-family:var(--f-body);font-weight:700;font-size:1rem}
+.setdone:disabled{opacity:.45}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
@@ -268,7 +274,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 <div class="wrap">
   <header>
     <h1>20분 맨몸 카운터</h1>
-    <p class="sub">철봉 → 팔굽혀펴기 → 스쿼트가 1세트. 한 번 할 때마다 탭하세요. 세 종목을 다 한 뒤 다른 종목을 탭하면 다음 세트로 넘어가요.</p>
+    <p class="sub">철봉 → 팔굽혀펴기 → 스쿼트가 1세트. 한 번 할 때마다 탭하세요. 한 세트가 끝나면 아래 <b>세트 완료</b>를 누르세요.</p>
   </header>
 
   <div class="pane" id="pane-work">
@@ -289,6 +295,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
   </section>
 
   <section class="pads" id="pads" aria-label="종목별 카운터"></section>
+  <button class="setdone" id="nextRound">세트 완료</button>
 
   <section class="spidey" aria-label="스파이더맨 지수">
     <div class="pct" id="spPct">0%</div>
@@ -299,7 +306,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
   </section>
 
   <section class="rounds" aria-label="세트별 기록">
-    <div class="rhead"><h2 id="roundTitle">세트</h2><div class="btns"><button class="btn" id="fillRound">5·10·15 채우기</button><button class="btn" id="nextRound">다음 세트</button></div></div>
+    <div class="rhead"><h2 id="roundTitle">세트</h2><div class="btns"><button class="btn" id="fillRound">5·10·15 채우기</button></div></div>
     <div class="mbar" id="mbar">
       <div class="track" aria-hidden="true"><i id="mFill"></i><b id="mPace"></b></div>
       <p><span id="mLeft">1세트 = 풀업 5 · 푸시업 10 · 스쿼트 15</span><span id="mStatus"></span></p>
@@ -485,7 +492,8 @@ function addToRound(k,d){
     // a set moves on only after all three exercises are in it (or the "다음 세트" button)
     const allIn=cur&&EX.every(x=>cur[x.k]>0);
     if(!cur||S.forceNew||(allIn&&S.lastK!==k)){
-      if(cur)celebrateRound(R.length-1); // finishing a set by moving on also counts as a clear
+      // moving on without pressing "세트 완료": no banner mid-exercise, just note the new set
+      if(cur){S.cleared=Math.max(S.cleared||0,R.length);toast(`${R.length+1}세트 시작`)}
       cur=emptyRound();R.push(cur)}
     cur[k]+=d;S.forceNew=false;S.lastK=k;
   }else{
@@ -786,9 +794,11 @@ function renderSession(){
     $("cur-"+x.k).textContent=!R.length&&!c?"탭 = +1":`${n}세트 ${c}/${MISSION[x.k]}${c>=MISSION[x.k]?" ✓":""}`;
   });
   $("roundTitle").textContent=`세트 ${R.length} · 톰 홀랜드 ${missionSets(R)}/${MISSION_GOAL}`;
-  $("nextRound").classList.toggle("on",S.forceNew);
-  $("nextRound").textContent=S.forceNew?"다음 탭부터 새 세트":"다음 세트";
-  $("nextRound").disabled=!R.length;
+  const nb=$("nextRound"),last=R[R.length-1];
+  nb.classList.toggle("on",S.forceNew);
+  nb.classList.toggle("ready",!S.forceNew&&!!last&&EX.every(x=>last[x.k]>0));
+  nb.textContent=S.forceNew?`SET ${R.length} 완료 · 다음 탭부터 ${R.length+1}세트 (누르면 취소)`:last?`SET ${R.length} 완료`:"세트 완료";
+  nb.disabled=!last||(!S.forceNew&&!rsum(last));
   renderMissionPace();
   $("roundBody").innerHTML=R.length?R.map((r,i)=>({r,i})).reverse().map(({r,i})=>`<tr class="${i===R.length-1&&!S.forceNew?"cur":""}"><td>${i+1}${roundDone(r)?" ✓":""}</td><td>${r.pull}</td><td>${r.push}</td><td>${r.squat}</td><td>${rsum(r)}</td></tr>`).join("")
     :`<tr><td colspan="5" style="font-family:var(--f-body);color:var(--muted);text-align:left">첫 탭을 하면 1세트가 시작됩니다.</td></tr>`;
