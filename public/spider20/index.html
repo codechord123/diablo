@@ -715,12 +715,14 @@ function tapFx(k,d,ev){
   if(d>0){pad.classList.remove("flash","shake");void pad.offsetWidth;pad.classList.add("flash","shake")}
 }
 function add(k,d){
+  if(d>0&&elapsed()>=DURATION){toast("20분이 끝났어요. 기록을 저장하거나 초기화하세요");return false} // reps after time don't count
   if(d>0&&!S.runningSince&&elapsed()===0) start(); // first tap starts the clock
   if(S.counts[k]+d<0)return false;
   S.counts[k]=Math.max(0,S.counts[k]+d);
-  const before=missionSets(S.rounds);
   addToRound(k,d);
-  if(missionSets(S.rounds)>before)missionRoundDone();
+  const i=S.rounds.length-1;
+  S.tomCel=S.tomCel||[];
+  if(i>=0&&roundDone(S.rounds[i])&&!S.tomCel.includes(i)){S.tomCel.push(i);missionRoundDone()}
   if(d>0)thwip(k);else undoBlip();
   try{navigator.vibrate&&navigator.vibrate(d>0?12:[8,40,8])}catch(e){}
   const pad=document.querySelector(`.pad[data-k="${k}"]`);
@@ -957,12 +959,14 @@ function missionRoundDone(){
   else{const k=S.rounds.length;showClear(`SET ${k} CLEAR!`,`톰 홀랜드 세트 ${n}/${MISSION_GOAL} ✓ · 28세트까지 ${MISSION_GOAL-n}`);say(`Set ${k} clear!`)}
 }
 function fillMissionRound(){
+  if(elapsed()>=DURATION){toast("20분이 끝났어요. 기록을 저장하거나 초기화하세요");return}
   if(!S.runningSince&&elapsed()===0)start();
   const R=S.rounds;let cur=R[R.length-1];
   if(!cur||S.forceNew||roundDone(cur)){cur=emptyRound();R.push(cur)}
   S.forceNew=false;S.lastK="squat";
   const needs={};
   EX.forEach(x=>{const need=Math.max(0,MISSION[x.k]-cur[x.k]);needs[x.k]=need;cur[x.k]+=need;S.counts[x.k]+=need});
+  S.tomCel=S.tomCel||[];S.tomCel.push(R.length-1);
   try{navigator.vibrate&&navigator.vibrate([20,40,20,40,60])}catch(e){}
   // three web shots, one per exercise, left to right
   EX.forEach((x,i)=>{if(needs[x.k]>0)setTimeout(()=>{thwip(x.k);tapFx(x.k,needs[x.k],null)},i*110)});
@@ -1180,7 +1184,7 @@ function askNick(u,db,uid){
 function renderAccount(u){
   $("acct").textContent=u?`${u.displayName||u.email||"Google 계정"}${u.email&&u.displayName?" · "+u.email:""}`:"";
 }
-$("logoutBtn").addEventListener("click",async()=>{if(!FBA)return;await FBA.auth.signOut(FBA.au);location.reload()});
+$("logoutBtn").addEventListener("click",async()=>{if(!FBA)return;try{localStorage.removeItem(DRAFT_KEY)}catch(e){}await FBA.auth.signOut(FBA.au);location.reload()});
 async function initStore(){
   const sync=$("syncText");
   sync.textContent="계정 연결 중…";
@@ -1221,11 +1225,15 @@ async function initStore(){
 }
 const stripLocal=r=>({date:r.date,pull:r.pull,push:r.push,squat:r.squat,mode:r.mode||null,rounds:r.rounds||null,seconds:r.seconds});
 
+let saving=false;
 $("saveBtn").addEventListener("click",async()=>{
+  if(saving||!total(S.counts))return; // a second tap while the first save is in flight would store it twice
+  saving=true;$("saveBtn").disabled=true;
   if(S.runningSince)pause();
   const r={id:String(Date.now()),date:S.startedAt||Date.now(),...S.counts,mode:"set",rounds:S.rounds.length?S.rounds.map(r=>({...r})):null,seconds:Math.round(Math.min(elapsed(),DURATION)/1000)};
   records=[r,...records];lsSet(LOCAL_LOG,records);
   if(col){try{await col.doc(r.id).set(stripLocal(r));r.synced=true;lsSet(LOCAL_LOG,records)}catch(e){toast("계정 저장 실패 · 이 브라우저에는 저장됨")}}
+  saving=false;
   newSession();renderHistory();
   toast(spidey(r)>=100?`스파이더맨 +1! 지금까지 ${spiderCount(records)} 스파이더맨`:`저장됨 · 스파이더맨 지수 ${spidey(r)}% (${tierOf(spidey(r))})`);
 });
