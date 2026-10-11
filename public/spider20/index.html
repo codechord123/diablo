@@ -1155,14 +1155,23 @@ async function loadFirebase(){
 function waitForLogin(F){
   const {auth,au}=F;
   return new Promise(res=>{
-    auth.getRedirectResult(au).catch(e=>gateError(e));
+    // only look for a redirect result when we actually started one: on iPhone Safari the check
+    // loads a cross-site frame that tracking prevention can stall, which held up the whole login
+    let redirected=false;try{redirected=sessionStorage.getItem("bw20-redirect")==="1";sessionStorage.removeItem("bw20-redirect")}catch(e){}
+    if(redirected)auth.getRedirectResult(au).catch(e=>gateError(e));
+    let heard=false;
     auth.onAuthStateChanged(au,u=>{
+      heard=true;
       if(u&&!u.isAnonymous){res(u);return}
       showGate(F);
     });
+    // if Firebase hasn't said anything after 6 s, let the person tap the button anyway
+    setTimeout(()=>{if(!heard)showGate(F)},6000);
   });
 }
 const inAppBrowser=/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent);
+window.addEventListener("error",e=>{const g=$("gate");if(g&&!g.hidden)$("gateErr").textContent="오류: "+(e.message||"알 수 없음")});
+window.addEventListener("unhandledrejection",e=>{const g=$("gate");if(g&&!g.hidden&&e.reason)$("gateErr").textContent="오류: "+(e.reason.code||e.reason.message||e.reason)});
 function showGate(F){
   $("gate").hidden=false;
   const btn=$("googleLogin");btn.disabled=false;$("googleLoginText").textContent="Google로 로그인";
@@ -1173,7 +1182,7 @@ function showGate(F){
     btn.disabled=true;$("gateErr").textContent="";
     try{await auth.signInWithPopup(au,prov)}
     catch(e){
-      if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){await auth.signInWithRedirect(au,prov);return}
+      if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){try{sessionStorage.setItem("bw20-redirect","1")}catch(_){}await auth.signInWithRedirect(au,prov);return}
       gateError(e);btn.disabled=false;
     }
   };
