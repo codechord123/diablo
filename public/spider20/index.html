@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#1d2320">
 <meta name="description" content="20분 동안 철봉·팔굽혀펴기·스쿼트를 세트로 세고, 톰 홀랜드 기준 스파이더맨 지수로 친구들과 랭킹을 겨루는 운동 카운터">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -33,6 +33,11 @@
   --danger:#e0716a; --on-accent:#101412; color-scheme:dark }
 
 *{box-sizing:border-box}
+/* app-like touch: no double-tap zoom, no text selection / copy menu while tapping fast */
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;font-size:max(16px,1em)}
+button{touch-action:manipulation}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
 .wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:16px 48px;display:flex;flex-direction:column;gap:20px}
 h1{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;letter-spacing:.01em}
@@ -74,14 +79,36 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .pad.shake{animation:shake .18s ease-out}
 @keyframes shake{25%{transform:translate(-2px,1px) rotate(-.6deg)}50%{transform:translate(2px,-1px) rotate(.6deg)}75%{transform:translate(-1px,0)}}
 .fx{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2;color:var(--c)}
-.fx svg{position:absolute;width:150px;height:150px;left:-75px;top:-75px;animation:web .5s cubic-bezier(.1,.8,.3,1) forwards}
+.fx svg{position:absolute;width:190px;height:190px;left:-95px;top:-95px;filter:drop-shadow(0 0 5px currentColor);animation:web .55s cubic-bezier(.1,.8,.3,1) forwards}
+.fx .ring{position:absolute;left:-12px;top:-12px;width:24px;height:24px;border:4px solid currentColor;border-radius:50%;animation:ring .55s cubic-bezier(.1,.7,.3,1) forwards}
+.fx .ring.r2{animation-delay:.08s;border-width:2px;opacity:0;animation-name:ring2}
+@keyframes ring{0%{transform:scale(.3);opacity:1}100%{transform:scale(9);opacity:0;border-width:1px}}
+@keyframes ring2{0%{transform:scale(.3);opacity:.8}100%{transform:scale(12);opacity:0}}
+.fx .core{position:absolute;left:-26px;top:-26px;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle,var(--surface) 0 20%,currentColor 45%,transparent 70%);animation:core .3s ease-out forwards}
+@keyframes core{0%{transform:scale(.2);opacity:1}100%{transform:scale(2.2);opacity:0}}
+.fx .strand{position:absolute;left:-1px;top:0;width:3px;height:var(--len);background:linear-gradient(currentColor,transparent);border-radius:2px;transform-origin:50% 0;
+  transform:rotate(var(--a)) scaleY(0);animation:strand .45s cubic-bezier(.1,.8,.3,1) forwards}
+@keyframes strand{0%{transform:rotate(var(--a)) scaleY(0);opacity:1}60%{opacity:1}100%{transform:rotate(var(--a)) translateY(30px) scaleY(1);opacity:0}}
 @keyframes web{0%{transform:scale(.15) rotate(-25deg);opacity:1}70%{opacity:.85}100%{transform:scale(1.35) rotate(8deg);opacity:0}}
 .fx b{position:absolute;left:0;top:0;transform:translate(-50%,-50%);font-family:var(--f-num);font-weight:700;font-size:1.9rem;white-space:nowrap;
   text-shadow:0 2px 0 var(--surface),0 -2px 0 var(--surface),2px 0 0 var(--surface),-2px 0 0 var(--surface);animation:pop .75s cubic-bezier(.2,.9,.3,1) forwards}
 .fx b.minus{color:var(--muted);font-size:1.4rem}
 @keyframes pop{0%{transform:translate(-50%,-50%) scale(.4);opacity:1}25%{transform:translate(-50%,-140%) scale(1.35)}100%{transform:translate(-50%,-300%) scale(1);opacity:0}}
-.fx i{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:currentColor;animation:spark .45s ease-out forwards}
-@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.fx i{position:absolute;left:calc(var(--s) / -2);top:calc(var(--s) / -2);width:var(--s);height:var(--s);border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor;animation:spark .6s cubic-bezier(.1,.8,.3,1) forwards}
+.fx i.w{background:var(--surface)}
+@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(.1);opacity:0}}
+/* combo counter + screen edge glow */
+.combo{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:12;transform:translateX(-50%);pointer-events:none;
+  font-family:var(--f-display);font-size:1.6rem;line-height:1;color:var(--cc,var(--danger));white-space:nowrap;
+  text-shadow:0 2px 0 var(--surface),0 -2px 0 var(--surface),2px 0 0 var(--surface),-2px 0 0 var(--surface),0 0 18px var(--cc,var(--danger))}
+.combo.pop{animation:combo .35s cubic-bezier(.2,1.8,.4,1)}
+.combo small{font-size:.6em;margin-right:4px}
+@keyframes combo{0%{transform:translateX(-50%) scale(1.6)}100%{transform:translateX(-50%) scale(1)}}
+.edge{position:fixed;inset:0;z-index:11;pointer-events:none;box-shadow:inset 0 0 0 0 var(--ec);opacity:0}
+.edge.on{animation:edge .6s ease-out}
+@keyframes edge{0%{opacity:1;box-shadow:inset 0 0 70px 14px var(--ec)}100%{opacity:0;box-shadow:inset 0 0 20px 0 var(--ec)}}
+.pads.quake{animation:quake .3s ease-out}
+@keyframes quake{20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-3px)}60%{transform:translate(-3px,1px)}80%{transform:translate(2px,0)}}
 .minis{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--c)}
 .minis button{border:0;background:transparent;padding:10px 0;font-family:var(--f-num);font-weight:700;color:var(--c);min-height:44px;font-size:.85rem}
 .tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
@@ -219,7 +246,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 @keyframes clearFade{0%,80%{opacity:1}100%{opacity:0}}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
-@media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i{animation:none}.fx svg,.fx i{display:none}.tap{transition:none}.bar>i{transition:none}}
+@media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
 </style>
 
 </head>
@@ -343,6 +370,8 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
   <button role="tab" id="tab-log" aria-selected="false">기록</button>
 </nav>
 <audio id="bgm" preload="none"></audio>
+<div class="combo" id="combo" hidden></div>
+<div class="edge" id="edge"></div>
 <div class="clear" id="clear" hidden><div id="clearText"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -391,9 +420,9 @@ EX.forEach(e=>{
       <span class="n" id="n-${e.k}">0</span><span class="hint" id="cur-${e.k}">탭 = +1</span></button>
     <div class="minis"><button id="minus-${e.k}" aria-label="${e.name} 1회 빼기">−1</button><button id="plus5-${e.k}" aria-label="${e.name} 5회 추가">+5</button></div>`;
   pads.appendChild(el);
-  $("tap-"+e.k).addEventListener("click",ev=>{if(add(e.k,1))tapFx(e.k,1,ev)});
+  $("tap-"+e.k).addEventListener("click",ev=>{bumpCombo(e.k);if(add(e.k,1))tapFx(e.k,1,ev)});
   $("minus-"+e.k).addEventListener("click",ev=>{if(add(e.k,-1))tapFx(e.k,-1,ev)});
-  $("plus5-"+e.k).addEventListener("click",ev=>{if(add(e.k,5))tapFx(e.k,5,null)});
+  $("plus5-"+e.k).addEventListener("click",ev=>{bumpCombo(e.k);if(add(e.k,5))tapFx(e.k,5,null)});
 });
 
 const WEB_SVG=(()=>{ // spider-web burst: 8 spokes + 2 rings
@@ -401,6 +430,22 @@ const WEB_SVG=(()=>{ // spider-web burst: 8 spokes + 2 rings
   const ring=r=>Array.from({length:8},(_,i)=>{const a=i*Math.PI/4;return `${50+r*Math.cos(a)},${50+r*Math.sin(a)}`}).join(" ");
   return `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">${l}<polygon points="${ring(18)}"/><polygon points="${ring(34)}" stroke-width="1.8"/></svg>`;
 })();
+// iOS Safari ignores user-scalable=no: block pinch zoom here (double-tap zoom is off via touch-action)
+document.addEventListener("gesturestart",e=>e.preventDefault(),{passive:false});
+document.addEventListener("dblclick",e=>e.preventDefault());
+let combo=0,comboT=null;
+function bumpCombo(k){
+  combo++;clearTimeout(comboT);comboT=setTimeout(()=>{combo=0;$("combo").hidden=true},1100);
+  const c=$("combo");
+  if(combo>=3){
+    c.style.setProperty("--cc",`var(--${k})`);
+    c.innerHTML=`<small>COMBO</small>×${combo}`;
+    c.style.fontSize=`${1.6+Math.min(combo,30)*.04}rem`;
+    c.hidden=false;c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop");
+  }
+  return combo;
+}
+function edgeGlow(k){const e=$("edge");e.style.setProperty("--ec",`var(--${k})`);e.classList.remove("on");void e.offsetWidth;e.classList.add("on")}
 function tapFx(k,d,ev){
   const pad=document.querySelector(`.pad[data-k="${k}"]`),r=pad.getBoundingClientRect();
   let x=r.width/2,y=r.height*.42;
@@ -408,12 +453,16 @@ function tapFx(k,d,ev){
   const fx=document.createElement("div");fx.className="fx";fx.style.transform=`translate(${x}px,${y}px)`;
   let h=`<b class="${d<0?"minus":""}">${d>0?"+"+d:"−1"}</b>`;
   if(d>0){
-    h=WEB_SVG+h;
-    for(let i=0;i<(d>1?12:7);i++){const a=Math.random()*Math.PI*2,dist=34+Math.random()*(d>1?60:36);
-      h+=`<i style="--dx:${Math.cos(a)*dist}px;--dy:${Math.sin(a)*dist}px"></i>`}
+    const big=d>1||combo%10===0&&combo>0;
+    h=`<span class="core"></span><span class="ring"></span><span class="ring r2"></span>`+WEB_SVG+h;
+    const strands=big?12:8;
+    for(let i=0;i<strands;i++)h+=`<span class="strand" style="--a:${i*360/strands+Math.random()*20}deg;--len:${40+Math.random()*(big?70:40)}px"></span>`;
+    for(let i=0;i<(big?22:12);i++){const a=Math.random()*Math.PI*2,dist=40+Math.random()*(big?100:60);
+      h+=`<i class="${i%3?"":"w"}" style="--s:${3+Math.random()*(big?7:5)}px;--dx:${Math.cos(a)*dist}px;--dy:${Math.sin(a)*dist}px"></i>`}
+    if(big){edgeGlow(k);const ps=$("pads");ps.classList.remove("quake");void ps.offsetWidth;ps.classList.add("quake")}
   }
   fx.innerHTML=h;pad.appendChild(fx);
-  setTimeout(()=>fx.remove(),800);
+  setTimeout(()=>fx.remove(),900);
   if(d>0){pad.classList.remove("flash","shake");void pad.offsetWidth;pad.classList.add("flash","shake")}
 }
 function add(k,d){
@@ -450,47 +499,85 @@ function addToRound(k,d){
 /* timer */
 let wake=null, ticker=null, audio=null, finished=false;
 function ac(){
-  audio=audio||new (window.AudioContext||window.webkitAudioContext)();
+  if(!audio){
+    audio=new (window.AudioContext||window.webkitAudioContext)();
+    // master bus: compressor lets effects play loud without clipping
+    const comp=audio.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=6;
+    const out=audio.createGain();out.gain.value=1.4;
+    comp.connect(out);out.connect(audio.destination);audio.master=comp;
+  }
   if(audio.state!=="running")audio.resume().catch(()=>{}); // iOS leaves it "interrupted" after switching apps
   return audio;
 }
+const OUT=()=>ac().master;
 /* tap sound effects */
 let sfxOn=lsGet("bw20-sfx",true);
 const THWIP={pull:[2400,700],push:[1800,550],squat:[1300,420]}; // web-shooter sweep per exercise
 function thwip(k){
   if(!sfxOn)return;
   try{
-    const a=ac(),t=a.currentTime,len=.14;
+    const a=ac(),t=a.currentTime,len=.14,up=1+Math.min(combo,20)*.03; // pitch climbs with the combo
     const buf=a.createBuffer(1,Math.floor(a.sampleRate*len),a.sampleRate),ch=buf.getChannelData(0);
     for(let i=0;i<ch.length;i++)ch[i]=(Math.random()*2-1)*(1-i/ch.length);
     const src=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();
     src.buffer=buf;bp.type="bandpass";bp.Q.value=6;
-    bp.frequency.setValueAtTime(THWIP[k][0],t);bp.frequency.exponentialRampToValueAtTime(THWIP[k][1],t+len);
+    bp.frequency.setValueAtTime(THWIP[k][0]*up,t);bp.frequency.exponentialRampToValueAtTime(THWIP[k][1]*up,t+len);
     g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.9,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+len);
-    src.connect(bp);bp.connect(g);g.connect(a.destination);src.start(t);src.stop(t+len);
+    src.connect(bp);bp.connect(g);g.connect(OUT());src.start(t);src.stop(t+len);
   }catch(e){}
 }
 function tone(freq,at,dur,type,vol){
   const a=ac(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+at;
-  o.type=type||"triangle";o.frequency.value=freq;o.connect(g);g.connect(a.destination);
+  o.type=type||"triangle";o.frequency.value=freq;o.connect(g);g.connect(OUT());
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol||.25,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
   o.start(t);o.stop(t+dur+.02);
 }
 function undoBlip(){if(sfxOn)try{tone(320,0,.09,"sine",.2);tone(240,.07,.1,"sine",.2)}catch(e){}}
+function whoosh(at,len,from,to,vol){
+  const a=ac(),t=a.currentTime+at;
+  const buf=a.createBuffer(1,Math.floor(a.sampleRate*len),a.sampleRate),ch=buf.getChannelData(0);
+  for(let i=0;i<ch.length;i++)ch[i]=Math.random()*2-1;
+  const src=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();
+  src.buffer=buf;bp.type="bandpass";bp.Q.value=2;
+  bp.frequency.setValueAtTime(from,t);bp.frequency.exponentialRampToValueAtTime(to,t+len);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+len*.6);g.gain.exponentialRampToValueAtTime(.0001,t+len);
+  src.connect(bp);bp.connect(g);g.connect(OUT());src.start(t);src.stop(t+len);
+}
 function fanfare(big){
   if(!sfxOn)return;
+  duck(big?3200:2300);
   try{
+    whoosh(0,.35,400,4000,.5);
     const notes=big?[523,659,784,1047,784,1047,1319]:[523,659,784,1047];
-    notes.forEach((f,i)=>tone(f,i*.09,i===notes.length-1?.5:.14,"square",.12));
+    const step=.085,end=notes.length*step;
+    notes.forEach((f,i)=>{tone(f,i*step,.16,"square",.22);tone(f*2,i*step,.12,"triangle",.12)});
+    // final chord, held
+    [1047,1319,1568,2093].forEach(f=>tone(big?f:f*.75,end,big?1.1:.75,"sawtooth",.09));
+    [523,784].forEach(f=>tone(big?f:f*.75,end,big?1.1:.75,"square",.14));
+    tone(65,end,.5,"sine",.5); // low hit
   }catch(e){}
+}
+/* music ducking: quieter under the clear fanfare and voice. iOS ignores volume, so it pauses there. */
+const canVol=(()=>{try{const t=new Audio();t.volume=.5;return Math.abs(t.volume-.5)<.01}catch(e){return false}})();
+let duckT=null,ducking=false;
+function duck(ms){
+  if(bgm.paused&&!ducking)return;
+  clearTimeout(duckT);ducking=true;
+  if(canVol)bgm.volume=.08;else bgm.pause();
+  duckT=setTimeout(()=>{
+    ducking=false;
+    if(canVol){let v=.08;const up=setInterval(()=>{v=Math.min(.6,v+.05);bgm.volume=v;if(v>=.6)clearInterval(up)},40)}
+    else if(shouldPlay()||bgmOn)playBgm();
+  },ms);
 }
 function say(text){
   if(!sfxOn||!window.speechSynthesis)return;
-  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=1.05;u.pitch=1.15;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=1.05;u.pitch=1.15;u.volume=1;
     setTimeout(()=>speechSynthesis.speak(u),350)}catch(e){}
 }
 let clearT=null;
 function showClear(main,sub){
+  edgeGlow("danger");
   const box=$("clear"),t=$("clearText");
   t.textContent=main;
   if(sub){const sm=document.createElement("small");sm.textContent=sub;t.appendChild(sm)}
@@ -558,7 +645,7 @@ renderSfx();
 
 /* resume music after the phone pauses it (switching to KakaoTalk, a call, lock screen) */
 let bgmWanted=false; // music was playing when the page went away
-function shouldPlay(){return bgmWanted||(bgmOn&&S.runningSince)}
+function shouldPlay(){return !ducking&&(bgmWanted||(bgmOn&&S.runningSince))}
 function resumeBgm(){
   if(!shouldPlay()||!bgm.paused)return;
   const p=bgm.play();
@@ -572,7 +659,7 @@ document.addEventListener("visibilitychange",()=>{
 });
 window.addEventListener("pageshow",resumeBgm);
 // a pause the user didn't ask for (system interruption) while the page is visible
-bgm.addEventListener("pause",()=>{if(!document.hidden&&!bgm.ended&&bgmOn&&S.runningSince)setTimeout(resumeBgm,600)});
+bgm.addEventListener("pause",()=>{if(!ducking&&!document.hidden&&!bgm.ended&&bgmOn&&S.runningSince)setTimeout(resumeBgm,600)});
 bgm.addEventListener("play",()=>{bgmWanted=false});
 // lock-screen / control-center buttons
 if("mediaSession" in navigator){
