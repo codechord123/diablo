@@ -579,8 +579,9 @@ function duck(ms){
     else if(shouldPlay()||bgmOn)playBgm();
   },ms);
 }
+const VOICE=false; // iOS lowers all other audio while speech synthesis talks, so the spoken callout is off
 function say(text){
-  if(!sfxOn||!window.speechSynthesis)return;
+  if(!VOICE||!sfxOn||!window.speechSynthesis)return;
   try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=1.05;u.pitch=1.15;u.volume=1;
     setTimeout(()=>speechSynthesis.speak(u),350)}catch(e){}
 }
