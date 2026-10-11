@@ -9,25 +9,22 @@
 
 ## 파일
 
-| 파일 | 내용 |
+| 위치 | 내용 |
 |---|---|
-| `index.html` | 앱 전체 (HTML/CSS/JS 한 파일) |
-| `bgm.mp3`, `bgm2.mp3`, `bgm3.mp3` | 타이머가 도는 동안 차례로 반복 재생되는 배경음악 (다음 곡 버튼으로 넘기기) |
-| `vercel.json` | Vercel 설정 |
-| `firestore.rules.snippet` | Firestore 보안 규칙 (기존 규칙에 **붙여 넣기**) |
+| `public/spider20/index.html` | 앱 전체 (HTML/CSS/JS 한 파일) |
+| `public/spider20/bgm*.mp3` | 타이머가 도는 동안 차례로 반복 재생되는 배경음악 3곡 |
+| `spider20/firestore.rules` | Firestore 보안 규칙 전문 |
+
+## 배포
+
+디아블로와 같은 Vercel 프로젝트가 `public/`을 배포하므로, 푸시하면 **`<디아블로 주소>/spider20/`** 에 바로 올라갑니다.
+따로 Vercel 프로젝트를 만들 필요가 없습니다.
 
 ## Firebase 설정 (to-do-cal-6e835 콘솔에서 1회)
 
-1. **Authentication → 로그인 방법**: `Google` 사용 설정 (익명은 쓰지 않음)
-2. **Authentication → 설정 → 승인된 도메인**: Vercel 도메인 추가 (예: `spider20.vercel.app`)
-3. **Firestore → 규칙**: `firestore.rules.snippet`의 두 `match` 블록을 기존 규칙 안에 추가 후 게시
-   - `firebase deploy --only firestore` 로 덮어쓰지 마세요. to-do-cal 앱의 규칙이 사라집니다.
-
-## Vercel 배포
-
-- 대시보드: New Project → 이 GitHub 저장소 선택 → **Root Directory를 `spider20`** 으로 지정
-  → Framework Preset `Other`, Build Command 비움 → Deploy
-- CLI: `cd spider20 && npx vercel --prod`
+1. **Authentication → 로그인 방법**: `Google` 사용 설정
+2. **Authentication → 설정 → 승인된 도메인**: Vercel 도메인 추가 (예: `diablo-xxx.vercel.app`)
+3. **Firestore → 규칙**: `spider20/firestore.rules` 내용으로 교체하되, `[to-do-cal]` 자리에 기존 규칙의 match 블록을 옮겨 넣고 게시
 
 ## Firestore 구조
 

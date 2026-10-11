@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ───────────────────────────────────────────────────────────
+    // [to-do-cal] 기존 앱 규칙
+    // Firebase 콘솔의 현재 규칙 중 이 블록 안에 있던 match 들을
+    // 여기에 그대로 옮겨 두세요. 지우면 to-do-cal 앱이 멈춥니다.
+    // ───────────────────────────────────────────────────────────
+
+
+    // ───────────────────────────────────────────────────────────
+    // [Spider20] 20분 맨몸 카운터 — Google 로그인한 사람만
+    // ───────────────────────────────────────────────────────────
+    function spiderSignedIn() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // 각자 운동 기록: 본인만 읽고 쓰기
+    match /users/{uid}/workouts/{wid} {
+      allow read, write: if spiderSignedIn() && request.auth.uid == uid;
+    }
+
+    // 랭킹: 로그인한 누구나 읽기, 자기 줄만 쓰기
+    match /board/{uid} {
+      allow read: if spiderSignedIn();
+      allow write: if spiderSignedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['spiders','bestPct','sessions','reps','tomSets','nick','updatedAt'])
+        && request.resource.data.nick is string && request.resource.data.nick.size() <= 16
+        && request.resource.data.spiders is int && request.resource.data.spiders >= 0
+        && request.resource.data.bestPct is int && request.resource.data.bestPct >= 0;
+    }
+  }
+}

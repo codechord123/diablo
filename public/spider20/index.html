@@ -303,7 +303,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
   <button role="tab" id="tab-rank" aria-selected="false">랭킹</button>
   <button role="tab" id="tab-log" aria-selected="false">기록</button>
 </nav>
-<audio id="bgm" src="bgm.mp3" preload="none"></audio>
+<audio id="bgm" preload="none"></audio>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -412,7 +412,9 @@ function pause(){
 let bgmOn=lsGet("bw20-bgm",true);
 const bgm=$("bgm");bgm.volume=.6;
 // playlist: plays in order, then starts over
-const TRACKS=["bgm.mp3","bgm2.mp3","bgm3.mp3"];
+// works at /spider20/, /spider20 (no trailing slash) and /spider20/index.html
+const BASE=/\/$|\.html$/.test(location.pathname)?"":location.pathname.split("/").pop()+"/";
+const TRACKS=["bgm.mp3","bgm2.mp3","bgm3.mp3"].map(f=>BASE+f);
 let track=lsGet("bw20-track",0)%TRACKS.length;
 function setTrack(i){track=(i+TRACKS.length)%TRACKS.length;lsSet("bw20-track",track);bgm.src=TRACKS[track];renderBgm()}
 bgm.src=TRACKS[track];
