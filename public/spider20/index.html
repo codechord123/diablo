@@ -14,8 +14,8 @@
 /* Layout: one-screen gym clipboard — timer strip on top, three big tap pads, history log below */
 :root{
   --bg:#e9ece8; --surface:#f7f8f5; --ink:#1d2320; --muted:#5f6a64; --line:#cfd5cf;
-  --pull:#2f5d8a; --push:#c26a1f; --squat:#3d7a4f;
-  --pull-soft:#dbe6f1; --push-soft:#f5e3d1; --squat-soft:#dcebdf;
+  --pull:#1d4ea8; --push:#d3202e; --squat:#2b2e37;
+  --pull-soft:#dde6f6; --push-soft:#f9dfe1; --squat-soft:#e2e3e7;
   --danger:#b3362f; --on-accent:#ffffff;
   --f-display:"Black Han Sans","IBM Plex Sans KR",system-ui,sans-serif;
   --f-body:"IBM Plex Sans KR",system-ui,-apple-system,sans-serif;
@@ -23,13 +23,13 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#141816; --surface:#1d2320; --ink:#e8ece9; --muted:#9aa59f; --line:#323a36;
-  --pull:#6fa3d6; --push:#e59a52; --squat:#74b98a;
-  --pull-soft:#1f2c39; --push-soft:#382819; --squat-soft:#1e3125;
+  --pull:#5b8ff0; --push:#ff5a63; --squat:#b9bfcc;
+  --pull-soft:#1a2740; --push-soft:#3a1a1d; --squat-soft:#262931;
   --danger:#e0716a; --on-accent:#101412; color-scheme:dark }}
 :root[data-theme="dark"]{
   --bg:#141816; --surface:#1d2320; --ink:#e8ece9; --muted:#9aa59f; --line:#323a36;
-  --pull:#6fa3d6; --push:#e59a52; --squat:#74b98a;
-  --pull-soft:#1f2c39; --push-soft:#382819; --squat-soft:#1e3125;
+  --pull:#5b8ff0; --push:#ff5a63; --squat:#b9bfcc;
+  --pull-soft:#1a2740; --push-soft:#3a1a1d; --squat-soft:#262931;
   --danger:#e0716a; --on-accent:#101412; color-scheme:dark }
 
 *{box-sizing:border-box}
@@ -409,6 +409,32 @@ button.me-badge{border:1px solid var(--line);background:var(--surface);border-ra
 .wf-text b i{font-style:normal;opacity:.7;margin:0 4px}
 .wf-text small{font-size:.76rem;font-weight:700;opacity:.92}
 @media (prefers-reduced-motion:reduce){.webfill::after,.webfill.fire .wf-web{animation:none}}
+/* counter pads as Spider-Man suits: blue, red, black — fixed colors so they read the same in either theme */
+.pad[data-k="pull"]{--pc:#2457c4;--pd:#0e2a66}
+.pad[data-k="push"]{--pc:#e0283a;--pd:#7a0d18}
+.pad[data-k="squat"]{--pc:#3a3e4a;--pd:#0b0c10}
+.pad{border:0;color:#fff;box-shadow:0 5px 0 var(--pd),0 10px 20px color-mix(in srgb,var(--pd) 45%,transparent);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23000' fill-opacity='.22'%3E%3Cellipse cx='50' cy='44' rx='6' ry='8'/%3E%3Cellipse cx='50' cy='58' rx='8' ry='11'/%3E%3Cg stroke='%23000' stroke-opacity='.22' stroke-width='2.4' fill='none' stroke-linecap='round'%3E%3Cpath d='M45 40L30 26L24 34M55 40L70 26L76 34M44 46L26 42L20 50M56 46L74 42L80 50M44 54L28 62L24 72M56 54L72 62L76 72M46 62L36 76L36 88M54 62L64 76L64 88'/%3E%3C/g%3E%3C/svg%3E") center 46%/72% no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' fill='none' stroke='%23000' stroke-opacity='.3' stroke-width='1'%3E%3Cpath d='M40 40L0 0M40 40L40 0M40 40L80 0M40 40L0 40M40 40L80 40M40 40L0 80M40 40L40 80M40 40L80 80'/%3E%3Cpath d='M28 28Q40 31 52 28Q49 40 52 52Q40 49 28 52Q31 40 28 28Z'/%3E%3Cpath d='M14 14Q40 20 66 14Q60 40 66 66Q40 60 14 66Q20 40 14 14Z'/%3E%3C/svg%3E") center/80px 80px,
+    radial-gradient(90% 60% at 30% 10%,rgb(255 255 255 / .22),transparent 60%),
+    linear-gradient(165deg,var(--pc),var(--pd))}
+.pad .tap .name{color:#fff;letter-spacing:.02em;text-shadow:0 1px 0 rgb(0 0 0 / .35)}
+.pad .tap .en{color:rgb(255 255 255 / .7)}
+.pad .tap .n{color:#fff;text-shadow:0 3px 0 rgb(0 0 0 / .35),0 0 18px rgb(255 255 255 / .18)}
+.pad .tap .hint{color:rgb(255 255 255 / .88);font-weight:700}
+.tgt{display:block;width:72%;height:5px;margin-top:5px;border-radius:3px;background:rgb(0 0 0 / .3);overflow:hidden}
+.tgt i{display:block;height:100%;width:0;background:#fff;border-radius:3px;transition:width .2s}
+.tgt.full i{background:#ffd23f;box-shadow:0 0 8px #ffd23f}
+.pad .minis{border-top:1px solid rgb(255 255 255 / .22);background:rgb(0 0 0 / .22)}
+.pad .minis button{color:#fff}
+.pad .minis button+button{border-left:1px solid rgb(255 255 255 / .22)}
+.pad::after{background:#fff}
+.pad .fx{color:#fff}
+.pad .fx b{text-shadow:0 2px 8px rgb(0 0 0 / .55)}
+.pad .fx .core{background:radial-gradient(circle,#fff 0 25%,rgb(255 255 255 / .7) 45%,transparent 70%)}
+.pad.bump .n{animation:bumpW .22s cubic-bezier(.3,1.8,.5,1)}
+@keyframes bumpW{40%{transform:scale(1.28);text-shadow:0 0 22px #fff}}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
@@ -661,7 +687,8 @@ EX.forEach(e=>{
   el.className="pad";el.dataset.k=e.k;
   el.innerHTML=`<button class="tap" id="tap-${e.k}" aria-label="${e.name} 1회 추가">
       <span class="name">${e.name}</span><span class="en">${e.en}</span>
-      <span class="n" id="n-${e.k}">0</span><span class="hint" id="cur-${e.k}">탭 = +1</span></button>
+      <span class="n" id="n-${e.k}">0</span><span class="hint" id="cur-${e.k}">탭 = +1</span>
+      <span class="tgt" aria-hidden="true"><i id="tgt-${e.k}"></i></span></button>
     <div class="minis"><button id="minus-${e.k}" aria-label="${e.name} 1회 빼기">−1</button><button id="plus5-${e.k}" aria-label="${e.name} 5회 추가">+5</button></div>`;
   pads.appendChild(el);
   $("tap-"+e.k).addEventListener("click",ev=>{bumpCombo(e.k);if(add(e.k,1))tapFx(e.k,1,ev)});
@@ -1054,6 +1081,8 @@ function renderSession(){
     $("n-"+x.k).textContent=S.counts[x.k];
     const c=cur?cur[x.k]:0,n=cur?R.length:R.length+1;
     $("cur-"+x.k).textContent=!R.length&&!c?"탭 = +1":`${n}세트 ${c}/${MISSION[x.k]}${c>=MISSION[x.k]?" ✓":""}`;
+    $("tgt-"+x.k).style.width=`${Math.min(100,c/MISSION[x.k]*100)}%`;
+    $("tgt-"+x.k).parentElement.classList.toggle("full",c>=MISSION[x.k]);
   });
   $("roundTitle").textContent=`세트 ${R.length} · 톰 홀랜드 ${missionSets(R)}/${MISSION_GOAL}`;
   const nb=$("nextRound"),last=R[R.length-1];
