@@ -251,6 +251,29 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .setdone.on{border-style:dashed;color:var(--muted);border-color:var(--line);font-family:var(--f-body);font-weight:700;font-size:1rem}
 .setdone:disabled{opacity:.45}
 .setdone.arm{border-style:solid;background:var(--push-soft);color:var(--ink);font-family:var(--f-body);font-weight:700;font-size:1rem}
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);width:100%}
+.seg3 button{min-height:44px}
+.seg3 button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:2px solid var(--c);background:transparent;color:var(--c);border-radius:999px;padding:8px 16px;font-weight:700;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--c);color:var(--on-accent)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi small{color:var(--muted);font-size:.76rem}
+.kpi b{font-family:var(--f-num);font-size:1.35rem;font-variant-numeric:tabular-nums;color:var(--c,var(--ink))}
+.kpi span{font-size:.74rem;color:var(--muted)}
+.prs{display:flex;flex-direction:column;gap:12px}
+.pr{border-left:4px solid var(--c);padding:4px 0 4px 12px;display:flex;flex-direction:column;gap:6px}
+.pr h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.1rem;color:var(--c)}
+.pr dl{margin:0;display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:baseline;font-variant-numeric:tabular-nums}
+.pr dt{color:var(--muted);font-size:.82rem}
+.pr dd{margin:0;font-family:var(--f-num);font-weight:700;text-align:right}
+.pr dd.when{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:.78rem;text-align:left}
+.sphero{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center}
+.sphero .big{grid-row:span 3;font-family:var(--f-num);font-weight:700;font-size:3.4rem;line-height:1;color:var(--danger)}
+.sphero .big small{display:block;font-family:var(--f-body);font-size:.75rem;color:var(--muted);font-weight:600;text-align:center}
+.sphero b{font-family:var(--f-display);font-weight:400;font-size:1.15rem}
+.sphero span{font-size:.85rem;color:var(--muted)}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
@@ -331,20 +354,31 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
   </div>
 
   <div class="pane" id="pane-stats" hidden>
-  <section class="panel" aria-label="최고 기록">
-    <div class="phead"><h2>최고 기록</h2></div>
-    <p class="mbest" id="mbest"></p>
-    <div class="bests" id="bests"></div>
-  </section>
-  <section class="panel" aria-label="통계">
-    <div class="phead"><h2>통계</h2>
+  <div class="seg seg3" role="tablist" aria-label="통계 종류">
+    <button role="tab" data-st="ex">종목별</button><button role="tab" data-st="best">최고 기록</button><button role="tab" data-st="spidey">스파이더맨</button>
+  </div>
+
+  <section class="panel" id="st-ex" aria-label="종목별 기록">
+    <div class="chips" id="exChips"></div>
+    <div class="phead"><h2 id="exTitle">철봉</h2>
       <div class="seg" role="group" aria-label="기간"><button id="pDay">일</button><button id="pWeek">주</button><button id="pMonth">월</button></div>
     </div>
-    <div class="pbest" id="pbest"></div>
-    <div class="bests" id="pbests"></div>
+    <div class="kpis" id="exKpis"></div>
     <div class="chart" id="pchart"></div>
   </section>
 
+  <section class="panel" id="st-best" aria-label="최고 기록" hidden>
+    <div class="phead"><h2>최고 기록</h2></div>
+    <div class="prs" id="prs"></div>
+  </section>
+
+  <section class="panel" id="st-spidey" aria-label="스파이더맨 기록" hidden>
+    <div class="sphero" id="spHero"></div>
+    <div class="phead"><h2>최근 운동 스파이더맨 지수</h2></div>
+    <div class="chart" id="spChart"></div>
+    <div class="phead"><h2>스파이더맨 달성</h2></div>
+    <ul class="log" id="spList"></ul>
+  </section>
   </div>
 
   <div class="pane" id="pane-rank" hidden>
@@ -1035,19 +1069,10 @@ async function removeRecord(id){
 function renderHistory(){
   publishBoard();
   const rs=[...records].sort((a,b)=>b.date-a.date);
-  // bests
-  $("bests").innerHTML=EX.map(x=>{
-    const best=rs.reduce((m,r)=>Math.max(m,r[x.k]||0),0);
-    const bestSet=rs.reduce((m,r)=>Math.max(m,...(r.rounds||[]).map(z=>z[x.k]||0)),0);
-    return `<div class="best" style="--c:var(--${x.k})"><small>${x.name} 최고</small><b>${best}회</b><small>한 세트 최고 ${bestSet||"–"}</small></div>`;
-  }).join("");
-  const mb=rs.reduce((m,r)=>Math.max(m,missionSets(r.rounds||[])),0);
-  const sb=rs.reduce((m,r)=>Math.max(m,spidey(r)),0);
-  $("mbest").innerHTML=`스파이더맨 <b>${spiderCount(rs)}</b>회 달성 · 스파이더맨 지수 최고 <b>${sb}%</b> (${tierOf(sb)}) · 톰 홀랜드 세트 최고 <b>${mb}</b> / ${MISSION_GOAL}세트`;
   // chart: last 10 sessions, stacked
   const last=rs.slice(0,10).reverse().map(r=>{const d=new Date(r.date);return{...r,label:`${d.getMonth()+1}/${d.getDate()}`}});
   $("chart").innerHTML=stackChart(last,`최근 ${last.length}회 세션 종목별 횟수`);
-  renderCalendar();renderPeriods();
+  renderCalendar();renderStats();
 
   // list
   const log=$("log");
@@ -1140,28 +1165,102 @@ const PERIODS={
   month:{name:"달",keyFn:monthKey,label:k=>`${+k.split("-")[1]}월`,long:k=>{const[y,m]=k.split("-");return `${y}년 ${+m}월`},
        prev:k=>{const[y,m]=k.split("-").map(Number);return monthKey(new Date(y,m-2,1))}},
 };
-function renderPeriods(){
-  const P=PERIODS[period];
-  $("pDay").setAttribute("aria-pressed",period==="day");$("pWeek").setAttribute("aria-pressed",period==="week");$("pMonth").setAttribute("aria-pressed",period==="month");
-  const g=groupBy(P.keyFn),all=[...g.values()];
-  if(!all.length){$("pbest").innerHTML=`<small>최고의 ${P.name}</small><span>기록을 저장하면 ${P.name} 단위 합계와 최고 기록이 여기에 나옵니다.</span>`;$("pbests").innerHTML="";$("pchart").innerHTML="";return}
-  const tot=x=>x.pull+x.push+x.squat;
-  const best=all.reduce((a,b)=>tot(b)>tot(a)?b:a);
-  const curKey=P.keyFn(new Date()),cur=g.get(curKey);
-  const avg=Math.round(all.reduce((a,b)=>a+tot(b),0)/all.length);
-  $("pbest").innerHTML=`<small>최고의 ${P.name} · ${P.long(best.key)}</small><b>${tot(best)}회</b>
-    <span>철봉 ${best.pull} · 팔굽혀펴기 ${best.push} · 스쿼트 ${best.squat} · 운동 ${best.n}회</span>
-    <span>이번 ${P.name} ${cur?tot(cur):0}회 · 평균 ${avg}회 (운동한 ${P.name} 기준)</span>`;
-  $("pbests").innerHTML=EX.map(x=>{const b=all.reduce((a,c)=>c[x.k]>a[x.k]?c:a);
-    return `<div class="best" style="--c:var(--${x.k})"><small>${x.name} ${P.name} 최고</small><b>${b[x.k]}회</b><small>${b[x.k]?P.long(b.key):"–"}</small></div>`}).join("");
-  // last 8 periods: workout days for "day", consecutive weeks/months otherwise
-  let keys;
-  if(period==="day")keys=all.map(x=>x.key).sort().slice(-8);
-  else{keys=[];let k=curKey;for(let i=0;i<8;i++){keys.unshift(k);k=P.prev(k)}}
-  const items=keys.map(k=>({...(g.get(k)||{pull:0,push:0,squat:0}),label:P.label(k)}));
-  $("pchart").innerHTML=stackChart(items,`최근 ${P.name}별 종목 합계`);
+function barChart(items,color,label,goal){
+  if(!items.length)return "";
+  const W=600,H=170,pl=34,pb=20,pt=8,bw=Math.min(40,(W-pl)/items.length*0.6);
+  const max=Math.max(...items.map(r=>r.v),goal||0,5);
+  const step=niceStep(max),top=Math.ceil(max/step)*step;
+  const y=v=>pt+(H-pt-pb)*(1-v/top);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">`;
+  for(let v=0;v<=top;v+=step)s+=`<line x1="${pl}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-6}" y="${y(v)+3}" text-anchor="end">${v}</text>`;
+  if(goal)s+=`<line x1="${pl}" x2="${W}" y1="${y(goal)}" y2="${y(goal)}" stroke="var(--danger)" stroke-width="2" stroke-dasharray="6 4"/><text x="${W-2}" y="${y(goal)-5}" text-anchor="end" style="fill:var(--danger)">${goal}</text>`;
+  items.forEach((r,i)=>{
+    const cx=pl+(W-pl)*(i+.5)/items.length;
+    if(r.v>0)s+=`<rect x="${cx-bw/2}" y="${y(r.v)}" width="${bw}" height="${y(0)-y(r.v)}" rx="3" fill="${r.c||color}"/><text x="${cx}" y="${y(r.v)-4}" text-anchor="middle">${r.v}</text>`;
+    s+=`<text x="${cx}" y="${H-5}" text-anchor="middle">${r.label}</text>`;
+  });
+  return s+"</svg>";
 }
-[["pDay","day"],["pWeek","week"],["pMonth","month"]].forEach(([id,p])=>$(id).addEventListener("click",()=>{period=p;lsSet("bw20-period",p);renderPeriods()}));
+let statTab=lsGet("bw20-stat","ex"),statEx=lsGet("bw20-statex","pull");
+const fmtDate=t=>{const d=new Date(t);return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`};
+function renderStats(){
+  document.querySelectorAll("[data-st]").forEach(b=>b.setAttribute("aria-selected",b.dataset.st===statTab));
+  $("st-ex").hidden=statTab!=="ex";$("st-best").hidden=statTab!=="best";$("st-spidey").hidden=statTab!=="spidey";
+  if(statTab==="ex")renderExStats();else if(statTab==="best")renderPRs();else renderSpideyStats();
+}
+document.querySelectorAll("[data-st]").forEach(b=>b.addEventListener("click",()=>{statTab=b.dataset.st;lsSet("bw20-stat",statTab);renderStats()}));
+
+/* 종목별: one exercise, by day / week / month */
+function renderExStats(){
+  const x=EX.find(e=>e.k===statEx)||EX[0],k=x.k,P=PERIODS[period];
+  $("exChips").innerHTML=EX.map(e=>`<button class="chip" data-ex="${e.k}" style="--c:var(--${e.k})" aria-pressed="${e.k===k}">${e.name}</button>`).join("");
+  $("exTitle").textContent=x.name;$("exTitle").style.color=`var(--${k})`;
+  $("pDay").setAttribute("aria-pressed",period==="day");$("pWeek").setAttribute("aria-pressed",period==="week");$("pMonth").setAttribute("aria-pressed",period==="month");
+  const g=groupBy(P.keyFn),all=[...g.values()].filter(v=>v[k]>0);
+  const total=records.reduce((a,r)=>a+(r[k]||0),0),sessions=records.filter(r=>r[k]>0).length;
+  const curKey=P.keyFn(new Date()),cur=g.get(curKey);
+  const bestP=all.length?all.reduce((a,b)=>b[k]>a[k]?b:a):null;
+  const bestSet=records.reduce((m,r)=>Math.max(m,...(r.rounds||[]).map(z=>z[k]||0)),0);
+  const kp=(label,val,sub)=>`<div class="kpi" style="--c:var(--${k})"><small>${label}</small><b>${val}</b><span>${sub||""}</span></div>`;
+  $("exKpis").innerHTML=
+    kp(`이번 ${P.name}`,`${cur?cur[k]:0}회`,bestP?`최고 ${bestP[k]}회 (${P.long(bestP.key)})`:"")+
+    kp("누적",`${total}회`,`${sessions}번 운동`)+
+    kp("운동당 평균",`${sessions?Math.round(total/sessions):0}회`,`톰 홀랜드 20분 ${TOM[k]}회`)+
+    kp("한 세트 최고",`${bestSet||0}회`,`톰 홀랜드 세트 기준 ${MISSION[k]}회`);
+  let keys;
+  if(period==="day")keys=[...g.keys()].sort().slice(-8);
+  else{keys=[];let kk=curKey;for(let i=0;i<8;i++){keys.unshift(kk);kk=P.prev(kk)}}
+  $("pchart").innerHTML=keys.length?barChart(keys.map(kk=>({v:(g.get(kk)||{})[k]||0,label:P.label(kk)})),`var(--${k})`,`최근 ${P.name}별 ${x.name}`)
+    :`<p class="empty">기록을 저장하면 ${x.name} 그래프가 나와요.</p>`;
+}
+$("exChips").addEventListener("click",e=>{const b=e.target.closest("[data-ex]");if(!b)return;statEx=b.dataset.ex;lsSet("bw20-statex",statEx);renderExStats()});
+[["pDay","day"],["pWeek","week"],["pMonth","month"]].forEach(([id,p])=>$(id).addEventListener("click",()=>{period=p;lsSet("bw20-period",p);renderExStats()}));
+
+/* 최고 기록: personal records per exercise and overall */
+function renderPRs(){
+  if(!records.length){$("prs").innerHTML=`<p class="empty">아직 기록이 없어요. 운동을 저장하면 종목별 최고 기록이 여기에 쌓여요.</p>`;return}
+  const best=(arr,f)=>arr.reduce((a,b)=>f(b)>f(a)?b:a);
+  const groups={day:[...groupBy(dayKey).values()],week:[...groupBy(weekKey).values()],month:[...groupBy(monthKey).values()]};
+  const row=(label,val,when)=>`<dt>${label}</dt><dd>${val}</dd><dd class="when">${when}</dd>`;
+  let h=EX.map(x=>{
+    const k=x.k,bs=best(records,r=>r[k]||0);
+    let setBest=0,setWhen="";
+    records.forEach(r=>(r.rounds||[]).forEach(z=>{if((z[k]||0)>setBest){setBest=z[k];setWhen=fmtDate(r.date)}}));
+    const d=best(groups.day,g=>g[k]),w=best(groups.week,g=>g[k]),m=best(groups.month,g=>g[k]);
+    return `<div class="pr" style="--c:var(--${k})"><h3>${x.name}</h3><dl>
+      ${row("한 번 운동",`${bs[k]||0}회`,bs[k]?fmtDate(bs.date):"–")}
+      ${row("한 세트",`${setBest}회`,setWhen||"–")}
+      ${row("하루",`${d[k]}회`,d[k]?PERIODS.day.long(d.key):"–")}
+      ${row("한 주",`${w[k]}회`,w[k]?PERIODS.week.long(w.key):"–")}
+      ${row("한 달",`${m[k]}회`,m[k]?PERIODS.month.long(m.key):"–")}
+    </dl></div>`;
+  }).join("");
+  const tot=r=>r.pull+r.push+r.squat,bt=best(records,tot),bm=best(records,r=>missionSets(r.rounds||[]));
+  h+=`<div class="pr" style="--c:var(--ink)"><h3>전체</h3><dl>
+    ${row("한 번 운동 합계",`${tot(bt)}회`,fmtDate(bt.date))}
+    ${row("톰 홀랜드 세트",`${missionSets(bm.rounds||[])}/${MISSION_GOAL}`,missionSets(bm.rounds||[])?fmtDate(bm.date):"–")}
+    ${row("총 운동",`${records.length}번`,`연속 ${streak(groupBy(dayKey))}일`)}
+  </dl></div>`;
+  $("prs").innerHTML=h;
+}
+
+/* 스파이더맨: count, best index, trend, achievement dates */
+function renderSpideyStats(){
+  const rs=[...records].sort((a,b)=>a.date-b.date);
+  const n=spiderCount(rs),bp=rs.reduce((m,r)=>Math.max(m,spidey(r)),0);
+  const nextT=TIERS.find(t=>t[0]>bp);
+  $("spHero").innerHTML=`<div class="big">${n}<small>스파이더맨</small></div>
+    <b>최고 ${bp}% · ${tierOf(bp)}</b>
+    <span>${nextT?`다음 단계 '${nextT[1]}'까지 ${nextT[0]-bp}%`:"최고 단계 달성"}</span>
+    <span>100%(철봉 140 · 팔굽혀펴기 280 · 스쿼트 420)를 한 번 찍을 때마다 1 스파이더맨</span>`;
+  const last=rs.slice(-10);
+  $("spChart").innerHTML=last.length?barChart(last.map(r=>{const v=spidey(r),d=new Date(r.date);return{v,label:`${d.getMonth()+1}/${d.getDate()}`,c:v>=100?"var(--danger)":"var(--muted)"}}),"var(--muted)","최근 운동 스파이더맨 지수",100)
+    :`<p class="empty">운동을 저장하면 지수 그래프가 나와요.</p>`;
+  const wins=rs.filter(r=>spidey(r)>=100).reverse();
+  $("spList").innerHTML=wins.length?wins.map((r,i)=>`<li><span class="d">${fmtDate(r.date)}<span class="tag sp">${spidey(r)}%</span></span><span class="sum">#${wins.length-i}</span>
+      <span class="meta"><span><i style="--c:var(--pull)">철봉</i> ${r.pull}</span><span><i style="--c:var(--push)">팔굽혀펴기</i> ${r.push}</span><span><i style="--c:var(--squat)">스쿼트</i> ${r.squat}</span></span></li>`).join("")
+    :`<li style="display:block"><p class="empty">아직 없어요. 20분 안에 철봉 140 · 팔굽혀펴기 280 · 스쿼트 420을 채우면 첫 스파이더맨이 기록돼요.</p></li>`;
+}
 
 function niceStep(m){const raw=m/4,p=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p}
 
