@@ -241,7 +241,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 <div class="wrap">
   <header>
     <h1>20분 맨몸 카운터</h1>
-    <p class="sub">철봉 → 팔굽혀펴기 → 스쿼트가 1세트. 한 번 할 때마다 탭하고, 했던 종목을 다시 탭하면 다음 세트로 넘어가요.</p>
+    <p class="sub">철봉 → 팔굽혀펴기 → 스쿼트가 1세트. 한 번 할 때마다 탭하세요. 세 종목을 다 한 뒤 다른 종목을 탭하면 다음 세트로 넘어가요.</p>
   </header>
 
   <div class="pane" id="pane-work">
@@ -361,8 +361,8 @@ function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 
 /* ---------- session state ---------- */
-// One set (round) = pull-ups + push-ups + squats. Tapping an exercise already done
-// in this round, after moving on to another one, starts the next round.
+// One set (round) = pull-ups + push-ups + squats. Once all three are in the set,
+// tapping a different exercise than the last one starts the next round.
 let S=lsGet(DRAFT_KEY,null);
 if(!S||!S.rounds)S=freshSession();
 function freshSession(){return{counts:{pull:0,push:0,squat:0},rounds:[],cleared:0,forceNew:false,lastK:null,elapsed:0,startedAt:null,runningSince:null}}
@@ -433,7 +433,9 @@ function add(k,d){
 function addToRound(k,d){
   const R=S.rounds;let cur=R[R.length-1];
   if(d>0){
-    if(!cur||S.forceNew||(cur[k]>0&&S.lastK!==k)){
+    // a set moves on only after all three exercises are in it (or the "다음 세트" button)
+    const allIn=cur&&EX.every(x=>cur[x.k]>0);
+    if(!cur||S.forceNew||(allIn&&S.lastK!==k)){
       if(cur)celebrateRound(R.length-1); // finishing a set by moving on also counts as a clear
       cur=emptyRound();R.push(cur)}
     cur[k]+=d;S.forceNew=false;S.lastK=k;
