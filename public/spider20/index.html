@@ -413,7 +413,7 @@ function addToRound(k,d){
 let wake=null, ticker=null, audio=null, finished=false;
 function ac(){
   audio=audio||new (window.AudioContext||window.webkitAudioContext)();
-  if(audio.state==="suspended")audio.resume();
+  if(audio.state!=="running")audio.resume().catch(()=>{}); // iOS leaves it "interrupted" after switching apps
   return audio;
 }
 /* tap sound effects */
@@ -509,7 +509,7 @@ function renderBgm(){
   $("bgmBtn").setAttribute("aria-label",playing?"음악 일시정지":"음악 재생");
 }
 $("bgmBtn").addEventListener("click",()=>{
-  if(!bgm.paused){bgm.pause();bgmOn=false}else{bgmOn=true;playBgm(true)}
+  if(!bgm.paused){bgmOn=false;bgmWanted=false;bgm.pause()}else{bgmOn=true;playBgm(true)}
   lsSet("bw20-bgm",bgmOn);
 });
 ["play","pause"].forEach(ev=>bgm.addEventListener(ev,renderBgm));
@@ -517,6 +517,34 @@ bgm.addEventListener("error",()=>{toast("음악 파일을 불러오지 못했어
 function renderSfx(){$("sfxBtn").textContent=sfxOn?"효과음 켬":"효과음 끔";$("sfxBtn").setAttribute("aria-pressed",sfxOn)}
 $("sfxBtn").addEventListener("click",()=>{sfxOn=!sfxOn;lsSet("bw20-sfx",sfxOn);renderSfx();if(sfxOn)thwip("pull")});
 renderSfx();
+
+/* resume music after the phone pauses it (switching to KakaoTalk, a call, lock screen) */
+let bgmWanted=false; // music was playing when the page went away
+function shouldPlay(){return bgmWanted||(bgmOn&&S.runningSince)}
+function resumeBgm(){
+  if(!shouldPlay()||!bgm.paused)return;
+  const p=bgm.play();
+  // iOS may refuse until the next touch: resume on the first tap anywhere
+  p&&p.catch(()=>{document.addEventListener("pointerdown",e=>{if(e.target.closest("#bgmBtn"))return;if(shouldPlay())bgm.play().catch(()=>{})},{once:true,capture:true})});
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){bgmWanted=bgmWanted||!bgm.paused;return}
+  resumeBgm();
+  if(audio&&audio.state!=="running")audio.resume().catch(()=>{});
+});
+window.addEventListener("pageshow",resumeBgm);
+// a pause the user didn't ask for (system interruption) while the page is visible
+bgm.addEventListener("pause",()=>{if(!document.hidden&&!bgm.ended&&bgmOn&&S.runningSince)setTimeout(resumeBgm,600)});
+bgm.addEventListener("play",()=>{bgmWanted=false});
+// lock-screen / control-center buttons
+if("mediaSession" in navigator){
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({title:"20분 맨몸 카운터",artist:"Spider20"});
+    navigator.mediaSession.setActionHandler("play",()=>{bgmOn=true;lsSet("bw20-bgm",true);playBgm(true)});
+    navigator.mediaSession.setActionHandler("pause",()=>{bgmOn=false;bgmWanted=false;lsSet("bw20-bgm",false);bgm.pause()});
+    navigator.mediaSession.setActionHandler("nexttrack",()=>{setTrack(track+1);playBgm(true)});
+  }catch(e){}
+}
 renderBgm();
 function loop(){clearInterval(ticker);ticker=setInterval(tick,250);tick()}
 function tick(){
