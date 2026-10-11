@@ -299,6 +299,54 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .exl .bar{position:relative;height:6px;border-radius:3px;background:var(--line)}
 .exl .bar i{position:absolute;inset:0 auto 0 0;border-radius:3px;background:var(--c)}
 .exl .bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);border-radius:1px}
+/* ranking arena: its own dark look, tokens redefined locally so children follow */
+.arena{--bg:#0e1211;--surface:#181e1c;--ink:#eef2ef;--muted:#9aa7a0;--line:#2a3330;--danger:#e2483d;--on-accent:#fff;
+  --gold:#e8b83a;--silver:#c3cad0;--bronze:#c8814a;
+  color:var(--ink);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%23ffffff' stroke-opacity='.07' stroke-width='1.2'%3E%3Cg transform='translate(200 0)'%3E%3Cpath d='M0 0L-200 0M0 0L-190 60M0 0L-150 120M0 0L-100 170M0 0L-40 200M0 0L0 200'/%3E%3Cpath d='M-40 0Q-36 14 -38 12Q-30 30 -20 34Q-8 38 0 40'/%3E%3Cpath d='M-90 0Q-84 26 -80 30Q-64 64 -46 78Q-20 88 0 90'/%3E%3Cpath d='M-140 0Q-134 40 -124 48Q-100 100 -70 124Q-34 140 0 140'/%3E%3Cpath d='M-190 0Q-182 56 -168 66Q-136 136 -92 166Q-46 188 0 190'/%3E%3C/g%3E%3C/svg%3E") top right/260px no-repeat,
+    radial-gradient(120% 80% at 50% 0%,#2a1414 0%,transparent 60%),var(--bg)}
+.arena-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.arena-head h2{font-size:1.5rem;letter-spacing:.02em}
+.arena .rules{color:var(--muted);font-size:.8rem;margin:0}
+.arena .rules b{color:var(--danger)}
+.arena .chip{--c:var(--ink)}
+.arena .seg{background:var(--surface);border-color:var(--line)}
+.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:end;gap:8px;padding-top:8px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;text-align:center}
+.pod .pav{position:relative;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.3rem;color:#111;background:var(--mc);
+  box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--mc),0 0 22px color-mix(in srgb,var(--mc) 55%,transparent)}
+.pod.p1 .pav{width:70px;height:70px;font-size:1.7rem}
+.pod.p1 .pav::before{content:"";position:absolute;top:-22px;left:50%;width:30px;height:18px;transform:translateX(-50%);background:var(--gold);
+  clip-path:polygon(0 100%,0 30%,25% 60%,50% 0,75% 60%,100% 30%,100% 100%)}
+.pod .pn{font-weight:700;font-size:.85rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .pv{font-family:var(--f-num);font-weight:700;font-size:1.5rem;line-height:1;color:var(--mc)}
+.pod.p1 .pv{font-size:2rem}
+.pod .pu{font-size:.68rem;color:var(--muted)}
+.pod .step{width:100%;border-radius:10px 10px 4px 4px;display:grid;place-items:center;font-family:var(--f-display);font-size:1.6rem;color:var(--bg);
+  background:linear-gradient(180deg,var(--mc),color-mix(in srgb,var(--mc) 55%,#000))}
+.pod.p1 .step{height:92px;font-size:2.2rem}.pod.p2 .step{height:66px}.pod.p3 .step{height:48px}
+.pod.empty .pav{background:transparent;color:var(--muted);box-shadow:0 0 0 2px var(--line);border:2px dashed var(--line)}
+.pod.empty .step{background:var(--surface);color:var(--muted)}
+.pod.me .pn{color:var(--danger)}
+.myrank{display:grid;grid-template-columns:auto 1fr auto;gap:2px 12px;align-items:center;padding:12px 14px;border-radius:14px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--danger) 28%,var(--surface)),var(--surface));border:1px solid color-mix(in srgb,var(--danger) 50%,transparent)}
+.myrank .mr-no{grid-row:span 2;font-family:var(--f-display);font-size:2rem;line-height:1;color:var(--danger)}
+.myrank .mr-no small{font-size:.5em;margin-left:2px}
+.myrank b{font-size:.95rem}
+.myrank span{font-size:.78rem;color:var(--muted)}
+.myrank .mr-v{grid-row:span 2;text-align:right;font-family:var(--f-num);font-weight:700;font-size:1.4rem}
+.arena .rank li{border-top-color:var(--line)}
+.arena .rank li.me{background:color-mix(in srgb,var(--danger) 18%,transparent)}
+.arena .rank .av{background:var(--line);color:var(--ink)}
+/* profile page */
+.profile .back{align-self:flex-start;border:0;background:none;color:var(--muted);font-weight:700;padding:4px 0;min-height:36px}
+.pf-head{display:flex;align-items:center;gap:14px}
+.pf-head b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.5rem}
+.pf-av{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:1.6rem;font-weight:800;background:var(--danger);color:var(--on-accent);flex:none}
+.pf-label{font-weight:700;font-size:.85rem}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:transparent;align-self:flex-start}
+button.me-badge{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;min-height:32px;cursor:pointer;color:var(--muted)}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
@@ -307,7 +355,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .titlebar h1{min-width:0}
 .me-badge{flex:none;display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--muted);max-width:50%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .me-badge b{font-family:var(--f-num);color:var(--danger);font-size:.95rem}
-body[data-tab="work"] header .sub{display:none}
+header .sub{display:none} /* how-to lives on the buttons themselves */
 body[data-tab="work"] header h1{font-size:1.25rem;line-height:1.2}
 body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
 #pane-work{gap:10px}
@@ -360,7 +408,7 @@ body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
 </div>
 <div class="wrap">
   <header>
-    <div class="titlebar"><h1>20분 맨몸 카운터</h1><span class="me-badge" id="meBadge" hidden></span></div>
+    <div class="titlebar"><h1>20분 맨몸 카운터</h1><button class="me-badge" id="meBadge" hidden aria-label="내 정보"></button></div>
     <p class="sub">철봉 → 팔굽혀펴기 → 스쿼트가 1세트. 한 번 할 때마다 탭하세요. 한 세트가 끝나면 아래 <b>세트 완료</b>를 누르세요.</p>
   </header>
 
@@ -453,17 +501,25 @@ body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
   <div class="seg seg3" role="tablist" aria-label="랭킹 종류">
     <button role="tab" data-rk="spidey">스파이더맨</button><button role="tab" data-rk="ex">종목별</button><button role="tab" data-rk="week">이번 주</button>
   </div>
-  <section class="panel" aria-label="랭킹">
-    <div class="phead"><h2 id="rankTitle">스파이더맨 랭킹</h2><span class="sync" id="rankSync"></span></div>
+  <section class="arena" aria-label="랭킹">
+    <div class="arena-head"><h2 id="rankTitle">스파이더맨 랭킹</h2><span class="sync" id="rankSync"></span></div>
     <div id="rankCtl"></div>
+    <div class="podium" id="podium"></div>
+    <div class="myrank" id="myRank" hidden></div>
     <p class="rules" id="rankRule"></p>
     <p class="note" id="rankNote" hidden></p>
     <ol class="rank" id="rankList"></ol>
   </section>
-  <section class="panel" aria-label="내 정보">
-    <div class="phead"><h2>내 정보</h2></div>
-    <div class="nick"><span class="sync" id="acct" style="flex:1 1 100%">계정 연결 중…</span><button class="btn" id="logoutBtn">로그아웃</button></div>
-    <div class="nick"><input id="nickInput" maxlength="16" placeholder="랭킹에 표시할 닉네임" aria-label="닉네임"><button class="btn" id="nickSave">닉네임 저장</button></div>
+  </div>
+
+  <div class="pane" id="pane-me" hidden>
+  <section class="panel profile" aria-label="내 정보">
+    <button class="back" id="meBack">‹ 돌아가기</button>
+    <div class="pf-head"><span class="pf-av" id="pfAv">?</span><div><b id="pfName">닉네임</b><span class="sync" id="acct">계정 연결 중…</span></div></div>
+    <div class="kpis" id="pfStats"></div>
+    <label class="pf-label" for="nickInput">닉네임</label>
+    <div class="nick"><input id="nickInput" maxlength="16" placeholder="랭킹에 표시할 닉네임" aria-label="닉네임"><button class="btn" id="nickSave">저장</button></div>
+    <button class="btn danger" id="logoutBtn">로그아웃</button>
   </section>
   </div>
 
@@ -1122,7 +1178,7 @@ async function initBoard(){
   DB.collection("board").onSnapshot(snap=>{
     board=snap.docs.map(d=>({id:d.id,...d.data()}));
     $("rankSync").textContent=`${board.length}명 참여`;
-    renderRank();
+    renderRank();if(!$("pane-me").hidden)renderProfile();
   },()=>{$("rankSync").textContent="";rankNote("랭킹을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.")});
   publishBoard();
 }
@@ -1157,18 +1213,43 @@ async function renderRank(){
     score=r=>String(t(r));big=t;unit="회";
     sub=r=>{const x=w(r);return `철봉 ${x.pull} · 팔굽혀펴기 ${x.push} · 스쿼트 ${x.squat}`};
   }
-  if(!rows.length){list.innerHTML=`<li style="display:block"><p class="empty">아직 기록이 없어요. 운동을 저장하면 랭킹에 올라가요. 이 화면은 새 버전으로 한 번 이상 저장한 사람부터 나와요.</p></li>`;return}
+  const pod=$("podium"),mine=$("myRank");
+  const ranked=[];let rank=0,prev=null;
+  rows.forEach((r,i)=>{const sc=score(r);if(sc!==prev){rank=i+1;prev=sc}ranked.push({r,rank})});
+  const nm=r=>r.nick||"닉네임 없는 거미";
+  // podium: 2nd, 1st, 3rd
+  const medal=["var(--gold)","var(--silver)","var(--bronze)"];
+  pod.innerHTML="";
+  [1,0,2].forEach(i=>{
+    const e=ranked[i],d=document.createElement("div");
+    d.className=`pod p${i+1}${e?"":" empty"}${e&&e.r.id===UID?" me":""}`;d.style.setProperty("--mc",medal[i]);
+    d.innerHTML=`<span class="pav"></span><span class="pn"></span><span class="pv"></span><span class="pu"></span><div class="step">${i+1}</div>`;
+    if(e){d.querySelector(".pav").textContent=[...nm(e.r)][0]||"?";d.querySelector(".pn").textContent=nm(e.r)+(e.r.id===UID?" (나)":"");
+      d.querySelector(".pv").textContent=big(e.r);d.querySelector(".pu").textContent=unit}
+    else{d.querySelector(".pav").textContent="?";d.querySelector(".pn").textContent="도전자 대기"}
+    pod.appendChild(d);
+  });
+  // my position, and how far the person above is
+  const me=ranked.findIndex(e=>e.r.id===UID);
+  if(me<0){mine.hidden=true}
+  else{
+    const e=ranked[me],above=ranked.slice(0,me).reverse().find(x=>x.rank<e.rank);
+    const diff=above?Number(big(above.r))-Number(big(e.r)):0;
+    mine.hidden=false;
+    mine.innerHTML=`<span class="mr-no">${e.rank}<small>위</small></span><b></b><span class="mr-v"></span><span></span>`;
+    mine.querySelector("b").textContent=`${nm(e.r)} · ${rows.length}명 중`;
+    mine.querySelector(".mr-v").textContent=`${big(e.r)}${unit==="회"?"회":""}`;
+    mine.querySelector("span:last-child").textContent=e.rank===1?"1위를 지키는 중!":above?(diff>0?`${above.rank}위까지 ${diff}${unit==="스파이더맨"?" 스파이더맨":"회"}`:`${above.rank}위와 동점, 다음 기준에서 밀려요`):"";
+  }
   list.innerHTML="";
-  let rank=0,prev=null;
-  rows.forEach((r,i)=>{
-    const sc=score(r);if(sc!==prev){rank=i+1;prev=sc}
-    const name=r.nick||"닉네임 없는 거미";
+  if(!rows.length){list.innerHTML=`<li style="display:block"><p class="empty">아직 기록이 없어요. 운동을 저장하면 랭킹에 올라가요.</p></li>`;return}
+  ranked.slice(3).forEach(({r,rank})=>{
     const li=document.createElement("li");if(r.id===UID)li.className="me";
     li.style.setProperty("--c",color);
     li.innerHTML=`<span class="no"></span><span class="av"></span><span class="who"><b></b><small></small></span><span class="sp c"><span class="v"></span><small></small></span>`;
     li.querySelector(".no").textContent=rank;
-    li.querySelector(".av").textContent=[...name][0]||"?";
-    li.querySelector(".who b").textContent=name+(r.id===UID?" (나)":"");
+    li.querySelector(".av").textContent=[...nm(r)][0]||"?";
+    li.querySelector(".who b").textContent=nm(r)+(r.id===UID?" (나)":"");
     li.querySelector(".who small").textContent=sub(r);
     li.querySelector(".sp .v").textContent=big(r);
     li.querySelector(".sp small").textContent=unit;
@@ -1205,6 +1286,7 @@ function renderMeBadge(){
   const n=document.createElement("span");n.textContent=myNick;
   const c=document.createElement("b");c.textContent=`${spiderCount(records)}`;
   el.append(n,c,document.createTextNode("스파이더맨"));
+  if(!$("pane-me").hidden)renderProfile();
 }
 function renderHistory(){
   publishBoard();renderMeBadge();
@@ -1434,14 +1516,33 @@ $("log").addEventListener("click",e=>{
   removeRecord(b.dataset.id);
 });
 
-const TABS=["work","cal","stats","rank","log"];
+const TABS=["work","cal","stats","rank","log","me"]; // "me" (내 정보) opens from the title-bar badge
+var lastTab="work";
+function renderProfile(){
+  const n=myNick||"닉네임 없음";
+  $("pfName").textContent=n;$("pfAv").textContent=[...n][0]||"?";
+  const sp=spiderCount(records),bp=records.reduce((m,r)=>Math.max(m,spidey(r)),0);
+  const reps=records.reduce((a,r)=>a+r.pull+r.push+r.squat,0),tom=records.reduce((m,r)=>Math.max(m,missionSets(r.rounds||[])),0);
+  const myRow=board.find(r=>r.id===UID);
+  const rows=[...board].sort((a,b)=>(b.spiders||0)-(a.spiders||0)||(b.bestPct||0)-(a.bestPct||0)||(b.reps||0)-(a.reps||0));
+  const rk=myRow?rows.findIndex(r=>r.id===UID)+1:0;
+  const kp=(l,v,s,c)=>`<div class="kpi" style="--c:${c||"var(--ink)"}"><small>${l}</small><b>${v}</b><span>${s||""}</span></div>`;
+  $("pfStats").innerHTML=kp("스파이더맨",sp,rk?`스파이더맨 랭킹 ${rk}위 / ${rows.length}명`:"","var(--danger)")
+    +kp("최고 지수",`${bp}%`,tierOf(bp))
+    +kp("총 운동",`${records.length}번`,`연속 ${streak(groupBy(dayKey))}일`)
+    +kp("총 횟수",`${reps}회`,`톰 홀랜드 세트 최고 ${tom}/${MISSION_GOAL}`);
+}
 function showTab(t){
-  TABS.forEach(x=>{$("pane-"+x).hidden=x!==t;$("tab-"+x).setAttribute("aria-selected",x===t)});
+  if(t!=="me")lastTab=t;
+  TABS.forEach(x=>{$("pane-"+x).hidden=x!==t;const tb=$("tab-"+x);if(tb)tb.setAttribute("aria-selected",x===t)});
+  if(t==="me")renderProfile();
   document.body.dataset.tab=t;
   lsSet("bw20-tab",t);window.scrollTo(0,0);
 }
-TABS.forEach(x=>$("tab-"+x).addEventListener("click",()=>showTab(x)));
-showTab(TABS.includes(lsGet("bw20-tab","work"))?lsGet("bw20-tab","work"):"work");
+TABS.forEach(x=>{const tb=$("tab-"+x);if(tb)tb.addEventListener("click",()=>showTab(x))});
+$("meBadge").addEventListener("click",()=>showTab("me"));
+$("meBack").addEventListener("click",()=>showTab(lastTab||"work"));
+{const t0=lsGet("bw20-tab","work");showTab(TABS.includes(t0)&&t0!=="me"?t0:"work")}
 
 let toastT=null;
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2200)}
