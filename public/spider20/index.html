@@ -350,7 +350,7 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 // in this round, after moving on to another one, starts the next round.
 let S=lsGet(DRAFT_KEY,null);
 if(!S||!S.rounds)S=freshSession();
-function freshSession(){return{counts:{pull:0,push:0,squat:0},rounds:[],forceNew:false,lastK:null,elapsed:0,startedAt:null,runningSince:null}}
+function freshSession(){return{counts:{pull:0,push:0,squat:0},rounds:[],cleared:0,forceNew:false,lastK:null,elapsed:0,startedAt:null,runningSince:null}}
 const emptyRound=()=>({pull:0,push:0,squat:0});
 const rsum=r=>r.pull+r.push+r.squat;
 // Tom Holland mission: 5 pull-ups, 10 push-ups, 15 squats per set; 28 sets in 20 minutes
@@ -397,7 +397,9 @@ function add(k,d){
 function addToRound(k,d){
   const R=S.rounds;let cur=R[R.length-1];
   if(d>0){
-    if(!cur||S.forceNew||(cur[k]>0&&S.lastK!==k)){cur=emptyRound();R.push(cur)}
+    if(!cur||S.forceNew||(cur[k]>0&&S.lastK!==k)){
+      if(cur)celebrateRound(R.length-1); // finishing a set by moving on also counts as a clear
+      cur=emptyRound();R.push(cur)}
     cur[k]+=d;S.forceNew=false;S.lastK=k;
   }else{
     let i=R.length-1;while(i>=0&&!R[i][k])i--;
@@ -530,12 +532,24 @@ function tick(){
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.runningSince)lockScreen()});
 
+// SET N CLEAR for any finished set; sets that hit 5/10/15 get the Tom Holland version
+function celebrateRound(i){
+  if((S.cleared||0)>i)return;
+  S.cleared=i+1;
+  const r=S.rounds[i];if(!r||roundDone(r))return; // already celebrated by missionRoundDone
+  fanfare(false);
+  try{navigator.vibrate&&navigator.vibrate([40,40,120])}catch(e){}
+  const miss=EX.filter(x=>r[x.k]<MISSION[x.k]).map(x=>`${x.name} ${MISSION[x.k]-r[x.k]}`).join(" · ");
+  showClear(`SET ${i+1} CLEAR!`,`${r.pull} / ${r.push} / ${r.squat} · 톰 홀랜드 세트까지 ${miss}`);
+  say(`Set ${i+1} clear!`);
+}
 function missionRoundDone(){
+  S.cleared=Math.max(S.cleared||0,S.rounds.length);
   const n=missionSets(S.rounds),goal=n===MISSION_GOAL;
   fanfare(goal);
   try{navigator.vibrate&&navigator.vibrate(goal?[80,60,80,60,300]:[40,40,120])}catch(e){}
   if(goal){showClear("SPIDER-MAN CLEAR!","28세트 · 톰 홀랜드 기록 달성");say("Spider-Man clear!")}
-  else{showClear(`SET ${n} CLEAR!`,`톰 홀랜드까지 ${MISSION_GOAL-n}세트`);say(`Set ${n} clear!`)}
+  else{const k=S.rounds.length;showClear(`SET ${k} CLEAR!`,`톰 홀랜드 세트 ${n}/${MISSION_GOAL} ✓ · 28세트까지 ${MISSION_GOAL-n}`);say(`Set ${k} clear!`)}
 }
 function fillMissionRound(){
   if(!S.runningSince&&elapsed()===0)start();
@@ -548,7 +562,9 @@ function fillMissionRound(){
 }
 $("fillRound").addEventListener("click",fillMissionRound);
 $("nextRound").addEventListener("click",()=>{
-  S.forceNew=!S.forceNew;persistDraft();renderSession()});
+  S.forceNew=!S.forceNew;
+  if(S.forceNew&&S.rounds.length)celebrateRound(S.rounds.length-1);
+  persistDraft();renderSession()});
 $("startBtn").addEventListener("click",()=>S.runningSince?pause():start());
 let resetArmed=null;
 $("resetBtn").addEventListener("click",()=>{
