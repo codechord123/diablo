@@ -198,6 +198,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
       <button class="btn primary" id="startBtn">시작</button>
       <button class="btn" id="resetBtn">초기화</button>
       <button class="btn" id="bgmBtn" aria-pressed="true">음악 켬</button>
+      <button class="btn" id="bgmNext" aria-label="다음 곡">다음 곡 ›</button>
     </div>
     <div class="bar"><i id="barFill"></i></div>
     <div class="state"><span id="stateText">대기 중 · 시작을 누르면 20분 카운트다운</span><span id="paceText"></span></div>
@@ -284,7 +285,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
   <button role="tab" id="tab-rank" aria-selected="false">랭킹</button>
   <button role="tab" id="tab-log" aria-selected="false">기록</button>
 </nav>
-<audio id="bgm" src="bgm.mp3" loop preload="none"></audio>
+<audio id="bgm" src="bgm.mp3" preload="none"></audio>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -391,8 +392,15 @@ function pause(){
 /* background music: plays while the timer runs */
 let bgmOn=lsGet("bw20-bgm",true);
 const bgm=$("bgm");bgm.volume=.6;
+// playlist: plays in order, then starts over
+const TRACKS=["bgm.mp3","bgm2.mp3","bgm3.mp3"];
+let track=lsGet("bw20-track",0)%TRACKS.length;
+function setTrack(i){track=(i+TRACKS.length)%TRACKS.length;lsSet("bw20-track",track);bgm.src=TRACKS[track];renderBgm()}
+bgm.src=TRACKS[track];
+bgm.addEventListener("ended",()=>{setTrack(track+1);playBgm()});
+$("bgmNext").addEventListener("click",()=>{const wasPlaying=!bgm.paused;setTrack(track+1);if(wasPlaying||S.runningSince)playBgm()});
 function playBgm(){if(bgmOn){const p=bgm.play();p&&p.catch(()=>{})}}
-function renderBgm(){$("bgmBtn").textContent=bgmOn?"음악 켬":"음악 끔";$("bgmBtn").setAttribute("aria-pressed",bgmOn)}
+function renderBgm(){$("bgmBtn").textContent=bgmOn?`음악 켬 ${track+1}/${TRACKS.length}`:"음악 끔";$("bgmNext").hidden=!bgmOn;$("bgmBtn").setAttribute("aria-pressed",bgmOn)}
 $("bgmBtn").addEventListener("click",()=>{bgmOn=!bgmOn;lsSet("bw20-bgm",bgmOn);renderBgm();
   if(!bgmOn)bgm.pause();else if(S.runningSince)playBgm()});
 renderBgm();
@@ -439,7 +447,7 @@ $("resetBtn").addEventListener("click",()=>{
   clearTimeout(resetArmed);resetArmed=null;b.textContent="초기화";b.classList.remove("danger");
   newSession();
 });
-function newSession(){$("bgm").pause();$("bgm").currentTime=0;S=freshSession();clearInterval(ticker);try{wake&&wake.release()}catch(e){}persistDraft();renderSession()}
+function newSession(){$("bgm").pause();S=freshSession();clearInterval(ticker);try{wake&&wake.release()}catch(e){}persistDraft();renderSession()}
 
 const total=c=>c.pull+c.push+c.squat;
 function fmt(ms){const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}

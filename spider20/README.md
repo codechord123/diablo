@@ -12,7 +12,7 @@
 | 파일 | 내용 |
 |---|---|
 | `index.html` | 앱 전체 (HTML/CSS/JS 한 파일) |
-| `bgm.mp3` | 타이머가 도는 동안 나오는 배경음악 |
+| `bgm.mp3`, `bgm2.mp3`, `bgm3.mp3` | 타이머가 도는 동안 차례로 반복 재생되는 배경음악 (다음 곡 버튼으로 넘기기) |
 | `vercel.json` | Vercel 설정 |
 | `firestore.rules.snippet` | Firestore 보안 규칙 (기존 규칙에 **붙여 넣기**) |
 
