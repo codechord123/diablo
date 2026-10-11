@@ -4,8 +4,8 @@
 **스파이더맨 지수**와 **스파이더맨 랭킹**으로 친구들과 겨루는 단일 페이지 앱.
 
 - 호스팅: **Vercel** (정적 파일, 빌드 없음)
-- 데이터: **Firebase** — Auth(익명 + Google 연결) / Firestore(기록 · 랭킹)
-- 서버 연결이 안 되면 브라우저(localStorage)에 저장했다가, 연결되면 자동 업로드
+- 데이터: **Firebase** — Auth(Google 로그인 필수) / Firestore(기록 · 랭킹)
+- 로그인 전에는 로그인 화면만 보입니다. 카카오톡 등 인앱 브라우저는 Google이 로그인을 막으므로 Chrome/Safari로 열어야 합니다.
 
 ## 파일
 
@@ -18,7 +18,7 @@
 
 ## Firebase 설정 (to-do-cal-6e835 콘솔에서 1회)
 
-1. **Authentication → 로그인 방법**: `익명`, `Google` 사용 설정
+1. **Authentication → 로그인 방법**: `Google` 사용 설정 (익명은 쓰지 않음)
 2. **Authentication → 설정 → 승인된 도메인**: Vercel 도메인 추가 (예: `spider20.vercel.app`)
 3. **Firestore → 규칙**: `firestore.rules.snippet`의 두 `match` 블록을 기존 규칙 안에 추가 후 게시
    - `firebase deploy --only firestore` 로 덮어쓰지 마세요. to-do-cal 앱의 규칙이 사라집니다.

@@ -177,6 +177,15 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .rank .sp{text-align:right;font-family:var(--f-num);font-weight:700;font-size:1.4rem;color:var(--danger);line-height:1}
 .rank .sp small{display:block;font-family:var(--f-body);font-size:.68rem;font-weight:600;color:var(--muted)}
 .note{margin:0;font-size:.82rem;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
+.gate{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.gate-card{width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px;text-align:center}
+.gate h1{font-size:2rem}
+.gate .big{font-family:var(--f-num);font-weight:700;font-size:3rem;color:var(--danger);line-height:1}
+.gate p{margin:0;color:var(--muted)}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:1rem}
+.gbtn svg{width:20px;height:20px}
+.gbtn:disabled{opacity:.5}
+.gate .err{color:var(--danger);font-size:.85rem;min-height:1.2em}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n{animation:none}.tap{transition:none}.bar>i{transition:none}}
@@ -184,6 +193,15 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 
 </head>
 <body>
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="big">20:00</div>
+    <h1>20분 맨몸 카운터</h1>
+    <p>철봉 5 · 팔굽혀펴기 10 · 스쿼트 15가 1세트. 톰 홀랜드는 20분에 28세트를 했어요. 기록을 저장하고 친구들과 스파이더맨 랭킹을 겨루려면 로그인하세요.</p>
+    <button class="gbtn" id="googleLogin" disabled><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span id="googleLoginText">불러오는 중…</span></button>
+    <p class="err" id="gateErr" role="alert"></p>
+  </div>
+</div>
 <div class="wrap">
   <header>
     <h1>20분 맨몸 카운터</h1>
@@ -259,7 +277,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
   <section class="panel" aria-label="랭킹">
     <div class="phead"><h2>스파이더맨 랭킹</h2><span class="sync" id="rankSync"></span></div>
     <p class="rules">20분 안에 스파이더맨 지수 <b>100%</b>(톰 홀랜드 28세트 분량: 철봉 140 · 팔굽혀펴기 280 · 스쿼트 420)를 찍을 때마다 <b>1 스파이더맨</b>. 스파이더맨 수가 같으면 최고 지수, 그다음 총 횟수로 순위를 정해요.</p>
-    <div class="nick"><span class="sync" id="acct" style="flex:1 1 100%">계정 연결 중…</span><button class="btn" id="linkGoogle" hidden>Google로 연결</button></div>
+    <div class="nick"><span class="sync" id="acct" style="flex:1 1 100%">계정 연결 중…</span><button class="btn" id="logoutBtn">로그아웃</button></div>
     <div class="nick"><input id="nickInput" maxlength="16" placeholder="랭킹에 표시할 닉네임" aria-label="닉네임"><button class="btn" id="nickSave">닉네임 저장</button></div>
     <p class="note" id="rankNote" hidden></p>
     <ol class="rank" id="rankList"></ol>
@@ -295,7 +313,8 @@ const EX=[
   {k:"squat",name:"스쿼트",en:"Squats"},
 ];
 const DURATION=20*60*1000;
-const DRAFT_KEY="bw20-draft", LOCAL_LOG="bw20-log";
+const DRAFT_KEY="bw20-draft";
+let LOCAL_LOG="bw20-log"; // becomes per-account ("bw20-log:<uid>") after sign-in
 const $=id=>document.getElementById(id);
 
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
@@ -546,45 +565,68 @@ function makeDB(F,fs){
     return api};
   return{collection:wrapCol,doc:p=>wrapDoc(F.doc(fs,p))};
 }
-async function connectFirebase(){
+async function loadFirebase(){
   const [app,auth,store]=await Promise.all([import(FB_URL("app")),import(FB_URL("auth")),import(FB_URL("firestore"))]);
   const fapp=app.initializeApp(firebaseConfig);
-  try{const an=await import(FB_URL("analytics"));if(await an.isSupported())an.getAnalytics(fapp)}catch(e){}
+  import(FB_URL("analytics")).then(async an=>{if(await an.isSupported())an.getAnalytics(fapp)}).catch(()=>{});
   const au=auth.getAuth(fapp);
-  const user=await new Promise(res=>{const off=auth.onAuthStateChanged(au,u=>{if(u){off();res(u)}});
-    auth.signInAnonymously(au).catch(()=>res(null))});
-  if(!user)return null;
   FBA={au,auth};
-  return{db:makeDB(store,store.getFirestore(fapp)),uid:user.uid,user};
+  return{auth,au,db:makeDB(store,store.getFirestore(fapp))};
+}
+// Resolves with the signed-in Google user; shows the login screen until there is one.
+function waitForLogin(F){
+  const {auth,au}=F;
+  return new Promise(res=>{
+    auth.getRedirectResult(au).catch(e=>gateError(e));
+    auth.onAuthStateChanged(au,u=>{
+      if(u&&!u.isAnonymous){$("gate").hidden=true;res(u);return}
+      showGate(F);
+    });
+  });
+}
+const inAppBrowser=/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent);
+function showGate(F){
+  $("gate").hidden=false;
+  const btn=$("googleLogin");btn.disabled=false;$("googleLoginText").textContent="Google로 로그인";
+  if(inAppBrowser)$("gateErr").textContent="카카오톡 등 앱 안의 브라우저에서는 Google 로그인이 막혀요. 오른쪽 위 메뉴에서 'Chrome / Safari로 열기'를 눌러 주세요.";
+  btn.onclick=async()=>{
+    const {auth,au}=F,prov=new auth.GoogleAuthProvider();
+    prov.setCustomParameters({prompt:"select_account"});
+    btn.disabled=true;$("gateErr").textContent="";
+    try{await auth.signInWithPopup(au,prov)}
+    catch(e){
+      if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){await auth.signInWithRedirect(au,prov);return}
+      gateError(e);btn.disabled=false;
+    }
+  };
+}
+function gateError(e){
+  if(!e||e.code==="auth/popup-closed-by-user"||e.code==="auth/cancelled-popup-request")return;
+  $("gateErr").textContent=e.code==="auth/unauthorized-domain"?"이 주소가 Firebase 승인된 도메인에 없어요. 관리자에게 알려 주세요."
+    :"로그인하지 못했어요 ("+(e.code||"알 수 없는 오류")+"). 다시 시도해 주세요.";
 }
 function renderAccount(u){
-  const el=$("acct");if(!el)return;
-  if(!u){el.textContent="오프라인 · 이 기기에만 저장";$("linkGoogle").hidden=true;return}
-  el.textContent=u.isAnonymous?"익명 계정 · 이 기기에서만 이어져요":`${u.displayName||u.email||"Google 계정"} · 여러 기기에서 이어져요`;
-  $("linkGoogle").hidden=!u.isAnonymous;
+  $("acct").textContent=u?`${u.displayName||u.email||"Google 계정"}${u.email&&u.displayName?" · "+u.email:""}`:"";
 }
-async function linkGoogle(){
-  if(!FBA)return;
-  const {au,auth}=FBA,prov=new auth.GoogleAuthProvider();
-  try{await auth.linkWithPopup(au.currentUser,prov);toast("Google 계정과 연결됐어요");renderAccount(au.currentUser)}
-  catch(e){
-    if(e.code==="auth/credential-already-in-use"){
-      // this Google account already has data: switch to it and carry this device's records over
-      records.forEach(r=>r.synced=false);lsSet(LOCAL_LOG,records);
-      const cred=auth.GoogleAuthProvider.credentialFromError(e);
-      await auth.signInWithCredential(au,cred);location.reload();
-    }else if(e.code!=="auth/popup-closed-by-user")toast("Google 연결 실패: "+(e.code||"알 수 없는 오류"));
-  }
-}
+$("logoutBtn").addEventListener("click",async()=>{if(!FBA)return;await FBA.auth.signOut(FBA.au);location.reload()});
 async function initStore(){
   const sync=$("syncText");
   sync.textContent="계정 연결 중…";
-  let conn=null;
-  try{conn=await withTimeout(connectFirebase(),10000)}catch(e){conn=null}
-  renderAccount(conn&&conn.user);
-  if(!conn){sync.textContent="이 기기에만 저장 중 (서버 연결 안 됨)";renderHistory();
-    rankNote("랭킹 서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.");return}
-  const db=conn.db,uid=conn.uid;
+  let F=null;
+  try{F=await withTimeout(loadFirebase(),10000)}catch(e){F=null}
+  if(!F){
+    $("googleLoginText").textContent="다시 시도";$("googleLogin").disabled=false;
+    $("googleLogin").onclick=()=>location.reload();
+    $("gateErr").textContent="서버에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.";return}
+  const u=await waitForLogin(F);
+  renderAccount(u);
+  const db=F.db,uid=u.uid;
+  // switch the local cache to this account; records made before any sign-in move into it once
+  LOCAL_LOG="bw20-log:"+uid;
+  const legacy=lsGet("bw20-log",[]).map(r=>({...r,synced:false}));
+  records=[...lsGet(LOCAL_LOG,[]),...legacy.filter(r=>!lsGet(LOCAL_LOG,[]).some(x=>x.id===r.id))];
+  try{localStorage.removeItem("bw20-log")}catch(e){}
+  lsSet(LOCAL_LOG,records);renderHistory();
   DB=db;UID=uid;
   initBoard();
   col=db.collection(`users/${uid}/workouts`);
@@ -658,7 +700,7 @@ async function renderRank(){
   });
 }
 $("nickInput").value=myNick;
-$("linkGoogle").addEventListener("click",linkGoogle);
+
 $("nickSave").addEventListener("click",()=>{
   myNick=$("nickInput").value.trim().slice(0,16);lsSet("bw20-nick",myNick);
   if(!DB){toast("서버에 연결되면 랭킹에 반영돼요");return}
