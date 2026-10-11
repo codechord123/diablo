@@ -390,6 +390,25 @@ button.me-badge{border:1px solid var(--line);background:var(--surface);border-ra
 .sh-ex span{display:block;font-size:.7rem;color:var(--muted)}
 .sh-del{align-self:stretch;min-height:46px}
 .daylist{display:flex;flex-direction:column;gap:6px}
+/* 5·10·15 one-shot button: Spider-Man suit colors, a single deliberate look in both themes */
+.webfill{--sr:#d3202e;--sb:#1d4ea8;position:relative;overflow:hidden;width:100%;min-height:64px;border:0;border-radius:16px;color:#fff;cursor:pointer;
+  display:flex;align-items:center;gap:14px;padding:10px 18px;text-align:left;touch-action:manipulation;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 60' fill='none' stroke='%23000' stroke-opacity='.28' stroke-width='1'%3E%3Cpath d='M60 30L0 0M60 30L60 0M60 30L120 0M60 30L0 30M60 30L120 30M60 30L0 60M60 30L60 60M60 30L120 60'/%3E%3Cpath d='M45 22Q60 26 75 22Q72 30 75 38Q60 34 45 38Q48 30 45 22Z'/%3E%3Cpath d='M28 12Q60 20 92 12Q86 30 92 48Q60 40 28 48Q34 30 28 12Z'/%3E%3C/svg%3E") center/120px 60px,
+    linear-gradient(115deg,var(--sr) 0 56%,#0c0c10 56% 57.5%,var(--sb) 57.5% 100%);
+  box-shadow:0 6px 0 #7d0f17,0 10px 22px rgb(211 32 46 / .35);transition:transform .08s,box-shadow .08s}
+.webfill::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgb(255 255 255 / .35) 45%,transparent 60%);transform:translateX(-120%);animation:wfShine 3.2s ease-in-out infinite}
+@keyframes wfShine{0%,60%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.webfill:active{transform:translateY(4px);box-shadow:0 2px 0 #7d0f17,0 4px 10px rgb(211 32 46 / .3)}
+.webfill:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.wf-web{flex:none;width:40px;height:40px;color:#fff;filter:drop-shadow(0 0 4px rgb(255 255 255 / .6))}
+.webfill.fire .wf-web{animation:wfSpin .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes wfSpin{0%{transform:scale(.6) rotate(-90deg)}100%{transform:scale(1) rotate(0)}}
+.wf-text{display:flex;flex-direction:column;gap:1px;min-width:0;position:relative;z-index:1}
+.wf-text b{font-family:var(--f-display);font-weight:400;font-size:1.7rem;line-height:1;letter-spacing:.03em;text-shadow:0 2px 0 rgb(0 0 0 / .35)}
+.wf-text b i{font-style:normal;opacity:.7;margin:0 4px}
+.wf-text small{font-size:.76rem;font-weight:700;opacity:.92}
+@media (prefers-reduced-motion:reduce){.webfill::after,.webfill.fire .wf-web{animation:none}}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
@@ -489,7 +508,11 @@ body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
   </section>
 
   <section class="rounds" aria-label="세트별 기록">
-    <div class="rhead"><h2 id="roundTitle">세트</h2><div class="btns"><button class="btn" id="fillRound">5·10·15 채우기</button></div></div>
+    <div class="rhead"><h2 id="roundTitle">세트</h2></div>
+    <button class="webfill" id="fillRound" aria-label="톰 홀랜드 1세트 한 번에 채우기: 철봉 5, 팔굽혀펴기 10, 스쿼트 15">
+      <svg class="wf-web" viewBox="0 0 100 100" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M50 50L50 2M50 50L84 16M50 50L98 50M50 50L84 84M50 50L50 98M50 50L16 84M50 50L2 50M50 50L16 16"/><path d="M50 30L64 36L70 50L64 64L50 70L36 64L30 50L36 36Z"/><path d="M50 12L77 23L88 50L77 77L50 88L23 77L12 50L23 23Z"/></svg>
+      <span class="wf-text"><b><span>5</span><i>·</i><span>10</span><i>·</i><span>15</span></b><small>톰 홀랜드 1세트 한 번에 채우기</small></span>
+    </button>
     <div class="mbar" id="mbar">
       <div class="track" aria-hidden="true"><i id="mFill"></i><b id="mPace"></b></div>
       <p><span id="mLeft">1세트 = 풀업 5 · 푸시업 10 · 스쿼트 15</span><span id="mStatus"></span></p>
@@ -933,8 +956,12 @@ function fillMissionRound(){
   const R=S.rounds;let cur=R[R.length-1];
   if(!cur||S.forceNew||roundDone(cur)){cur=emptyRound();R.push(cur)}
   S.forceNew=false;S.lastK="squat";
-  EX.forEach(x=>{const need=Math.max(0,MISSION[x.k]-cur[x.k]);cur[x.k]+=need;S.counts[x.k]+=need});
-  try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}
+  const needs={};
+  EX.forEach(x=>{const need=Math.max(0,MISSION[x.k]-cur[x.k]);needs[x.k]=need;cur[x.k]+=need;S.counts[x.k]+=need});
+  try{navigator.vibrate&&navigator.vibrate([20,40,20,40,60])}catch(e){}
+  // three web shots, one per exercise, left to right
+  EX.forEach((x,i)=>{if(needs[x.k]>0)setTimeout(()=>{thwip(x.k);tapFx(x.k,needs[x.k],null)},i*110)});
+  const b=$("fillRound");b.classList.remove("fire");void b.offsetWidth;b.classList.add("fire");
   missionRoundDone();persistDraft();renderSession();
 }
 $("fillRound").addEventListener("click",fillMissionRound);
