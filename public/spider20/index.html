@@ -1286,9 +1286,12 @@ document.querySelectorAll("[data-st]").forEach(b=>b.addEventListener("click",()=
 
 /* 종목별: one exercise, by day / week / month */
 function renderExStats(){
-  const x=EX.find(e=>e.k===statEx)||EX[0],k=x.k,P=PERIODS[period];
-  $("exChips").innerHTML=EX.map(e=>`<button class="chip" data-ex="${e.k}" style="--c:var(--${e.k})" aria-pressed="${e.k===k}">${e.name}</button>`).join("");
-  $("exTitle").textContent=x.name;$("exTitle").style.color=`var(--${k})`;
+  const ALL={k:"all",name:"전체"};
+  const x=statEx==="all"?ALL:(EX.find(e=>e.k===statEx)||EX[0]),k=x.k,P=PERIODS[period];
+  $("exChips").innerHTML=EX.map(e=>`<button class="chip" data-ex="${e.k}" style="--c:var(--${e.k})" aria-pressed="${e.k===k}">${e.name}</button>`).join("")
+    +`<button class="chip" data-ex="all" style="--c:var(--ink)" aria-pressed="${k==="all"}">전체</button>`;
+  $("exTitle").textContent=x.name;$("exTitle").style.color=k==="all"?"var(--ink)":`var(--${k})`;
+  if(k==="all")return renderAllStats(P);
   $("pDay").setAttribute("aria-pressed",period==="day");$("pWeek").setAttribute("aria-pressed",period==="week");$("pMonth").setAttribute("aria-pressed",period==="month");
   const g=groupBy(P.keyFn),all=[...g.values()].filter(v=>v[k]>0);
   const total=records.reduce((a,r)=>a+(r[k]||0),0),sessions=records.filter(r=>r[k]>0).length;
@@ -1306,6 +1309,27 @@ function renderExStats(){
   else{keys=[];let kk=curKey;for(let i=0;i<8;i++){keys.unshift(kk);kk=P.prev(kk)}}
   $("pchart").innerHTML=keys.length?barChart(keys.map(kk=>({v:(g.get(kk)||{})[k]||0,label:P.label(kk)})),`var(--${k})`,`최근 ${P.name}별 ${x.name}`)
     :`<p class="empty">기록을 저장하면 ${x.name} 그래프가 나와요.</p>`;
+}
+/* 전체: the three exercises added up */
+function renderAllStats(P){
+  $("pDay").setAttribute("aria-pressed",period==="day");$("pWeek").setAttribute("aria-pressed",period==="week");$("pMonth").setAttribute("aria-pressed",period==="month");
+  const t=v=>(v.pull||0)+(v.push||0)+(v.squat||0);
+  const g=groupBy(P.keyFn),all=[...g.values()].filter(v=>t(v)>0);
+  const total=records.reduce((a,r)=>a+t(r),0),sessions=records.length;
+  const curKey=P.keyFn(new Date()),cur=g.get(curKey);
+  const bestP=all.length?all.reduce((a,b)=>t(b)>t(a)?b:a):null;
+  const bestSet=records.reduce((m,r)=>Math.max(m,...(r.rounds||[]).map(rsum)),0);
+  const kp=(label,val,sub)=>`<div class="kpi" style="--c:var(--ink)"><small>${label}</small><b>${val}</b><span>${sub||""}</span></div>`;
+  $("exKpis").innerHTML=
+    kp(`이번 ${P.name}`,`${cur?t(cur):0}회`,bestP?`최고 ${t(bestP)}회 (${P.long(bestP.key)})`:"")+
+    kp("누적",`${total}회`,`${sessions}번 운동`)+
+    kp("운동당 평균",`${sessions?Math.round(total/sessions):0}회`,`톰 홀랜드 20분 ${TOM.pull+TOM.push+TOM.squat}회`)+
+    kp("한 세트 최고",`${bestSet||0}회`,`톰 홀랜드 세트 기준 ${MISSION.pull+MISSION.push+MISSION.squat}회`);
+  let keys;
+  if(period==="day")keys=[...g.keys()].sort().slice(-8);
+  else{keys=[];let kk=curKey;for(let i=0;i<8;i++){keys.unshift(kk);kk=P.prev(kk)}}
+  $("pchart").innerHTML=keys.length?stackChart(keys.map(kk=>({...(g.get(kk)||{pull:0,push:0,squat:0}),label:P.label(kk)})),`최근 ${P.name}별 세 종목 합계`)
+    :`<p class="empty">기록을 저장하면 그래프가 나와요.</p>`;
 }
 $("exChips").addEventListener("click",e=>{const b=e.target.closest("[data-ex]");if(!b)return;statEx=b.dataset.ex;lsSet("bw20-statex",statEx);renderExStats()});
 [["pDay","day"],["pWeek","week"],["pMonth","month"]].forEach(([id,p])=>$(id).addEventListener("click",()=>{period=p;lsSet("bw20-period",p);renderExStats()}));
