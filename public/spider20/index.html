@@ -303,8 +303,13 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
 /* ── workout tab: everything needed mid-set fits one phone screen ── */
-body[data-tab="work"] header{display:none}
-body[data-tab="work"] .wrap{padding-block:10px 88px}
+.titlebar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.titlebar h1{min-width:0}
+.me-badge{flex:none;display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--muted);max-width:50%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.me-badge b{font-family:var(--f-num);color:var(--danger);font-size:.95rem}
+body[data-tab="work"] header .sub{display:none}
+body[data-tab="work"] header h1{font-size:1.25rem;line-height:1.2}
+body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
 #pane-work{gap:10px}
 #pane-work .timer{padding:10px 12px;gap:6px 10px}
 #pane-work .clock{font-size:clamp(2.2rem,11vw,2.8rem)}
@@ -334,7 +339,7 @@ body[data-tab="work"] .wrap{padding-block:10px 88px}
 #pane-work .trk b{height:22px;min-width:22px;font-size:.66rem}
 #pane-work .race .gap{font-size:.85rem;padding:0}
 #pane-work .exl small{font-size:.66rem}
-@media (max-height:620px){#pane-work .exl{display:none}#pane-work .tap{padding-top:6px}#pane-work .timer{padding-block:8px}}
+@media (max-height:620px){#pane-work .exl,#pane-work .spidey .why{display:none}#pane-work .setdone{min-height:40px}#pane-work .tap .n{font-size:2.3rem}#pane-work .sounds .btn{min-height:30px}#pane-work .minis button{min-height:34px}#pane-work .tap{padding-top:6px}#pane-work .timer{padding-block:8px}}
 </style>
 
 </head>
@@ -355,7 +360,7 @@ body[data-tab="work"] .wrap{padding-block:10px 88px}
 </div>
 <div class="wrap">
   <header>
-    <h1>20분 맨몸 카운터</h1>
+    <div class="titlebar"><h1>20분 맨몸 카운터</h1><span class="me-badge" id="meBadge" hidden></span></div>
     <p class="sub">철봉 → 팔굽혀펴기 → 스쿼트가 1세트. 한 번 할 때마다 탭하세요. 한 세트가 끝나면 아래 <b>세트 완료</b>를 누르세요.</p>
   </header>
 
@@ -1184,7 +1189,7 @@ $("nickSave").addEventListener("click",()=>{
   const n=cleanNick($("nickInput").value);
   if(n.length<2){toast("닉네임은 2~16자로 정해 주세요");return}
   if(board.some(r=>r.id!==UID&&(r.nick||"").toLowerCase()===n.toLowerCase())){toast(`'${n}'은(는) 이미 누가 쓰고 있어요`);return}
-  myNick=n;lsSet("bw20-nick:"+UID,myNick);$("nickInput").value=n;
+  myNick=n;lsSet("bw20-nick:"+UID,myNick);$("nickInput").value=n;renderMeBadge();
   publishBoard().then(()=>toast(boardBlocked?"닉네임 저장 실패":"닉네임 저장됨"));
 });
 
@@ -1193,8 +1198,16 @@ async function removeRecord(id){
   if(col){try{await col.doc(id).delete()}catch(e){toast("삭제 실패")}}
 }
 
+function renderMeBadge(){
+  const el=$("meBadge");if(!el)return;
+  if(!myNick){el.hidden=true;return}
+  el.hidden=false;el.textContent="";
+  const n=document.createElement("span");n.textContent=myNick;
+  const c=document.createElement("b");c.textContent=`${spiderCount(records)}`;
+  el.append(n,c,document.createTextNode("스파이더맨"));
+}
 function renderHistory(){
-  publishBoard();
+  publishBoard();renderMeBadge();
   const rs=[...records].sort((a,b)=>b.date-a.date);
   // chart: last 10 sessions, stacked
   const last=rs.slice(0,10).reverse().map(r=>{const d=new Date(r.date);return{...r,label:`${d.getMonth()+1}/${d.getDate()}`}});
