@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#1d2320">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="스파이더20">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="description" content="20분 동안 철봉·팔굽혀펴기·스쿼트를 세트로 세고, 톰 홀랜드 기준 스파이더맨 지수로 친구들과 랭킹을 겨루는 운동 카운터">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>20분 맨몸 카운터</title>
@@ -414,6 +421,14 @@ button.me-badge{border:1px solid var(--line);background:var(--surface);border-ra
 .pad .fx .core{background:radial-gradient(circle,#fff 0 25%,rgb(255 255 255 / .7) 45%,transparent 70%)}
 .pad.bump .n{animation:bumpW .22s cubic-bezier(.3,1.8,.5,1)}
 @keyframes bumpW{40%{transform:scale(1.28);text-shadow:0 0 22px #fff}}
+.installtip{display:grid;grid-template-columns:40px 1fr auto auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.installtip img{border-radius:10px}
+.installtip p{margin:0;font-size:.8rem;line-height:1.4}
+.installtip p b{font-weight:700}
+.it-x{border:0;background:none;color:var(--muted);width:32px;height:32px;font-size:.9rem}
+.undobar{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:12px;
+  background:var(--ink);color:var(--bg);padding:10px 10px 10px 16px;border-radius:12px;font-weight:600;font-size:.9rem;width:calc(100% - 32px);max-width:480px;justify-content:space-between;box-shadow:0 8px 24px rgb(0 0 0 / .25)}
+.undobar button{border:0;background:var(--danger);color:#fff;font-weight:800;border-radius:8px;padding:8px 12px;min-height:38px;white-space:nowrap}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
@@ -480,6 +495,12 @@ body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
   </header>
 
   <div class="pane" id="pane-work">
+  <div class="installtip" id="installTip" hidden>
+    <img src="icons/icon-192.png" alt="" width="40" height="40">
+    <p id="installText">홈 화면에 추가하면 주소창 없이 앱처럼 쓸 수 있어요.</p>
+    <button class="btn" id="installBtn" hidden>설치</button>
+    <button class="it-x" id="installX" aria-label="안내 닫기">✕</button>
+  </div>
 
   <section class="timer" aria-label="타이머">
     <div class="clock" id="clock">20:00</div>
@@ -621,6 +642,7 @@ body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
 <div class="combo" id="combo" hidden></div>
 <div class="edge" id="edge"></div>
 <div class="clear" id="clear" hidden><div id="clearText"></div></div>
+<div class="undobar" id="undoBar" hidden role="status" aria-live="polite"><span id="undoText"></span><button id="undoBtn">되돌리기</button></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -933,7 +955,8 @@ function tick(){
     try{wake&&wake.release()}catch(err){}
     $("bgm").pause();
     beep(3);try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(err){}
-    persistDraft();toast("20분 끝! 기록을 저장하세요");
+    persistDraft();
+    if(total(S.counts))saveWorkout(true);else toast("20분 끝!");
   }
   renderClock();
 }
@@ -1226,17 +1249,31 @@ async function initStore(){
 const stripLocal=r=>({date:r.date,pull:r.pull,push:r.push,squat:r.squat,mode:r.mode||null,rounds:r.rounds||null,seconds:r.seconds});
 
 let saving=false;
-$("saveBtn").addEventListener("click",async()=>{
+$("saveBtn").addEventListener("click",()=>saveWorkout(false));
+let undoT=null;
+async function saveWorkout(auto){
   if(saving||!total(S.counts))return; // a second tap while the first save is in flight would store it twice
   saving=true;$("saveBtn").disabled=true;
   if(S.runningSince)pause();
+  const before=JSON.parse(JSON.stringify(S)); // for 되돌리기
   const r={id:String(Date.now()),date:S.startedAt||Date.now(),...S.counts,mode:"set",rounds:S.rounds.length?S.rounds.map(r=>({...r})):null,seconds:Math.round(Math.min(elapsed(),DURATION)/1000)};
   records=[r,...records];lsSet(LOCAL_LOG,records);
   if(col){try{await col.doc(r.id).set(stripLocal(r));r.synced=true;lsSet(LOCAL_LOG,records)}catch(e){toast("계정 저장 실패 · 이 브라우저에는 저장됨")}}
   saving=false;
   newSession();renderHistory();
-  toast(spidey(r)>=100?`스파이더맨 +1! 지금까지 ${spiderCount(records)} 스파이더맨`:`저장됨 · 스파이더맨 지수 ${spidey(r)}% (${tierOf(spidey(r))})`);
-});
+  const msg=spidey(r)>=100?`스파이더맨 +1! 지금까지 ${spiderCount(records)} 스파이더맨`:`저장됨 · 스파이더맨 지수 ${spidey(r)}% (${tierOf(spidey(r))})`;
+  if(!auto){toast(msg);return}
+  // auto-saved at 20:00: offer to take it back for a few seconds
+  $("undoText").textContent=spidey(r)>=100?"20분 끝! 자동 저장 · 스파이더맨 +1":`20분 끝! 자동 저장했어요 · 지수 ${spidey(r)}%`;
+  $("undoBar").hidden=false;clearTimeout(undoT);
+  undoT=setTimeout(()=>$("undoBar").hidden=true,8000);
+  $("undoBtn").onclick=async()=>{
+    clearTimeout(undoT);$("undoBar").hidden=true;
+    await removeRecord(r.id);
+    S=before;persistDraft();renderSession();
+    toast("저장을 취소했어요. 숫자를 고친 뒤 다시 저장하세요");
+  };
+}
 
 /* ---------- ranking board: board/<id> = one summary doc per person ---------- */
 const spiderCount=rs=>rs.filter(r=>spidey(r)>=100).length;
@@ -1658,6 +1695,19 @@ $("meBack").addEventListener("click",()=>showTab(lastTab||"work"));
 {const t0=lsGet("bw20-tab","work");showTab(TABS.includes(t0)&&t0!=="me"?t0:"work")}
 
 let toastT=null;
+/* "add to home screen" tip: iPhone Safari gets instructions, Android/Chrome gets an install button */
+(function(){
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  if(standalone||lsGet("bw20-installtip-off",false))return;
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),inApp=/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent);
+  const tip=$("installTip");
+  if(ios&&!inApp){$("installText").innerHTML="홈 화면에 추가하면 앱처럼 쓸 수 있어요. 아래 <b>공유 버튼</b> → <b>홈 화면에 추가</b>";tip.hidden=false}
+  let deferred=null;
+  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;$("installText").textContent="앱으로 설치하면 주소창 없이 바로 열려요.";$("installBtn").hidden=false;tip.hidden=false});
+  $("installBtn").addEventListener("click",async()=>{if(!deferred)return;deferred.prompt();try{await deferred.userChoice}catch(e){}deferred=null;tip.hidden=true});
+  $("installX").addEventListener("click",()=>{tip.hidden=true;lsSet("bw20-installtip-off",true)});
+  window.addEventListener("appinstalled",()=>{tip.hidden=true;lsSet("bw20-installtip-off",true)});
+})();
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2200)}
 
 renderSession();renderHistory();
