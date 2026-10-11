@@ -65,8 +65,23 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .tap .en{font-size:.72rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
 .tap .n{font-family:var(--f-num);font-weight:700;font-size:clamp(2.8rem,13vw,4.2rem);line-height:1.05;font-variant-numeric:tabular-nums;color:var(--ink)}
 .tap .hint{font-size:.75rem;color:var(--muted)}
-.pad.bump .n{animation:bump .18s ease-out}
-@keyframes bump{50%{transform:scale(1.12)}}
+.pad.bump .n{animation:bump .22s cubic-bezier(.3,1.8,.5,1)}
+@keyframes bump{40%{transform:scale(1.28);color:var(--c)}}
+/* tap effects: web burst + floating count + sparks, drawn at the touch point */
+.pad::after{content:"";position:absolute;inset:0;background:var(--c);opacity:0;pointer-events:none}
+.pad.flash::after{animation:flash .25s ease-out}
+@keyframes flash{0%{opacity:.22}100%{opacity:0}}
+.pad.shake{animation:shake .18s ease-out}
+@keyframes shake{25%{transform:translate(-2px,1px) rotate(-.6deg)}50%{transform:translate(2px,-1px) rotate(.6deg)}75%{transform:translate(-1px,0)}}
+.fx{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2;color:var(--c)}
+.fx svg{position:absolute;width:150px;height:150px;left:-75px;top:-75px;animation:web .5s cubic-bezier(.1,.8,.3,1) forwards}
+@keyframes web{0%{transform:scale(.15) rotate(-25deg);opacity:1}70%{opacity:.85}100%{transform:scale(1.35) rotate(8deg);opacity:0}}
+.fx b{position:absolute;left:0;top:0;transform:translate(-50%,-50%);font-family:var(--f-num);font-weight:700;font-size:1.9rem;white-space:nowrap;
+  text-shadow:0 2px 0 var(--surface),0 -2px 0 var(--surface),2px 0 0 var(--surface),-2px 0 0 var(--surface);animation:pop .75s cubic-bezier(.2,.9,.3,1) forwards}
+.fx b.minus{color:var(--muted);font-size:1.4rem}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.4);opacity:1}25%{transform:translate(-50%,-140%) scale(1.35)}100%{transform:translate(-50%,-300%) scale(1);opacity:0}}
+.fx i{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:currentColor;animation:spark .45s ease-out forwards}
+@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
 .minis{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--c)}
 .minis button{border:0;background:transparent;padding:10px 0;font-family:var(--f-num);font-weight:700;color:var(--c);min-height:44px;font-size:.85rem}
 .tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
@@ -204,7 +219,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 @keyframes clearFade{0%,80%{opacity:1}100%{opacity:0}}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
-@media (prefers-reduced-motion:reduce){.pad.bump .n{animation:none}.tap{transition:none}.bar>i{transition:none}}
+@media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i{animation:none}.fx svg,.fx i{display:none}.tap{transition:none}.bar>i{transition:none}}
 </style>
 
 </head>
@@ -376,14 +391,34 @@ EX.forEach(e=>{
       <span class="n" id="n-${e.k}">0</span><span class="hint" id="cur-${e.k}">탭 = +1</span></button>
     <div class="minis"><button id="minus-${e.k}" aria-label="${e.name} 1회 빼기">−1</button><button id="plus5-${e.k}" aria-label="${e.name} 5회 추가">+5</button></div>`;
   pads.appendChild(el);
-  $("tap-"+e.k).addEventListener("click",()=>add(e.k,1));
-  $("minus-"+e.k).addEventListener("click",()=>add(e.k,-1));
-  $("plus5-"+e.k).addEventListener("click",()=>add(e.k,5));
+  $("tap-"+e.k).addEventListener("click",ev=>{if(add(e.k,1))tapFx(e.k,1,ev)});
+  $("minus-"+e.k).addEventListener("click",ev=>{if(add(e.k,-1))tapFx(e.k,-1,ev)});
+  $("plus5-"+e.k).addEventListener("click",ev=>{if(add(e.k,5))tapFx(e.k,5,null)});
 });
 
+const WEB_SVG=(()=>{ // spider-web burst: 8 spokes + 2 rings
+  let l="";for(let i=0;i<8;i++){const a=i*Math.PI/4;l+=`<line x1="50" y1="50" x2="${50+46*Math.cos(a)}" y2="${50+46*Math.sin(a)}"/>`}
+  const ring=r=>Array.from({length:8},(_,i)=>{const a=i*Math.PI/4;return `${50+r*Math.cos(a)},${50+r*Math.sin(a)}`}).join(" ");
+  return `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">${l}<polygon points="${ring(18)}"/><polygon points="${ring(34)}" stroke-width="1.8"/></svg>`;
+})();
+function tapFx(k,d,ev){
+  const pad=document.querySelector(`.pad[data-k="${k}"]`),r=pad.getBoundingClientRect();
+  let x=r.width/2,y=r.height*.42;
+  if(ev&&ev.clientX){x=ev.clientX-r.left;y=ev.clientY-r.top}
+  const fx=document.createElement("div");fx.className="fx";fx.style.transform=`translate(${x}px,${y}px)`;
+  let h=`<b class="${d<0?"minus":""}">${d>0?"+"+d:"−1"}</b>`;
+  if(d>0){
+    h=WEB_SVG+h;
+    for(let i=0;i<(d>1?12:7);i++){const a=Math.random()*Math.PI*2,dist=34+Math.random()*(d>1?60:36);
+      h+=`<i style="--dx:${Math.cos(a)*dist}px;--dy:${Math.sin(a)*dist}px"></i>`}
+  }
+  fx.innerHTML=h;pad.appendChild(fx);
+  setTimeout(()=>fx.remove(),800);
+  if(d>0){pad.classList.remove("flash","shake");void pad.offsetWidth;pad.classList.add("flash","shake")}
+}
 function add(k,d){
   if(d>0&&!S.runningSince&&elapsed()===0) start(); // first tap starts the clock
-  if(S.counts[k]+d<0)return;
+  if(S.counts[k]+d<0)return false;
   S.counts[k]=Math.max(0,S.counts[k]+d);
   const before=missionSets(S.rounds);
   addToRound(k,d);
@@ -393,6 +428,7 @@ function add(k,d){
   const pad=document.querySelector(`.pad[data-k="${k}"]`);
   pad.classList.remove("bump");void pad.offsetWidth;pad.classList.add("bump");
   persistDraft();renderSession();
+  return true;
 }
 function addToRound(k,d){
   const R=S.rounds;let cur=R[R.length-1];
