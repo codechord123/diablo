@@ -26,7 +26,9 @@ service cloud.firestore {
     match /board/{uid} {
       allow read: if spiderSignedIn();
       allow write: if spiderSignedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['spiders','bestPct','sessions','reps','tomSets','nick','updatedAt'])
+        && request.resource.data.keys().hasOnly(['spiders','bestPct','sessions','reps','tomSets','nick','updatedAt','stats','week'])
+        && (!('stats' in request.resource.data) || request.resource.data.stats is map)
+        && (!('week' in request.resource.data) || request.resource.data.week is map)
         && request.resource.data.nick is string && request.resource.data.nick.size() <= 16
         && request.resource.data.spiders is int && request.resource.data.spiders >= 0
         && request.resource.data.bestPct is int && request.resource.data.bestPct >= 0;

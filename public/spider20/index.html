@@ -274,6 +274,31 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .sphero .big small{display:block;font-family:var(--f-body);font-size:.75rem;color:var(--muted);font-weight:600;text-align:center}
 .sphero b{font-family:var(--f-display);font-weight:400;font-size:1.15rem}
 .sphero span{font-size:.85rem;color:var(--muted)}
+.rank .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--on-accent);background:var(--c,var(--muted));font-size:1rem}
+.rank li:nth-child(-n+3) .no{font-size:1.3rem}
+.rank .sp.c{color:var(--c)}
+.rankctl{display:flex;flex-direction:column;gap:8px}
+.seg.wide{display:grid;grid-template-columns:repeat(3,1fr);width:100%}
+/* race gauge: Tom Holland's pace vs mine */
+.race{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.lane{display:grid;grid-template-columns:4.6em 1fr;align-items:center;gap:8px}
+.lane .ln{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.trk{position:relative;height:14px;border-radius:7px;background:var(--line)}
+.trk i{position:absolute;inset:0 auto 0 0;width:0;border-radius:7px;transition:width .3s linear}
+.trk.tom i{background:repeating-linear-gradient(45deg,var(--muted) 0 6px,color-mix(in srgb,var(--muted) 70%,transparent) 6px 12px)}
+.trk.me i{background:var(--danger)}
+.trk b{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);min-width:26px;height:26px;padding:0 5px;border-radius:13px;display:grid;place-items:center;
+  font-size:.7rem;font-weight:800;color:var(--on-accent);border:2px solid var(--surface);transition:left .3s linear;white-space:nowrap}
+.trk.tom b{background:var(--muted)}
+.trk.me b{background:var(--danger)}
+.race .gap{font-size:.9rem;font-weight:700;text-align:center;padding:4px 0}
+.race .gap.ahead{color:var(--squat)}.race .gap.behind{color:var(--danger)}
+.exl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.exl div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.exl small{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.exl .bar{position:relative;height:6px;border-radius:3px;background:var(--line)}
+.exl .bar i{position:absolute;inset:0 auto 0 0;border-radius:3px;background:var(--c)}
+.exl .bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);border-radius:1px}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
@@ -325,7 +350,12 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
     <div class="pct" id="spPct">0%</div>
     <div class="tier" id="spTier">평범한 고등학생</div>
     <div class="why" id="spWhy">톰 홀랜드(20분 28세트)를 100%로 계산합니다</div>
-    <div class="web"><i id="spFill"></i></div>
+    <div class="race" aria-label="톰 홀랜드와 내 페이스 비교">
+      <div class="lane"><span class="ln">톰 홀랜드</span><div class="trk tom"><i id="raceTom"></i><b id="raceTomM">톰</b></div></div>
+      <div class="lane"><span class="ln">나</span><div class="trk me"><i id="spFill"></i><b id="raceMeM">나</b></div></div>
+      <div class="gap" id="raceGap">시작하면 톰 홀랜드가 20분에 28세트 페이스로 달려요</div>
+      <div class="exl" id="raceEx"></div>
+    </div>
     <div class="ticks" id="spTicks"></div>
   </section>
 
@@ -382,13 +412,20 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
   </div>
 
   <div class="pane" id="pane-rank" hidden>
+  <div class="seg seg3" role="tablist" aria-label="랭킹 종류">
+    <button role="tab" data-rk="spidey">스파이더맨</button><button role="tab" data-rk="ex">종목별</button><button role="tab" data-rk="week">이번 주</button>
+  </div>
   <section class="panel" aria-label="랭킹">
-    <div class="phead"><h2>스파이더맨 랭킹</h2><span class="sync" id="rankSync"></span></div>
-    <p class="rules">20분 안에 스파이더맨 지수 <b>100%</b>(톰 홀랜드 28세트 분량: 철봉 140 · 팔굽혀펴기 280 · 스쿼트 420)를 찍을 때마다 <b>1 스파이더맨</b>. 스파이더맨 수가 같으면 최고 지수, 그다음 총 횟수로 순위를 정해요.</p>
-    <div class="nick"><span class="sync" id="acct" style="flex:1 1 100%">계정 연결 중…</span><button class="btn" id="logoutBtn">로그아웃</button></div>
-    <div class="nick"><input id="nickInput" maxlength="16" placeholder="랭킹에 표시할 닉네임" aria-label="닉네임"><button class="btn" id="nickSave">닉네임 저장</button></div>
+    <div class="phead"><h2 id="rankTitle">스파이더맨 랭킹</h2><span class="sync" id="rankSync"></span></div>
+    <div id="rankCtl"></div>
+    <p class="rules" id="rankRule"></p>
     <p class="note" id="rankNote" hidden></p>
     <ol class="rank" id="rankList"></ol>
+  </section>
+  <section class="panel" aria-label="내 정보">
+    <div class="phead"><h2>내 정보</h2></div>
+    <div class="nick"><span class="sync" id="acct" style="flex:1 1 100%">계정 연결 중…</span><button class="btn" id="logoutBtn">로그아웃</button></div>
+    <div class="nick"><input id="nickInput" maxlength="16" placeholder="랭킹에 표시할 닉네임" aria-label="닉네임"><button class="btn" id="nickSave">닉네임 저장</button></div>
   </section>
   </div>
 
@@ -801,7 +838,20 @@ function renderSpidey(){
   const c=S.counts,p=spidey(c),e=Math.min(elapsed(),DURATION);
   $("spPct").textContent=p+"%";
   $("spTier").textContent=tierOf(p);
-  $("spFill").style.width=Math.min(100,p)+"%";
+  // race: Tom runs at 28 sets per 20 min; my position is the weakest exercise's share of Tom's totals
+  const tomP=e/DURATION,meP=Math.min(...EX.map(x=>(c[x.k]||0)/TOM[x.k]));
+  const pos=v=>`${Math.min(100,v*100)}%`;
+  const mpos=v=>`clamp(18px,${Math.min(100,v*100)}%,calc(100% - 18px))`; // keep the label inside the track
+  $("raceTom").style.width=pos(tomP);$("raceTomM").style.left=mpos(tomP);
+  $("spFill").style.width=pos(meP);$("raceMeM").style.left=mpos(meP);
+  $("raceTomM").textContent=`톰 ${Math.floor(tomP*MISSION_GOAL)}`;$("raceMeM").textContent=`나 ${Math.floor(meP*MISSION_GOAL)}`;
+  const gap=(meP-tomP)*MISSION_GOAL,g=$("raceGap");
+  if(e===0&&!total(c)){g.textContent="시작하면 톰 홀랜드가 20분에 28세트 페이스로 달려요";g.className="gap"}
+  else if(Math.abs(gap)<.5){g.textContent="톰 홀랜드와 나란히 달리는 중";g.className="gap ahead"}
+  else if(gap>0){g.textContent=`톰 홀랜드보다 ${gap.toFixed(1)}세트 앞섬`;g.className="gap ahead"}
+  else{g.textContent=`톰 홀랜드보다 ${(-gap).toFixed(1)}세트 뒤처짐`;g.className="gap behind"}
+  $("raceEx").innerHTML=EX.map(x=>{const mine=(c[x.k]||0)/TOM[x.k],tomN=Math.round(tomP*TOM[x.k]);
+    return `<div style="--c:var(--${x.k})"><small>${x.name} ${c[x.k]||0}/${tomN}</small><div class="bar"><i style="width:${pos(mine)}"></i><b style="left:${pos(tomP)}"></b></div></div>`}).join("");
   $("spTicks").innerHTML=TIERS.map(t=>`<span class="${p>=t[0]?"on":""}">${t[0]}</span>`).join("");
   const weak=EX.reduce((a,x)=>(c[x.k]||0)/TOM[x.k]<(c[a.k]||0)/TOM[a.k]?x:a);
   let why;
@@ -1009,9 +1059,15 @@ const spiderCount=rs=>rs.filter(r=>spidey(r)>=100).length;
 let board=[],myNick="";
 function rankNote(t){const n=$("rankNote");n.hidden=!t;n.textContent=t||""}
 function boardSummary(){
+  const wk=weekKey(new Date()),stats={},week={key:wk,pull:0,push:0,squat:0};
+  EX.forEach(x=>{const k=x.k;stats[k]={
+    tot:records.reduce((a,r)=>a+(r[k]||0),0),
+    best:records.reduce((m,r)=>Math.max(m,r[k]||0),0),
+    set:records.reduce((m,r)=>Math.max(m,...(r.rounds||[]).map(z=>z[k]||0)),0)}});
+  records.forEach(r=>{if(weekKey(new Date(r.date))===wk)EX.forEach(x=>week[x.k]+=r[x.k]||0)});
   return{spiders:spiderCount(records),bestPct:records.reduce((m,r)=>Math.max(m,spidey(r)),0),
     sessions:records.length,reps:records.reduce((a,r)=>a+r.pull+r.push+r.squat,0),
-    tomSets:records.reduce((m,r)=>Math.max(m,missionSets(r.rounds||[])),0)};
+    tomSets:records.reduce((m,r)=>Math.max(m,missionSets(r.rounds||[])),0),stats,week};
 }
 async function publishBoard(){
   if(!DB||!UID||boardBlocked)return;
@@ -1032,24 +1088,62 @@ async function initBoard(){
   },()=>{$("rankSync").textContent="";rankNote("랭킹을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.")});
   publishBoard();
 }
+let rankTab=lsGet("bw20-rank","spidey"),rankEx=lsGet("bw20-rankex","pull"),rankMetric=lsGet("bw20-rankm","tot");
+const METRICS={tot:"누적",best:"한 번 최고",set:"한 세트 최고"};
 async function renderRank(){
-  const list=$("rankList");
-  if(!board.length){list.innerHTML=`<li style="display:block"><p class="empty">아직 참여한 사람이 없어요. 운동을 저장하면 랭킹에 올라갑니다.</p></li>`;return}
-  const rows=[...board].sort((a,b)=>(b.spiders||0)-(a.spiders||0)||(b.bestPct||0)-(a.bestPct||0)||(b.reps||0)-(a.reps||0));
-  const ps=USER?await USER.profiles(rows.map(r=>r.id)):{};
+  document.querySelectorAll("[data-rk]").forEach(b=>b.setAttribute("aria-selected",b.dataset.rk===rankTab));
+  const list=$("rankList"),ctl=$("rankCtl"),wk=weekKey(new Date());
+  let rows,score,big,sub,unit,color="var(--danger)";
+  if(rankTab==="spidey"){
+    $("rankTitle").textContent="스파이더맨 랭킹";ctl.innerHTML="";
+    $("rankRule").innerHTML=`20분 안에 스파이더맨 지수 <b>100%</b>(철봉 140 · 팔굽혀펴기 280 · 스쿼트 420)를 찍을 때마다 <b>1 스파이더맨</b>. 같으면 최고 지수, 그다음 총 횟수 순.`;
+    rows=[...board].sort((a,b)=>(b.spiders||0)-(a.spiders||0)||(b.bestPct||0)-(a.bestPct||0)||(b.reps||0)-(a.reps||0));
+    score=r=>`${r.spiders||0}|${r.bestPct||0}|${r.reps||0}`;big=r=>r.spiders||0;unit="스파이더맨";
+    sub=r=>`최고 ${r.bestPct||0}% · ${tierOf(r.bestPct||0)} · 톰 세트 최고 ${r.tomSets||0} · 총 ${r.reps||0}회`;
+  }else if(rankTab==="ex"){
+    const x=EX.find(e=>e.k===rankEx)||EX[0],k=x.k;color=`var(--${k})`;
+    $("rankTitle").textContent=`${x.name} 랭킹`;
+    ctl.innerHTML=`<div class="rankctl"><div class="chips">${EX.map(e=>`<button class="chip" data-rex="${e.k}" style="--c:var(--${e.k})" aria-pressed="${e.k===k}">${e.name}</button>`).join("")}</div>
+      <div class="seg wide" role="group" aria-label="기준">${Object.entries(METRICS).map(([m,l])=>`<button data-rm="${m}" aria-pressed="${m===rankMetric}">${l}</button>`).join("")}</div></div>`;
+    $("rankRule").textContent=rankMetric==="tot"?`지금까지 한 ${x.name} 전체 횟수`:rankMetric==="best"?`한 번(20분) 운동에서 한 ${x.name} 최고 횟수`:`한 세트에서 한 ${x.name} 최고 횟수`;
+    const v=r=>((r.stats||{})[k]||{})[rankMetric]||0;
+    rows=[...board].filter(r=>r.stats).sort((a,b)=>v(b)-v(a));
+    score=r=>String(v(r));big=v;unit="회";
+    sub=r=>{const st=(r.stats||{})[k]||{};return `누적 ${st.tot||0} · 한 번 최고 ${st.best||0} · 한 세트 최고 ${st.set||0}`};
+  }else{
+    $("rankTitle").textContent="이번 주 랭킹";ctl.innerHTML="";
+    $("rankRule").textContent=`${PERIODS.week.long(wk)} 동안 세 종목을 합친 횟수. 매주 월요일에 새로 시작해요.`;
+    const w=r=>r.week&&r.week.key===wk?r.week:{pull:0,push:0,squat:0};
+    const t=r=>{const x=w(r);return x.pull+x.push+x.squat};
+    rows=[...board].sort((a,b)=>t(b)-t(a));
+    score=r=>String(t(r));big=t;unit="회";
+    sub=r=>{const x=w(r);return `철봉 ${x.pull} · 팔굽혀펴기 ${x.push} · 스쿼트 ${x.squat}`};
+  }
+  if(!rows.length){list.innerHTML=`<li style="display:block"><p class="empty">아직 기록이 없어요. 운동을 저장하면 랭킹에 올라가요. 이 화면은 새 버전으로 한 번 이상 저장한 사람부터 나와요.</p></li>`;return}
   list.innerHTML="";
   let rank=0,prev=null;
   rows.forEach((r,i)=>{
-    const k=`${r.spiders||0}|${r.bestPct||0}|${r.reps||0}`;if(k!==prev){rank=i+1;prev=k}
-    const p=ps[r.id]||{};
+    const sc=score(r);if(sc!==prev){rank=i+1;prev=sc}
+    const name=r.nick||"닉네임 없는 거미";
     const li=document.createElement("li");if(r.id===UID)li.className="me";
-    li.innerHTML=`<span class="no">${rank}</span><img alt=""><span class="who"><b></b><small></small></span><span class="sp">${r.spiders||0}<small>스파이더맨</small></span>`;
-    if(p.avatarUrl)li.querySelector("img").src=p.avatarUrl;
-    li.querySelector(".who b").textContent=(r.nick||p.name||"닉네임 없는 거미")+(r.id===UID?" (나)":"");
-    li.querySelector(".who small").textContent=`최고 ${r.bestPct||0}% · ${tierOf(r.bestPct||0)} · 톰 세트 최고 ${r.tomSets||0} · 총 ${r.reps||0}회`;
+    li.style.setProperty("--c",color);
+    li.innerHTML=`<span class="no"></span><span class="av"></span><span class="who"><b></b><small></small></span><span class="sp c"><span class="v"></span><small></small></span>`;
+    li.querySelector(".no").textContent=rank;
+    li.querySelector(".av").textContent=[...name][0]||"?";
+    li.querySelector(".who b").textContent=name+(r.id===UID?" (나)":"");
+    li.querySelector(".who small").textContent=sub(r);
+    li.querySelector(".sp .v").textContent=big(r);
+    li.querySelector(".sp small").textContent=unit;
     list.appendChild(li);
   });
 }
+document.querySelectorAll("[data-rk]").forEach(b=>b.addEventListener("click",()=>{rankTab=b.dataset.rk;lsSet("bw20-rank",rankTab);renderRank()}));
+$("rankCtl").addEventListener("click",e=>{
+  const c=e.target.closest("[data-rex]"),m=e.target.closest("[data-rm]");
+  if(c){rankEx=c.dataset.rex;lsSet("bw20-rankex",rankEx)}
+  if(m){rankMetric=m.dataset.rm;lsSet("bw20-rankm",rankMetric)}
+  if(c||m)renderRank();
+});
 $("nickInput").value=myNick;
 
 $("nickSave").addEventListener("click",()=>{
