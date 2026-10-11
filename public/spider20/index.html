@@ -312,20 +312,23 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .arena .rules b{color:var(--danger)}
 .arena .chip{--c:var(--ink)}
 .arena .seg{background:var(--surface);border-color:var(--line)}
-.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:end;gap:8px;padding-top:8px}
+.podium{display:grid;grid-template-columns:1fr 1.1fr 1fr;align-items:end;gap:6px;padding-top:14px}
 .pod{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;text-align:center}
-.pod .pav{position:relative;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.3rem;color:#111;background:var(--mc);
+.pod{gap:3px}
+.pod .pav{position:relative;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1rem;color:#111;background:var(--mc);
   box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--mc),0 0 22px color-mix(in srgb,var(--mc) 55%,transparent)}
-.pod.p1 .pav{width:70px;height:70px;font-size:1.7rem}
-.pod.p1 .pav::before{content:"";position:absolute;top:-22px;left:50%;width:30px;height:18px;transform:translateX(-50%);background:var(--gold);
+.pod.p1 .pav{width:48px;height:48px;font-size:1.25rem}
+.pod.p1 .pav::before{content:"";position:absolute;top:-15px;left:50%;width:22px;height:13px;transform:translateX(-50%);background:var(--gold);
   clip-path:polygon(0 100%,0 30%,25% 60%,50% 0,75% 60%,100% 30%,100% 100%)}
-.pod .pn{font-weight:700;font-size:.85rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pod .pv{font-family:var(--f-num);font-weight:700;font-size:1.5rem;line-height:1;color:var(--mc)}
-.pod.p1 .pv{font-size:2rem}
+.pod .pn{font-weight:700;font-size:.78rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .pv{font-family:var(--f-num);font-weight:700;font-size:1.1rem;line-height:1;color:var(--mc)}
+.pod.p1 .pv{font-size:1.35rem}
+.pod .pu{display:none}
 .pod .pu{font-size:.68rem;color:var(--muted)}
 .pod .step{width:100%;border-radius:10px 10px 4px 4px;display:grid;place-items:center;font-family:var(--f-display);font-size:1.6rem;color:var(--bg);
   background:linear-gradient(180deg,var(--mc),color-mix(in srgb,var(--mc) 55%,#000))}
-.pod.p1 .step{height:92px;font-size:2.2rem}.pod.p2 .step{height:66px}.pod.p3 .step{height:48px}
+.pod .step{font-size:1.1rem}
+.pod.p1 .step{height:44px;font-size:1.4rem}.pod.p2 .step{height:32px}.pod.p3 .step{height:24px}
 .pod.empty .pav{background:transparent;color:var(--muted);box-shadow:0 0 0 2px var(--line);border:2px dashed var(--line)}
 .pod.empty .step{background:var(--surface);color:var(--muted)}
 .pod.me .pn{color:var(--danger)}
@@ -337,6 +340,10 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .myrank span{font-size:.78rem;color:var(--muted)}
 .myrank .mr-v{grid-row:span 2;text-align:right;font-family:var(--f-num);font-weight:700;font-size:1.4rem}
 .arena .rank li{border-top-color:var(--line)}
+.arena .rank li.medal .no{color:var(--mc)}
+.arena .rank li{padding:8px 6px}
+.arena .rank .who small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arena .rank li.medal .av{background:var(--mc);color:#111}
 .arena .rank li.me{background:color-mix(in srgb,var(--danger) 18%,transparent)}
 .arena .rank .av{background:var(--line);color:var(--ink)}
 /* profile page */
@@ -347,6 +354,42 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .pf-label{font-weight:700;font-size:.85rem}
 .btn.danger{color:var(--danger);border-color:var(--danger);background:transparent;align-self:flex-start}
 button.me-badge{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;min-height:32px;cursor:pointer;color:var(--muted)}
+.wkdays{display:flex;flex-direction:column;gap:10px}
+.wkday{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.wkday.rest{background:transparent;border-style:dashed}
+.wkday .wh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.wkday .wh b{font-size:.95rem}
+.wkday .wh b small{color:var(--danger);font-weight:700;margin-left:6px;font-size:.75rem}
+.wkday .wh span{font-family:var(--f-num);font-weight:700;font-variant-numeric:tabular-nums}
+.wkday .wh em{font-style:normal;color:var(--muted);font-size:.82rem}
+.wlist{display:flex;flex-direction:column;gap:6px}
+.witem{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;width:100%;text-align:left;border:1px solid var(--line);background:var(--bg);
+  border-radius:12px;padding:10px 12px;min-height:52px}
+.witem .wt{font-family:var(--f-num);font-weight:700;font-size:.95rem}
+.witem .wm{font-size:.8rem;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;min-width:0}
+.witem .wm i{font-style:normal;font-weight:700;color:var(--c)}
+.witem .ws{font-family:var(--f-num);font-weight:700;text-align:right}
+.witem .ws small{display:block;font-family:var(--f-body);font-size:.7rem;color:var(--danger);font-weight:700}
+.witem::after{content:"›";grid-column:4;color:var(--muted);font-size:1.2rem}
+.witem{grid-template-columns:auto 1fr auto auto}
+.sheet{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet-bg{position:absolute;inset:0;background:rgb(0 0 0 / .45)}
+.sheet-card{position:relative;width:100%;max-width:560px;max-height:88%;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;
+  padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:sheetUp .22s ease-out}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet-card{animation:none}}
+.sh-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sh-x{border:1px solid var(--line);background:var(--bg);border-radius:50%;width:40px;height:40px;font-size:1rem}
+#shBody{display:flex;flex-direction:column;gap:14px}
+.sh-tags{display:flex;gap:6px;flex-wrap:wrap}
+.sh-tags .tag{margin-left:0}
+.sh-ex{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sh-ex div{border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface));border-radius:12px;padding:10px;text-align:center}
+.sh-ex small{display:block;font-weight:700;color:var(--c);font-size:.8rem}
+.sh-ex b{font-family:var(--f-num);font-size:1.8rem;line-height:1.2}
+.sh-ex span{display:block;font-size:.7rem;color:var(--muted)}
+.sh-del{align-self:stretch;min-height:46px}
+.daylist{display:flex;flex-direction:column;gap:6px}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
@@ -464,7 +507,7 @@ body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
     <div class="cal-head"><button class="cal-nav" id="calPrev" aria-label="이전 달">‹</button><b id="calTitle"></b><button class="cal-nav" id="calNext" aria-label="다음 달">›</button></div>
     <div class="msum" id="msum"></div>
     <div class="cal" id="cal"></div>
-    <p class="daydetail" id="dayDetail">날짜를 누르면 그날 기록이 나옵니다.</p>
+    <div class="daydetail" id="dayDetail">날짜를 누르면 그날 기록이 나옵니다.</div>
   </section>
 
   </div>
@@ -524,15 +567,13 @@ body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
   </div>
 
   <div class="pane" id="pane-log" hidden>
-  <section class="panel" aria-label="기록">
-    <div class="phead">
-      <h2>기록</h2>
-      <span class="sync" id="syncText">계정 연결 중…</span>
-    </div>
+  <section class="panel" aria-label="최근 7일">
+    <div class="phead"><h2>최근 7일</h2><span class="sync" id="syncText">계정 연결 중…</span></div>
+    <div class="kpis" id="wkKpis"></div>
     <div class="legend"><span style="--c:var(--pull)">철봉</span><span style="--c:var(--push)">팔굽혀펴기</span><span style="--c:var(--squat)">스쿼트</span></div>
     <div class="chart" id="chart"></div>
-    <ul class="log" id="log"></ul>
   </section>
+  <div class="wkdays" id="wkDays"></div>
   </div>
 </div>
 <nav class="tabs" role="tablist" aria-label="화면">
@@ -540,9 +581,16 @@ body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
   <button role="tab" id="tab-cal" aria-selected="false">캘린더</button>
   <button role="tab" id="tab-stats" aria-selected="false">통계</button>
   <button role="tab" id="tab-rank" aria-selected="false">랭킹</button>
-  <button role="tab" id="tab-log" aria-selected="false">기록</button>
+  <button role="tab" id="tab-log" aria-selected="false">주간</button>
 </nav>
 <audio id="bgm" preload="none"></audio>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="shTitle">
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet-card">
+    <div class="sh-head"><h2 id="shTitle"></h2><button class="sh-x" id="sheetX" aria-label="닫기">✕</button></div>
+    <div id="shBody"></div>
+  </div>
+</div>
 <div class="combo" id="combo" hidden></div>
 <div class="edge" id="edge"></div>
 <div class="clear" id="clear" hidden><div id="clearText"></div></div>
@@ -1243,11 +1291,12 @@ async function renderRank(){
   }
   list.innerHTML="";
   if(!rows.length){list.innerHTML=`<li style="display:block"><p class="empty">아직 기록이 없어요. 운동을 저장하면 랭킹에 올라가요.</p></li>`;return}
-  ranked.slice(3).forEach(({r,rank})=>{
+  ranked.forEach(({r,rank})=>{
     const li=document.createElement("li");if(r.id===UID)li.className="me";
     li.style.setProperty("--c",color);
     li.innerHTML=`<span class="no"></span><span class="av"></span><span class="who"><b></b><small></small></span><span class="sp c"><span class="v"></span><small></small></span>`;
     li.querySelector(".no").textContent=rank;
+    if(rank<=3)li.style.setProperty("--mc",["var(--gold)","var(--silver)","var(--bronze)"][rank-1]),li.classList.add("medal");
     li.querySelector(".av").textContent=[...nm(r)][0]||"?";
     li.querySelector(".who b").textContent=nm(r)+(r.id===UID?" (나)":"");
     li.querySelector(".who small").textContent=sub(r);
@@ -1291,22 +1340,7 @@ function renderMeBadge(){
 function renderHistory(){
   publishBoard();renderMeBadge();
   const rs=[...records].sort((a,b)=>b.date-a.date);
-  // chart: last 10 sessions, stacked
-  const last=rs.slice(0,10).reverse().map(r=>{const d=new Date(r.date);return{...r,label:`${d.getMonth()+1}/${d.getDate()}`}});
-  $("chart").innerHTML=stackChart(last,`최근 ${last.length}회 세션 종목별 횟수`);
-  renderCalendar();renderStats();
-
-  // list
-  const log=$("log");
-  if(!rs.length){log.innerHTML=`<li style="display:block"><p class="empty">아직 기록이 없어요. 20분 동안 탭으로 세고 <b>기록 저장</b>을 누르면 여기에 날짜별로 쌓입니다.</p></li>`;return}
-  log.innerHTML=rs.map(r=>{
-    const d=new Date(r.date),days="일월화수목금토";
-    const ds=`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} (${days[d.getDay()]}) ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-    return `<li><span class="d">${ds}<span class="tag sp">스파이더맨 ${spidey(r)}%</span>${r.rounds&&r.rounds.length?`<span class="tag">톰 홀랜드 ${missionSets(r.rounds)}/${MISSION_GOAL}</span>`:""}</span><span class="sum">${r.pull+r.push+r.squat}회</span>
-      <span class="meta">${EX.map(x=>`<span><i style="--c:var(--${x.k})">${x.name}</i> ${r[x.k]||0}</span>`).join("")}<span>${r.rounds&&r.rounds.length?r.rounds.length+"세트 · ":""}${fmt((r.seconds||0)*1000)}</span></span>
-      ${r.rounds&&r.rounds.length?`<span class="rs">${r.rounds.map((z,i)=>`<span>${i+1}세트 ${z.pull}/${z.push}/${z.squat}</span>`).join("")}</span>`:""}
-      <button class="del" data-id="${r.id}">삭제</button></li>`;
-  }).join("");
+  renderCalendar();renderStats();renderWeek();
 }
 function stackChart(items,label){
   if(!items.length)return "";
@@ -1372,8 +1406,7 @@ function renderDayDetail(){
   const [yy,mm,dd]=selDay.split("-").map(Number);
   const rs=records.filter(r=>dayKey(new Date(r.date))===selDay).sort((a,b)=>a.date-b.date);
   if(!rs.length){el.innerHTML=`<b>${mm}월 ${dd}일</b> · 기록 없음`;return}
-  el.innerHTML=`<b>${mm}월 ${dd}일</b> · `+rs.map(r=>{const d=new Date(r.date);
-    return `${pad2(d.getHours())}:${pad2(d.getMinutes())} 철봉 <b>${r.pull||0}</b> 팔굽 <b>${r.push||0}</b> 스쿼트 <b>${r.squat||0}</b>${r.rounds&&r.rounds.length?` (톰 홀랜드 ${missionSets(r.rounds)}세트)`:""}`}).join(" / ");
+  el.innerHTML=`<b>${mm}월 ${dd}일</b> · ${rs.length}번 운동 · 눌러서 자세히 보기<div class="daylist" style="margin-top:8px">${rs.map(workoutItem).join("")}</div>`;
 }
 $("cal").addEventListener("click",e=>{const b=e.target.closest(".day[data-day]");if(!b)return;selDay=selDay===b.dataset.day?null:b.dataset.day;renderCalendar()});
 $("calPrev").addEventListener("click",()=>{calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()-1,1);renderCalendar()});
@@ -1510,11 +1543,62 @@ function renderSpideyStats(){
 
 function niceStep(m){const raw=m/4,p=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p}
 
-$("log").addEventListener("click",e=>{
-  const b=e.target.closest(".del");if(!b)return;
-  if(!b.classList.contains("arm")){b.classList.add("arm");b.textContent="한 번 더 누르면 삭제";setTimeout(()=>{if(b.isConnected){b.classList.remove("arm");b.textContent="삭제"}},3000);return}
-  removeRecord(b.dataset.id);
+/* one workout as a tappable row (calendar day list, weekly list) */
+const DAYS_KO="일월화수목금토";
+function workoutItem(r){
+  const d=new Date(r.date),sp=spidey(r);
+  return `<button class="witem" data-wid="${r.id}"><span class="wt">${pad2(d.getHours())}:${pad2(d.getMinutes())}</span>
+    <span class="wm">${EX.map(x=>`<span><i style="--c:var(--${x.k})">${x.name.slice(0,2)}</i> ${r[x.k]||0}</span>`).join("")}</span>
+    <span class="ws">${r.pull+r.push+r.squat}회${sp>=100?"<small>스파이더맨!</small>":`<small style="color:var(--muted)">${sp}%</small>`}</span></button>`;
+}
+/* 주간: today and the six days before it */
+function renderWeek(){
+  const today=new Date();today.setHours(0,0,0,0);
+  const days=[];for(let i=0;i<7;i++){const d=new Date(today);d.setDate(d.getDate()-i);days.push(d)}
+  const keyOf=d=>dayKey(d),byDay={};
+  records.forEach(r=>{const k=dayKey(new Date(r.date));(byDay[k]=byDay[k]||[]).push(r)});
+  const inWeek=days.flatMap(d=>byDay[keyOf(d)]||[]);
+  const sum=k=>inWeek.reduce((a,r)=>a+(r[k]||0),0),tot=sum("pull")+sum("push")+sum("squat");
+  const kp=(l,v,sb,c)=>`<div class="kpi" style="--c:${c||"var(--ink)"}"><small>${l}</small><b>${v}</b><span>${sb||""}</span></div>`;
+  $("wkKpis").innerHTML=kp("운동",`${inWeek.length}번`,`${days.filter(d=>byDay[keyOf(d)]).length}일 운동 · 쉰 날 ${days.filter(d=>!byDay[keyOf(d)]).length}일`)
+    +kp("총 횟수",`${tot}회`,`철봉 ${sum("pull")} · 팔굽 ${sum("push")} · 스쿼트 ${sum("squat")}`)
+    +kp("스파이더맨",spiderCount(inWeek),"이번 7일 동안","var(--danger)")
+    +kp("최고 지수",`${inWeek.reduce((m,r)=>Math.max(m,spidey(r)),0)}%`,tierOf(inWeek.reduce((m,r)=>Math.max(m,spidey(r)),0)));
+  $("chart").innerHTML=stackChart([...days].reverse().map(d=>{const rs=byDay[keyOf(d)]||[];
+    return{pull:rs.reduce((a,r)=>a+r.pull,0),push:rs.reduce((a,r)=>a+r.push,0),squat:rs.reduce((a,r)=>a+r.squat,0),label:`${d.getMonth()+1}/${d.getDate()}`}}),"최근 7일 종목별 횟수");
+  $("wkDays").innerHTML=days.map((d,i)=>{
+    const rs=(byDay[keyOf(d)]||[]).sort((a,b)=>b.date-a.date);
+    const t=rs.reduce((a,r)=>a+r.pull+r.push+r.squat,0);
+    const label=`${d.getMonth()+1}.${d.getDate()} (${DAYS_KO[d.getDay()]})${i===0?"<small>오늘</small>":i===1?"<small style=\"color:var(--muted)\">어제</small>":""}`;
+    if(!rs.length)return `<div class="wkday rest"><div class="wh"><b>${label}</b><em>쉬는 날</em></div></div>`;
+    return `<div class="wkday"><div class="wh"><b>${label}</b><span>${rs.length}번 · ${t}회</span></div><div class="wlist">${rs.map(workoutItem).join("")}</div></div>`;
+  }).join("");
+}
+/* detail sheet */
+function openWorkout(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  const d=new Date(r.date),sp=spidey(r),R=r.rounds||[];
+  $("shTitle").textContent=`${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS_KO[d.getDay()]}) ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  $("shBody").innerHTML=`
+    <div class="sh-tags"><span class="tag sp">스파이더맨 ${sp}% · ${tierOf(sp)}</span>${R.length?`<span class="tag">톰 홀랜드 ${missionSets(R)}/${MISSION_GOAL}</span>`:""}<span class="tag">${fmt((r.seconds||0)*1000)} 운동</span></div>
+    <div class="sh-ex">${EX.map(x=>`<div style="--c:var(--${x.k})"><small>${x.name}</small><b>${r[x.k]||0}</b><span>톰 홀랜드 ${TOM[x.k]}의 ${Math.round((r[x.k]||0)/TOM[x.k]*100)}%</span></div>`).join("")}</div>
+    <div class="kpis">
+      <div class="kpi"><small>합계</small><b>${r.pull+r.push+r.squat}회</b><span>${R.length?R.length+"세트":"세트 기록 없음"}</span></div>
+      <div class="kpi"><small>분당</small><b>${r.seconds?((r.pull+r.push+r.squat)/(r.seconds/60)).toFixed(1):"–"}회</b><span>${sp>=100?"이날 1 스파이더맨 획득":`100%까지 ${100-sp}%`}</span></div>
+    </div>
+    ${R.length?`<div style="overflow-x:auto"><table class="rtable"><thead><tr><th>세트</th><th>철봉</th><th>팔굽혀펴기</th><th>스쿼트</th><th>합계</th></tr></thead><tbody>${R.map((z,i)=>`<tr><td>${i+1}${roundDone(z)?" ✓":""}</td><td>${z.pull}</td><td>${z.push}</td><td>${z.squat}</td><td>${rsum(z)}</td></tr>`).join("")}</tbody></table></div>`:""}
+    <button class="btn danger sh-del" id="shDel" data-id="${r.id}">이 기록 삭제</button>`;
+  $("sheet").hidden=false;
+}
+function closeSheet(){$("sheet").hidden=true}
+$("sheetBg").addEventListener("click",closeSheet);$("sheetX").addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheet").hidden)closeSheet()});
+$("shBody").addEventListener("click",e=>{
+  const b=e.target.closest("#shDel");if(!b)return;
+  if(!b.classList.contains("arm")){b.classList.add("arm");b.textContent="한 번 더 누르면 삭제돼요";setTimeout(()=>{if(b.isConnected){b.classList.remove("arm");b.textContent="이 기록 삭제"}},3000);return}
+  removeRecord(b.dataset.id);closeSheet();toast("기록을 삭제했어요");
 });
+document.addEventListener("click",e=>{const w=e.target.closest(".witem[data-wid]");if(w)openWorkout(w.dataset.wid)});
 
 const TABS=["work","cal","stats","rank","log","me"]; // "me" (내 정보) opens from the title-bar badge
 var lastTab="work";
