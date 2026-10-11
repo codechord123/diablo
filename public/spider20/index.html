@@ -302,6 +302,39 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
+/* ── workout tab: everything needed mid-set fits one phone screen ── */
+body[data-tab="work"] header{display:none}
+body[data-tab="work"] .wrap{padding-block:10px 88px}
+#pane-work{gap:10px}
+#pane-work .timer{padding:10px 12px;gap:6px 10px}
+#pane-work .clock{font-size:clamp(2.2rem,11vw,2.8rem)}
+#pane-work .tctrl .btn{min-height:40px;padding:6px 12px}
+#pane-work .sounds{gap:6px}
+#pane-work .sounds .btn{min-height:34px;padding:4px 8px;font-size:.82rem}
+#pane-work .bar{height:4px}
+#pane-work .state{font-size:.72rem}
+#pane-work #stateText{display:none}
+#pane-work .pads{gap:8px}
+#pane-work .tap{min-height:0;padding:10px 6px 8px;gap:0}
+#pane-work .tap .en{display:none}
+#pane-work .tap .name{font-size:1rem}
+#pane-work .tap .n{font-size:clamp(2.4rem,11vw,3.2rem)}
+#pane-work .tap .hint{font-size:.7rem}
+#pane-work .minis button{min-height:38px;padding:6px 0}
+#pane-work .setdone{min-height:46px;font-size:1.1rem}
+#pane-work .setdone.on,#pane-work .setdone.arm{font-size:.88rem}
+#pane-work .spidey{padding:10px 12px;gap:2px 12px}
+#pane-work .spidey .pct{font-size:clamp(1.7rem,8vw,2.1rem)}
+#pane-work .spidey .tier{font-size:1rem}
+#pane-work .spidey .why{font-size:.72rem;line-height:1.35}
+#pane-work .spidey .ticks{display:none}
+#pane-work .race{gap:4px;margin-top:4px}
+#pane-work .lane .ln{font-size:.72rem}
+#pane-work .trk{height:12px}
+#pane-work .trk b{height:22px;min-width:22px;font-size:.66rem}
+#pane-work .race .gap{font-size:.85rem;padding:0}
+#pane-work .exl small{font-size:.66rem}
+@media (max-height:620px){#pane-work .exl{display:none}#pane-work .tap{padding-top:6px}#pane-work .timer{padding-block:8px}}
 </style>
 
 </head>
@@ -1391,6 +1424,7 @@ $("log").addEventListener("click",e=>{
 const TABS=["work","cal","stats","rank","log"];
 function showTab(t){
   TABS.forEach(x=>{$("pane-"+x).hidden=x!==t;$("tab-"+x).setAttribute("aria-selected",x===t)});
+  document.body.dataset.tab=t;
   lsSet("bw20-tab",t);window.scrollTo(0,0);
 }
 TABS.forEach(x=>$("tab-"+x).addEventListener("click",()=>showTab(x)));
