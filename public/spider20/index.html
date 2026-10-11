@@ -250,6 +250,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .setdone.ready{background:var(--danger);color:var(--on-accent);box-shadow:0 6px 18px color-mix(in srgb,var(--danger) 35%,transparent)}
 .setdone.on{border-style:dashed;color:var(--muted);border-color:var(--line);font-family:var(--f-body);font-weight:700;font-size:1rem}
 .setdone:disabled{opacity:.45}
+.setdone.arm{border-style:solid;background:var(--push-soft);color:var(--ink);font-family:var(--f-body);font-weight:700;font-size:1rem}
 .toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
@@ -724,7 +725,14 @@ function fillMissionRound(){
   missionRoundDone();persistDraft();renderSession();
 }
 $("fillRound").addEventListener("click",fillMissionRound);
+var skipArmed=null; // var: renderSession may run before this line
 $("nextRound").addEventListener("click",()=>{
+  const last=S.rounds[S.rounds.length-1];
+  if(!S.forceNew&&!(last&&EX.every(x=>last[x.k]>0))){
+    if(!last||!rsum(last))return;
+    if(!skipArmed){skipArmed=setTimeout(()=>{skipArmed=null;renderSession()},3000);renderSession();return}
+  }
+  clearTimeout(skipArmed);skipArmed=null;
   S.forceNew=!S.forceNew;
   if(S.forceNew&&S.rounds.length)celebrateRound(S.rounds.length-1);
   persistDraft();renderSession()});
@@ -797,9 +805,15 @@ function renderSession(){
   $("roundTitle").textContent=`세트 ${R.length} · 톰 홀랜드 ${missionSets(R)}/${MISSION_GOAL}`;
   const nb=$("nextRound"),last=R[R.length-1];
   nb.classList.toggle("on",S.forceNew);
-  nb.classList.toggle("ready",!S.forceNew&&!!last&&EX.every(x=>last[x.k]>0));
-  nb.textContent=S.forceNew?`SET ${R.length} 완료 · 다음 탭부터 ${R.length+1}세트 (누르면 취소)`:last?`SET ${R.length} 완료`:"세트 완료";
-  nb.disabled=!last||(!S.forceNew&&!rsum(last));
+  // the set can be finished only once all three exercises are in it
+  const ready=!S.forceNew&&!!last&&EX.every(x=>last[x.k]>0);
+  const missing=last?EX.filter(x=>!last[x.k]).map(x=>x.name):EX.map(x=>x.name);
+  nb.classList.toggle("ready",ready);
+  nb.textContent=S.forceNew?`SET ${R.length} 완료 · 다음 탭부터 ${R.length+1}세트 (누르면 취소)`
+    :ready?`SET ${R.length} 완료`:`세트 완료 · 남은 종목: ${missing.join(", ")}`;
+  nb.disabled=!S.forceNew&&!(last&&rsum(last)); // a set missing an exercise can still end, after a confirm tap
+  if(skipArmed&&!S.forceNew&&!ready)nb.textContent=`${missing.join(", ")} 빼고 SET ${R.length} 완료? 한 번 더 누르세요`;
+  nb.classList.toggle("arm",!!skipArmed&&!ready&&!S.forceNew);
   renderMissionPace();
   $("roundBody").innerHTML=R.length?R.map((r,i)=>({r,i})).reverse().map(({r,i})=>`<tr class="${i===R.length-1&&!S.forceNew?"cur":""}"><td>${i+1}${roundDone(r)?" ✓":""}</td><td>${r.pull}</td><td>${r.push}</td><td>${r.squat}</td><td>${rsum(r)}</td></tr>`).join("")
     :`<tr><td colspan="5" style="font-family:var(--f-body);color:var(--muted);text-align:left">첫 탭을 하면 1세트가 시작됩니다.</td></tr>`;
