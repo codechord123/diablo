@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d2320">
+<meta name="description" content="20분 동안 철봉·팔굽혀펴기·스쿼트를 세트로 세고, 톰 홀랜드 기준 스파이더맨 지수로 친구들과 랭킹을 겨루는 운동 카운터">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>20분 맨몸 카운터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen gym clipboard — timer strip on top, three big tap pads, history log below */
+:root{
+  --bg:#e9ece8; --surface:#f7f8f5; --ink:#1d2320; --muted:#5f6a64; --line:#cfd5cf;
+  --pull:#2f5d8a; --push:#c26a1f; --squat:#3d7a4f;
+  --pull-soft:#dbe6f1; --push-soft:#f5e3d1; --squat-soft:#dcebdf;
+  --danger:#b3362f; --on-accent:#ffffff;
+  --f-display:"Black Han Sans","IBM Plex Sans KR",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141816; --surface:#1d2320; --ink:#e8ece9; --muted:#9aa59f; --line:#323a36;
+  --pull:#6fa3d6; --push:#e59a52; --squat:#74b98a;
+  --pull-soft:#1f2c39; --push-soft:#382819; --squat-soft:#1e3125;
+  --danger:#e0716a; --on-accent:#101412; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#141816; --surface:#1d2320; --ink:#e8ece9; --muted:#9aa59f; --line:#323a36;
+  --pull:#6fa3d6; --push:#e59a52; --squat:#74b98a;
+  --pull-soft:#1f2c39; --push-soft:#382819; --squat-soft:#1e3125;
+  --danger:#e0716a; --on-accent:#101412; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:16px 48px;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;letter-spacing:.01em}
+h2{font-family:var(--f-display);font-weight:400;font-size:1.25rem;margin:0}
+.sub{color:var(--muted);font-size:.85rem;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
+/* timer */
+.timer{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:center}
+.clock{font-family:var(--f-num);font-weight:700;font-size:clamp(2.6rem,12vw,3.6rem);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.clock.done{color:var(--danger)}
+.tctrl{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.btn{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 14px;font-weight:600;min-height:44px}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:transparent}
+.bar{grid-column:1/-1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--ink);transition:width .3s linear}
+.state{grid-column:1/-1;font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* pads */
+.pads{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pad{position:relative;display:flex;flex-direction:column;border-radius:16px;overflow:hidden;border:2px solid var(--c);background:var(--soft)}
+.pad[data-k="pull"]{--c:var(--pull);--soft:var(--pull-soft)}
+.pad[data-k="push"]{--c:var(--push);--soft:var(--push-soft)}
+.pad[data-k="squat"]{--c:var(--squat);--soft:var(--squat-soft)}
+.tap{border:0;background:transparent;padding:14px 8px 18px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:200px;justify-content:center;touch-action:manipulation;user-select:none;transition:transform .06s}
+.tap:active{transform:scale(.97)}
+.tap .name{font-family:var(--f-display);font-size:1.15rem;color:var(--c)}
+.tap .en{font-size:.72rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.tap .n{font-family:var(--f-num);font-weight:700;font-size:clamp(2.8rem,13vw,4.2rem);line-height:1.05;font-variant-numeric:tabular-nums;color:var(--ink)}
+.tap .hint{font-size:.75rem;color:var(--muted)}
+.pad.bump .n{animation:bump .18s ease-out}
+@keyframes bump{50%{transform:scale(1.12)}}
+.minis{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--c)}
+.minis button{border:0;background:transparent;padding:10px 0;font-family:var(--f-num);font-weight:700;color:var(--c);min-height:44px;font-size:.85rem}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,calc(50% - 360px)) calc(6px + env(safe-area-inset-bottom,0px));gap:4px}
+.tabs button{border:0;background:transparent;border-radius:10px;padding:8px 4px;font-weight:600;min-height:48px;font-size:.9rem;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.wrap{padding-bottom:96px!important}
+.pane{display:flex;flex-direction:column;gap:20px}
+.pane[hidden],[hidden]{display:none!important}
+.rscroll{max-height:220px;overflow:auto}
+.rhead .btns{display:flex;gap:6px;flex-wrap:wrap}
+.rounds{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.rhead .btn.on{background:var(--ink);color:var(--bg)}
+.mbar{display:flex;flex-direction:column;gap:6px}
+.mbar .track{height:10px;background:var(--line);border-radius:5px;position:relative;overflow:hidden}
+.mbar .track i{position:absolute;inset:0 auto 0 0;background:var(--ink);border-radius:5px;transition:width .3s}
+.mbar .track b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--danger)}
+.mbar p{margin:0;font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.ahead{color:var(--squat);font-weight:700}.behind{color:var(--danger);font-weight:700}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;border:1px solid var(--ink);border-radius:5px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.mbest{margin:0;font-size:.85rem;color:var(--muted)}.mbest b{color:var(--ink);font-family:var(--f-num)}
+.rtable{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.9rem}
+.rtable th,.rtable td{padding:6px 4px;text-align:right;border-top:1px solid var(--line)}
+.rtable th:first-child,.rtable td:first-child{text-align:left}
+.rtable thead th{border-top:0;font-weight:600;font-size:.78rem;color:var(--muted)}
+.rtable td{font-family:var(--f-num)}
+.rtable tr.cur td{font-weight:700}
+.rtable tr.cur td:first-child::after{content:" 진행 중";font-family:var(--f-body);font-size:.72rem;color:var(--muted);font-weight:400}
+.log .rs{grid-column:1/-1;font-size:.78rem;color:var(--muted);font-family:var(--f-num);font-variant-numeric:tabular-nums;display:flex;gap:4px 12px;flex-wrap:wrap}
+.minis button+button{border-left:1px solid var(--c)}
+@media (max-width:420px){.tap{min-height:170px}.tap .name{font-size:1rem}}
+
+.total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.total b{font-family:var(--f-num);font-size:1.3rem;font-variant-numeric:tabular-nums}
+.save{width:100%;background:var(--ink);color:var(--bg);border:0;border-radius:12px;padding:14px;font-weight:700;font-size:1rem;min-height:52px}
+.save:disabled{opacity:.4;cursor:default}
+
+/* history */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.phead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.legend{display:flex;gap:12px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--c);vertical-align:-1px}
+.bests{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.best{border-left:3px solid var(--c);padding:2px 0 2px 10px}
+.best small{display:block;color:var(--muted);font-size:.75rem}
+.best b{font-family:var(--f-num);font-size:1.15rem;font-variant-numeric:tabular-nums}
+.chart{overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{fill:var(--muted);font-family:var(--f-num);font-size:10px}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.log li{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+.log .d{font-weight:600}
+.log .meta{grid-column:1;font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums;display:flex;gap:10px;flex-wrap:wrap}
+.log .meta i{font-style:normal;color:var(--c);font-weight:600}
+.log .sum{font-family:var(--f-num);font-weight:700;font-size:1.1rem;grid-row:1;grid-column:2;text-align:right}
+.log .del{grid-column:2;border:0;background:none;color:var(--muted);font-size:.8rem;padding:4px 0;text-align:right}
+.log .del.arm{color:var(--danger);font-weight:700}
+.empty{color:var(--muted);font-size:.9rem;margin:0}
+.sync{font-size:.75rem;color:var(--muted)}
+.cal-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cal-head b{font-family:var(--f-display);font-weight:400;font-size:1.1rem}
+.cal-nav{border:1px solid var(--line);background:var(--bg);border-radius:10px;width:44px;height:44px;font-size:1.1rem}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .wd{text-align:center;font-size:.72rem;color:var(--muted);padding-bottom:2px}
+.cal .wd:nth-child(6){color:var(--pull)}.cal .wd:nth-child(7){color:var(--danger)}
+.day{border:1px solid transparent;border-radius:8px;min-height:48px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;background:color-mix(in srgb,var(--squat) calc(var(--lv,0) * 1%),var(--bg));font-variant-numeric:tabular-nums}
+.day span{font-size:.8rem}
+.day small{font-family:var(--f-num);font-size:.66rem;font-weight:700;color:var(--ink)}
+.day.hot span,.day.hot small{color:var(--on-accent)}
+.day.today{border-color:var(--ink)}
+.day.sel{outline:2px solid var(--push);outline-offset:1px}
+.day.out{visibility:hidden}
+.daydetail{font-size:.85rem;color:var(--muted);margin:0}
+.daydetail b{color:var(--ink)}
+.msum{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.msum b{color:var(--ink);font-family:var(--f-num)}
+.seg{display:inline-grid;grid-template-columns:repeat(3,auto);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;background:var(--bg)}
+.seg button{border:0;background:transparent;border-radius:8px;padding:6px 14px;font-weight:600;min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.pbest{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:12px;padding:12px}
+.pbest small{color:var(--muted);font-size:.78rem}
+.pbest b{font-family:var(--f-num);font-size:1.5rem;font-variant-numeric:tabular-nums}
+.pbest span{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.divider{border:0;border-top:1px solid var(--line);margin:0}
+.spidey{border:2px solid var(--danger);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;background:var(--surface)}
+.spidey .pct{grid-row:span 2;font-family:var(--f-num);font-weight:700;font-size:clamp(2.2rem,10vw,2.8rem);line-height:1;color:var(--danger);font-variant-numeric:tabular-nums}
+.spidey .tier{font-family:var(--f-display);font-size:1.1rem}
+.spidey .why{font-size:.8rem;color:var(--muted)}
+.spidey .web{grid-column:1/-1;height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:6px}
+.spidey .web i{display:block;height:100%;width:0;background:var(--danger);transition:width .3s}
+.spidey .ticks{grid-column:1/-1;display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);gap:4px}
+.spidey .ticks span.on{color:var(--danger);font-weight:700}
+.tag.sp{border-color:var(--danger);color:var(--danger)}
+.rules{margin:0;font-size:.85rem;color:var(--muted)}
+.rules b{color:var(--danger)}
+.nick{display:flex;gap:8px;flex-wrap:wrap}
+.nick input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:44px}
+.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rank li{display:grid;grid-template-columns:2.2em 36px 1fr auto;gap:4px 10px;align-items:center;padding:10px 6px;border-top:1px solid var(--line);border-radius:8px}
+.rank li.me{background:var(--push-soft)}
+.rank .no{font-family:var(--f-num);font-weight:700;font-size:1.1rem;text-align:center;font-variant-numeric:tabular-nums}
+.rank li:nth-child(1) .no{color:var(--danger)}
+.rank img{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--line)}
+.rank .who{min-width:0}
+.rank .who b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .who small{color:var(--muted);font-size:.76rem;font-variant-numeric:tabular-nums}
+.rank .sp{text-align:right;font-family:var(--f-num);font-weight:700;font-size:1.4rem;color:var(--danger);line-height:1}
+.rank .sp small{display:block;font-family:var(--f-body);font-size:.68rem;font-weight:600;color:var(--muted)}
+.note{margin:0;font-size:.82rem;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
+.toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.pad.bump .n{animation:none}.tap{transition:none}.bar>i{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>20분 맨몸 카운터</h1>
+    <p class="sub">철봉 → 팔굽혀펴기 → 스쿼트가 1세트. 한 번 할 때마다 탭하고, 했던 종목을 다시 탭하면 다음 세트로 넘어가요.</p>
+  </header>
+
+  <div class="pane" id="pane-work">
+
+  <section class="timer" aria-label="타이머">
+    <div class="clock" id="clock">20:00</div>
+    <div class="tctrl">
+      <button class="btn primary" id="startBtn">시작</button>
+      <button class="btn" id="resetBtn">초기화</button>
+      <button class="btn" id="bgmBtn" aria-pressed="true">음악 켬</button>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="state"><span id="stateText">대기 중 · 시작을 누르면 20분 카운트다운</span><span id="paceText"></span></div>
+  </section>
+
+  <section class="pads" id="pads" aria-label="종목별 카운터"></section>
+
+  <section class="spidey" aria-label="스파이더맨 지수">
+    <div class="pct" id="spPct">0%</div>
+    <div class="tier" id="spTier">평범한 고등학생</div>
+    <div class="why" id="spWhy">톰 홀랜드(20분 28세트)를 100%로 계산합니다</div>
+    <div class="web"><i id="spFill"></i></div>
+    <div class="ticks" id="spTicks"></div>
+  </section>
+
+  <section class="rounds" aria-label="세트별 기록">
+    <div class="rhead"><h2 id="roundTitle">세트</h2><div class="btns"><button class="btn" id="fillRound">5·10·15 채우기</button><button class="btn" id="nextRound">다음 세트</button></div></div>
+    <div class="mbar" id="mbar">
+      <div class="track" aria-hidden="true"><i id="mFill"></i><b id="mPace"></b></div>
+      <p><span id="mLeft">1세트 = 풀업 5 · 푸시업 10 · 스쿼트 15</span><span id="mStatus"></span></p>
+    </div>
+    <div class="rscroll"><table class="rtable"><thead><tr><th>세트</th><th>철봉</th><th>팔굽혀펴기</th><th>스쿼트</th><th>합계</th></tr></thead><tbody id="roundBody"></tbody></table></div>
+  </section>
+
+  <div class="total"><span class="sub">이번 세션 합계</span><b id="sessTotal">0회</b></div>
+  <button class="save" id="saveBtn" disabled>기록 저장</button>
+  </div>
+
+  <div class="pane" id="pane-cal" hidden>
+  <section class="panel" aria-label="캘린더">
+    <div class="phead"><h2>캘린더</h2></div>
+    <div class="cal-head"><button class="cal-nav" id="calPrev" aria-label="이전 달">‹</button><b id="calTitle"></b><button class="cal-nav" id="calNext" aria-label="다음 달">›</button></div>
+    <div class="msum" id="msum"></div>
+    <div class="cal" id="cal"></div>
+    <p class="daydetail" id="dayDetail">날짜를 누르면 그날 기록이 나옵니다.</p>
+  </section>
+
+  </div>
+
+  <div class="pane" id="pane-stats" hidden>
+  <section class="panel" aria-label="최고 기록">
+    <div class="phead"><h2>최고 기록</h2></div>
+    <p class="mbest" id="mbest"></p>
+    <div class="bests" id="bests"></div>
+  </section>
+  <section class="panel" aria-label="통계">
+    <div class="phead"><h2>통계</h2>
+      <div class="seg" role="group" aria-label="기간"><button id="pDay">일</button><button id="pWeek">주</button><button id="pMonth">월</button></div>
+    </div>
+    <div class="pbest" id="pbest"></div>
+    <div class="bests" id="pbests"></div>
+    <div class="chart" id="pchart"></div>
+  </section>
+
+  </div>
+
+  <div class="pane" id="pane-rank" hidden>
+  <section class="panel" aria-label="랭킹">
+    <div class="phead"><h2>스파이더맨 랭킹</h2><span class="sync" id="rankSync"></span></div>
+    <p class="rules">20분 안에 스파이더맨 지수 <b>100%</b>(톰 홀랜드 28세트 분량: 철봉 140 · 팔굽혀펴기 280 · 스쿼트 420)를 찍을 때마다 <b>1 스파이더맨</b>. 스파이더맨 수가 같으면 최고 지수, 그다음 총 횟수로 순위를 정해요.</p>
+    <div class="nick"><span class="sync" id="acct" style="flex:1 1 100%">계정 연결 중…</span><button class="btn" id="linkGoogle" hidden>Google로 연결</button></div>
+    <div class="nick"><input id="nickInput" maxlength="16" placeholder="랭킹에 표시할 닉네임" aria-label="닉네임"><button class="btn" id="nickSave">닉네임 저장</button></div>
+    <p class="note" id="rankNote" hidden></p>
+    <ol class="rank" id="rankList"></ol>
+  </section>
+  </div>
+
+  <div class="pane" id="pane-log" hidden>
+  <section class="panel" aria-label="기록">
+    <div class="phead">
+      <h2>기록</h2>
+      <span class="sync" id="syncText">계정 연결 중…</span>
+    </div>
+    <div class="legend"><span style="--c:var(--pull)">철봉</span><span style="--c:var(--push)">팔굽혀펴기</span><span style="--c:var(--squat)">스쿼트</span></div>
+    <div class="chart" id="chart"></div>
+    <ul class="log" id="log"></ul>
+  </section>
+  </div>
+</div>
+<nav class="tabs" role="tablist" aria-label="화면">
+  <button role="tab" id="tab-work" aria-selected="true">운동</button>
+  <button role="tab" id="tab-cal" aria-selected="false">캘린더</button>
+  <button role="tab" id="tab-stats" aria-selected="false">통계</button>
+  <button role="tab" id="tab-rank" aria-selected="false">랭킹</button>
+  <button role="tab" id="tab-log" aria-selected="false">기록</button>
+</nav>
+<audio id="bgm" src="bgm.mp3" loop preload="none"></audio>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const EX=[
+  {k:"pull",name:"철봉",en:"Pull-ups"},
+  {k:"push",name:"팔굽혀펴기",en:"Push-ups"},
+  {k:"squat",name:"스쿼트",en:"Squats"},
+];
+const DURATION=20*60*1000;
+const DRAFT_KEY="bw20-draft", LOCAL_LOG="bw20-log";
+const $=id=>document.getElementById(id);
+
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+/* ---------- session state ---------- */
+// One set (round) = pull-ups + push-ups + squats. Tapping an exercise already done
+// in this round, after moving on to another one, starts the next round.
+let S=lsGet(DRAFT_KEY,null);
+if(!S||!S.rounds)S=freshSession();
+function freshSession(){return{counts:{pull:0,push:0,squat:0},rounds:[],forceNew:false,lastK:null,elapsed:0,startedAt:null,runningSince:null}}
+const emptyRound=()=>({pull:0,push:0,squat:0});
+const rsum=r=>r.pull+r.push+r.squat;
+// Tom Holland mission: 5 pull-ups, 10 push-ups, 15 squats per set; 28 sets in 20 minutes
+const MISSION={pull:5,push:10,squat:15},MISSION_GOAL=28;
+const roundDone=r=>EX.every(x=>r[x.k]>=MISSION[x.k]);
+const missionSets=R=>R.filter(roundDone).length;
+// Spider-Man index: Tom Holland's 28 sets (140 / 280 / 420 reps) = 100%.
+// The weakest exercise decides how many full sets your reps are worth.
+const TOM={pull:5*MISSION_GOAL,push:10*MISSION_GOAL,squat:15*MISSION_GOAL};
+const spidey=c=>Math.round(Math.min(...EX.map(x=>(c[x.k]||0)/TOM[x.k]))*100);
+const TIERS=[[0,"평범한 고등학생"],[20,"거미에 물린 직후"],[40,"홈메이드 슈트"],[60,"스타크 인턴"],[80,"아이언 스파이더"],[100,"톰 홀랜드급"]];
+const tierOf=p=>TIERS.filter(t=>p>=t[0]).pop()[1];
+function elapsed(){return S.elapsed+(S.runningSince?Date.now()-S.runningSince:0)}
+function persistDraft(){lsSet(DRAFT_KEY,S)}
+
+/* pads */
+const pads=$("pads");
+EX.forEach(e=>{
+  const el=document.createElement("div");
+  el.className="pad";el.dataset.k=e.k;
+  el.innerHTML=`<button class="tap" id="tap-${e.k}" aria-label="${e.name} 1회 추가">
+      <span class="name">${e.name}</span><span class="en">${e.en}</span>
+      <span class="n" id="n-${e.k}">0</span><span class="hint" id="cur-${e.k}">탭 = +1</span></button>
+    <div class="minis"><button id="minus-${e.k}" aria-label="${e.name} 1회 빼기">−1</button><button id="plus5-${e.k}" aria-label="${e.name} 5회 추가">+5</button></div>`;
+  pads.appendChild(el);
+  $("tap-"+e.k).addEventListener("click",()=>add(e.k,1));
+  $("minus-"+e.k).addEventListener("click",()=>add(e.k,-1));
+  $("plus5-"+e.k).addEventListener("click",()=>add(e.k,5));
+});
+
+function add(k,d){
+  if(d>0&&!S.runningSince&&elapsed()===0) start(); // first tap starts the clock
+  if(S.counts[k]+d<0)return;
+  S.counts[k]=Math.max(0,S.counts[k]+d);
+  const before=missionSets(S.rounds);
+  addToRound(k,d);
+  if(missionSets(S.rounds)>before)missionRoundDone();
+  try{navigator.vibrate&&navigator.vibrate(d>0?12:[8,40,8])}catch(e){}
+  const pad=document.querySelector(`.pad[data-k="${k}"]`);
+  pad.classList.remove("bump");void pad.offsetWidth;pad.classList.add("bump");
+  persistDraft();renderSession();
+}
+function addToRound(k,d){
+  const R=S.rounds;let cur=R[R.length-1];
+  if(d>0){
+    if(!cur||S.forceNew||(cur[k]>0&&S.lastK!==k)){cur=emptyRound();R.push(cur)}
+    cur[k]+=d;S.forceNew=false;S.lastK=k;
+  }else{
+    let i=R.length-1;while(i>=0&&!R[i][k])i--;
+    if(i<0)return;
+    R[i][k]-=1;
+    if(i===R.length-1&&!rsum(R[i])){R.pop();S.lastK=null}
+  }
+}
+
+/* timer */
+let wake=null, ticker=null, audio=null, finished=false;
+function beep(times){
+  try{
+    audio=audio||new (window.AudioContext||window.webkitAudioContext)();
+    for(let i=0;i<times;i++){
+      const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime+i*0.35;
+      o.frequency.value=880;o.connect(g);g.connect(audio.destination);
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.3,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.25);
+      o.start(t);o.stop(t+.3);
+    }
+  }catch(e){}
+}
+async function lockScreen(){try{wake=await navigator.wakeLock.request("screen")}catch(e){wake=null}}
+function start(){
+  if(elapsed()>=DURATION)return;
+  if(!S.startedAt)S.startedAt=Date.now();
+  S.runningSince=Date.now();
+  beep(1);lockScreen();playBgm();
+  persistDraft();loop();renderSession();
+}
+function pause(){
+  S.elapsed=elapsed();S.runningSince=null;
+  try{wake&&wake.release()}catch(e){} wake=null;
+  $("bgm").pause();
+  persistDraft();renderSession();
+}
+/* background music: plays while the timer runs */
+let bgmOn=lsGet("bw20-bgm",true);
+const bgm=$("bgm");bgm.volume=.6;
+function playBgm(){if(bgmOn){const p=bgm.play();p&&p.catch(()=>{})}}
+function renderBgm(){$("bgmBtn").textContent=bgmOn?"음악 켬":"음악 끔";$("bgmBtn").setAttribute("aria-pressed",bgmOn)}
+$("bgmBtn").addEventListener("click",()=>{bgmOn=!bgmOn;lsSet("bw20-bgm",bgmOn);renderBgm();
+  if(!bgmOn)bgm.pause();else if(S.runningSince)playBgm()});
+renderBgm();
+function loop(){clearInterval(ticker);ticker=setInterval(tick,250);tick()}
+function tick(){
+  const e=elapsed();
+  if(S.runningSince&&e>=DURATION){
+    S.elapsed=DURATION;S.runningSince=null;clearInterval(ticker);
+    try{wake&&wake.release()}catch(err){}
+    $("bgm").pause();
+    beep(3);try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(err){}
+    persistDraft();toast("20분 끝! 기록을 저장하세요");
+  }
+  renderClock();
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.runningSince)lockScreen()});
+
+function missionRoundDone(){
+  const n=missionSets(S.rounds);
+  beep(n===MISSION_GOAL?3:1);
+  toast(n===MISSION_GOAL?"28세트 달성! 톰 홀랜드 기록과 같아요":`톰 홀랜드 세트 ${n}개 달성`);
+}
+function fillMissionRound(){
+  if(!S.runningSince&&elapsed()===0)start();
+  const R=S.rounds;let cur=R[R.length-1];
+  if(!cur||S.forceNew||roundDone(cur)){cur=emptyRound();R.push(cur)}
+  S.forceNew=false;S.lastK="squat";
+  EX.forEach(x=>{const need=Math.max(0,MISSION[x.k]-cur[x.k]);cur[x.k]+=need;S.counts[x.k]+=need});
+  try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}
+  missionRoundDone();persistDraft();renderSession();
+}
+$("fillRound").addEventListener("click",fillMissionRound);
+$("nextRound").addEventListener("click",()=>{
+  S.forceNew=!S.forceNew;persistDraft();renderSession()});
+$("startBtn").addEventListener("click",()=>S.runningSince?pause():start());
+let resetArmed=null;
+$("resetBtn").addEventListener("click",()=>{
+  const b=$("resetBtn");
+  if(total(S.counts)>0&&!resetArmed){
+    b.textContent="정말 초기화?";b.classList.add("danger");
+    resetArmed=setTimeout(()=>{resetArmed=null;b.textContent="초기화";b.classList.remove("danger")},3000);
+    return;
+  }
+  clearTimeout(resetArmed);resetArmed=null;b.textContent="초기화";b.classList.remove("danger");
+  newSession();
+});
+function newSession(){$("bgm").pause();$("bgm").currentTime=0;S=freshSession();clearInterval(ticker);try{wake&&wake.release()}catch(e){}persistDraft();renderSession()}
+
+const total=c=>c.pull+c.push+c.squat;
+function fmt(ms){const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function renderMissionPace(){
+  const done=missionSets(S.rounds),e=Math.min(elapsed(),DURATION),target=e/DURATION*MISSION_GOAL;
+  $("mFill").style.width=Math.min(100,done/MISSION_GOAL*100)+"%";
+  $("mPace").style.left=`calc(${Math.min(100,target/MISSION_GOAL*100)}% - 1px)`;
+  const diff=done-Math.floor(target),st=$("mStatus");
+  const per=Math.round(DURATION/1000/MISSION_GOAL);
+  $("mLeft").textContent=`1세트 = 풀업 5 · 푸시업 10 · 스쿼트 15 · 세트당 ${per}초 페이스`;
+  if(e===0){st.textContent="빨간 선 = 28세트 페이스";st.className=""}
+  else if(diff>=0){st.textContent=`페이스보다 ${diff}세트 앞섬`;st.className="ahead"}
+  else{st.textContent=`페이스보다 ${-diff}세트 뒤처짐`;st.className="behind"}
+}
+function renderSpidey(){
+  const c=S.counts,p=spidey(c),e=Math.min(elapsed(),DURATION);
+  $("spPct").textContent=p+"%";
+  $("spTier").textContent=tierOf(p);
+  $("spFill").style.width=Math.min(100,p)+"%";
+  $("spTicks").innerHTML=TIERS.map(t=>`<span class="${p>=t[0]?"on":""}">${t[0]}</span>`).join("");
+  const weak=EX.reduce((a,x)=>(c[x.k]||0)/TOM[x.k]<(c[a.k]||0)/TOM[a.k]?x:a);
+  let why;
+  if(!total(c))why="톰 홀랜드(20분 28세트)를 100%로 계산합니다";
+  else if(p>=100)why=`톰 홀랜드를 ${p===100?"따라잡았어요":(p-100)+"% 넘었어요"}`;
+  else{
+    const sets=Math.floor(Math.min(...EX.map(x=>(c[x.k]||0)/(TOM[x.k]/MISSION_GOAL))));
+    why=`${sets}세트 분량 · ${weak.name}이(가) 제일 부족해요`;
+    if(e>60000&&e<DURATION&&S.runningSince)why+=` · 이 페이스면 20분에 ${Math.round(p*DURATION/e)}%`;
+  }
+  $("spWhy").textContent=why;
+}
+function renderClock(){
+  renderSpidey();
+  const e=elapsed(),left=DURATION-e;
+  $("clock").textContent=fmt(left);
+  $("clock").classList.toggle("done",left<=0);
+  $("barFill").style.width=Math.min(100,e/DURATION*100)+"%";
+  renderMissionPace();
+  const st=$("stateText");
+  if(left<=0)st.textContent="완료 · 수고했어요";
+  else if(S.runningSince)st.textContent="운동 중 · 화면이 꺼지지 않게 유지합니다";
+  else if(e>0)st.textContent="일시정지";
+  else st.textContent="대기 중 · 시작 또는 첫 탭으로 카운트다운";
+  const mins=e/60000,t=total(S.counts);
+  $("paceText").textContent=mins>=1&&t?`분당 ${(t/mins).toFixed(1)}회`:"";
+}
+function renderSession(){
+  const R=S.rounds,cur=S.forceNew?null:R[R.length-1];
+  EX.forEach(x=>{
+    $("n-"+x.k).textContent=S.counts[x.k];
+    const c=cur?cur[x.k]:0,n=cur?R.length:R.length+1;
+    $("cur-"+x.k).textContent=!R.length&&!c?"탭 = +1":`${n}세트 ${c}/${MISSION[x.k]}${c>=MISSION[x.k]?" ✓":""}`;
+  });
+  $("roundTitle").textContent=`세트 ${R.length} · 톰 홀랜드 ${missionSets(R)}/${MISSION_GOAL}`;
+  $("nextRound").classList.toggle("on",S.forceNew);
+  $("nextRound").textContent=S.forceNew?"다음 탭부터 새 세트":"다음 세트";
+  $("nextRound").disabled=!R.length;
+  renderMissionPace();
+  $("roundBody").innerHTML=R.length?R.map((r,i)=>({r,i})).reverse().map(({r,i})=>`<tr class="${i===R.length-1&&!S.forceNew?"cur":""}"><td>${i+1}${roundDone(r)?" ✓":""}</td><td>${r.pull}</td><td>${r.push}</td><td>${r.squat}</td><td>${rsum(r)}</td></tr>`).join("")
+    :`<tr><td colspan="5" style="font-family:var(--f-body);color:var(--muted);text-align:left">첫 탭을 하면 1세트가 시작됩니다.</td></tr>`;
+  const t=total(S.counts);
+  $("sessTotal").textContent=t+"회";
+  $("saveBtn").disabled=t===0;
+  $("startBtn").textContent=S.runningSince?"일시정지":(elapsed()>0&&elapsed()<DURATION?"계속":"시작");
+  $("startBtn").disabled=elapsed()>=DURATION;
+  renderClock();
+}
+
+/* ---------- history (db with local fallback) ---------- */
+let records=lsGet(LOCAL_LOG,[]); // local copy, also the fallback store
+let col=null;
+
+const withTimeout=(pr,ms)=>Promise.race([pr,new Promise(r=>setTimeout(()=>r(null),ms))]);
+let DB=null,USER=null,UID=null,boardBlocked=false,lastBoard="";
+/* ---------- Firebase (Auth + Firestore). Hosting is Vercel; this only talks to the API. ---------- */
+const firebaseConfig={
+  apiKey:"AIzaSyCRajHXD9_KlfvJQb-GtUr8NSk7ce0uad0",
+  authDomain:"to-do-cal-6e835.firebaseapp.com",
+  projectId:"to-do-cal-6e835",
+  storageBucket:"to-do-cal-6e835.firebasestorage.app",
+  messagingSenderId:"460218654402",
+  appId:"1:460218654402:web:fdb98e791b530e7bbee55b",
+  measurementId:"G-4PTMXMBG2K"
+};
+const FB_VER="10.12.2",FB_URL=m=>`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}.js`;
+let FBA=null; // auth helpers, set once Firebase loads
+// Small wrapper so the rest of the page reads like a plain document store.
+function makeDB(F,fs){
+  const wrapDoc=ref=>({set:d=>F.setDoc(ref,d),delete:()=>F.deleteDoc(ref),
+    get:async()=>{const s=await F.getDoc(ref);return{exists:s.exists(),data:()=>s.data()}}});
+  const wrapCol=path=>{const c=F.collection(fs,path),q=[];const api={
+    doc:id=>wrapDoc(F.doc(c,id)),
+    orderBy(f,d){q.push(F.orderBy(f,d));return api},
+    limit(n){q.push(F.limit(n));return api},
+    onSnapshot(next,err){return F.onSnapshot(F.query(c,...q),s=>next({docs:s.docs.map(d=>({id:d.id,data:()=>d.data()}))}),err)}};
+    return api};
+  return{collection:wrapCol,doc:p=>wrapDoc(F.doc(fs,p))};
+}
+async function connectFirebase(){
+  const [app,auth,store]=await Promise.all([import(FB_URL("app")),import(FB_URL("auth")),import(FB_URL("firestore"))]);
+  const fapp=app.initializeApp(firebaseConfig);
+  try{const an=await import(FB_URL("analytics"));if(await an.isSupported())an.getAnalytics(fapp)}catch(e){}
+  const au=auth.getAuth(fapp);
+  const user=await new Promise(res=>{const off=auth.onAuthStateChanged(au,u=>{if(u){off();res(u)}});
+    auth.signInAnonymously(au).catch(()=>res(null))});
+  if(!user)return null;
+  FBA={au,auth};
+  return{db:makeDB(store,store.getFirestore(fapp)),uid:user.uid,user};
+}
+function renderAccount(u){
+  const el=$("acct");if(!el)return;
+  if(!u){el.textContent="오프라인 · 이 기기에만 저장";$("linkGoogle").hidden=true;return}
+  el.textContent=u.isAnonymous?"익명 계정 · 이 기기에서만 이어져요":`${u.displayName||u.email||"Google 계정"} · 여러 기기에서 이어져요`;
+  $("linkGoogle").hidden=!u.isAnonymous;
+}
+async function linkGoogle(){
+  if(!FBA)return;
+  const {au,auth}=FBA,prov=new auth.GoogleAuthProvider();
+  try{await auth.linkWithPopup(au.currentUser,prov);toast("Google 계정과 연결됐어요");renderAccount(au.currentUser)}
+  catch(e){
+    if(e.code==="auth/credential-already-in-use"){
+      // this Google account already has data: switch to it and carry this device's records over
+      records.forEach(r=>r.synced=false);lsSet(LOCAL_LOG,records);
+      const cred=auth.GoogleAuthProvider.credentialFromError(e);
+      await auth.signInWithCredential(au,cred);location.reload();
+    }else if(e.code!=="auth/popup-closed-by-user")toast("Google 연결 실패: "+(e.code||"알 수 없는 오류"));
+  }
+}
+async function initStore(){
+  const sync=$("syncText");
+  sync.textContent="계정 연결 중…";
+  let conn=null;
+  try{conn=await withTimeout(connectFirebase(),10000)}catch(e){conn=null}
+  renderAccount(conn&&conn.user);
+  if(!conn){sync.textContent="이 기기에만 저장 중 (서버 연결 안 됨)";renderHistory();
+    rankNote("랭킹 서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.");return}
+  const db=conn.db,uid=conn.uid;
+  DB=db;UID=uid;
+  initBoard();
+  col=db.collection(`users/${uid}/workouts`);
+  sync.textContent="서버에 저장됨";
+  // upload records saved on this device before the account was reachable
+  for(const r of records.filter(r=>!r.synced)){try{await col.doc(r.id).set(stripLocal(r));r.synced=true}catch(e){}}
+  lsSet(LOCAL_LOG,records);
+  col.orderBy("date","desc").limit(500).onSnapshot(snap=>{
+    const remote=snap.docs.map(d=>({...d.data(),id:d.id,synced:true}));
+    const ids=new Set(remote.map(r=>r.id));
+    records=[...remote,...records.filter(r=>!r.synced&&!ids.has(r.id))];
+    lsSet(LOCAL_LOG,records);renderHistory();
+  },()=>{sync.textContent="동기화 오류 · 이 기기 기록 표시 중";renderHistory()});
+}
+const stripLocal=r=>({date:r.date,pull:r.pull,push:r.push,squat:r.squat,mode:r.mode||null,rounds:r.rounds||null,seconds:r.seconds});
+
+$("saveBtn").addEventListener("click",async()=>{
+  if(S.runningSince)pause();
+  const r={id:String(Date.now()),date:S.startedAt||Date.now(),...S.counts,mode:"set",rounds:S.rounds.length?S.rounds.map(r=>({...r})):null,seconds:Math.round(Math.min(elapsed(),DURATION)/1000)};
+  records=[r,...records];lsSet(LOCAL_LOG,records);
+  if(col){try{await col.doc(r.id).set(stripLocal(r));r.synced=true;lsSet(LOCAL_LOG,records)}catch(e){toast("계정 저장 실패 · 이 브라우저에는 저장됨")}}
+  newSession();renderHistory();
+  toast(spidey(r)>=100?`스파이더맨 +1! 지금까지 ${spiderCount(records)} 스파이더맨`:`저장됨 · 스파이더맨 지수 ${spidey(r)}% (${tierOf(spidey(r))})`);
+});
+
+/* ---------- ranking board: board/<id> = one summary doc per person ---------- */
+const spiderCount=rs=>rs.filter(r=>spidey(r)>=100).length;
+let board=[],myNick=lsGet("bw20-nick","");
+function rankNote(t){const n=$("rankNote");n.hidden=!t;n.textContent=t||""}
+function boardSummary(){
+  return{spiders:spiderCount(records),bestPct:records.reduce((m,r)=>Math.max(m,spidey(r)),0),
+    sessions:records.length,reps:records.reduce((a,r)=>a+r.pull+r.push+r.squat,0),
+    tomSets:records.reduce((m,r)=>Math.max(m,missionSets(r.rounds||[])),0)};
+}
+async function publishBoard(){
+  if(!DB||!UID||boardBlocked)return;
+  const doc={...boardSummary(),nick:myNick.slice(0,16)};
+  const key=JSON.stringify(doc);
+  if(key===lastBoard)return;
+  lastBoard=key;
+  try{await DB.doc("board/"+UID).set({...doc,updatedAt:Date.now()})}
+  catch(e){boardBlocked=true;lastBoard="";
+    rankNote("랭킹 저장에 실패했어요. 잠시 뒤 다시 시도해 주세요.");setTimeout(()=>{boardBlocked=false},30000)}
+}
+async function initBoard(){
+  $("rankSync").textContent="불러오는 중…";
+  try{const mine=await DB.doc("board/"+UID).get();if(mine.exists&&mine.data().nick&&!myNick){myNick=mine.data().nick;lsSet("bw20-nick",myNick);$("nickInput").value=myNick}}catch(e){}
+  DB.collection("board").onSnapshot(snap=>{
+    board=snap.docs.map(d=>({id:d.id,...d.data()}));
+    $("rankSync").textContent=`${board.length}명 참여`;
+    renderRank();
+  },()=>{$("rankSync").textContent="";rankNote("랭킹을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.")});
+  publishBoard();
+}
+async function renderRank(){
+  const list=$("rankList");
+  if(!board.length){list.innerHTML=`<li style="display:block"><p class="empty">아직 참여한 사람이 없어요. 운동을 저장하면 랭킹에 올라갑니다.</p></li>`;return}
+  const rows=[...board].sort((a,b)=>(b.spiders||0)-(a.spiders||0)||(b.bestPct||0)-(a.bestPct||0)||(b.reps||0)-(a.reps||0));
+  const ps=USER?await USER.profiles(rows.map(r=>r.id)):{};
+  list.innerHTML="";
+  let rank=0,prev=null;
+  rows.forEach((r,i)=>{
+    const k=`${r.spiders||0}|${r.bestPct||0}|${r.reps||0}`;if(k!==prev){rank=i+1;prev=k}
+    const p=ps[r.id]||{};
+    const li=document.createElement("li");if(r.id===UID)li.className="me";
+    li.innerHTML=`<span class="no">${rank}</span><img alt=""><span class="who"><b></b><small></small></span><span class="sp">${r.spiders||0}<small>스파이더맨</small></span>`;
+    if(p.avatarUrl)li.querySelector("img").src=p.avatarUrl;
+    li.querySelector(".who b").textContent=(r.nick||p.name||"닉네임 없는 거미")+(r.id===UID?" (나)":"");
+    li.querySelector(".who small").textContent=`최고 ${r.bestPct||0}% · ${tierOf(r.bestPct||0)} · 톰 세트 최고 ${r.tomSets||0} · 총 ${r.reps||0}회`;
+    list.appendChild(li);
+  });
+}
+$("nickInput").value=myNick;
+$("linkGoogle").addEventListener("click",linkGoogle);
+$("nickSave").addEventListener("click",()=>{
+  myNick=$("nickInput").value.trim().slice(0,16);lsSet("bw20-nick",myNick);
+  if(!DB){toast("서버에 연결되면 랭킹에 반영돼요");return}
+  publishBoard().then(()=>toast(boardBlocked?"닉네임 저장 실패":"닉네임 저장됨"));
+});
+
+async function removeRecord(id){
+  records=records.filter(r=>r.id!==id);lsSet(LOCAL_LOG,records);renderHistory();
+  if(col){try{await col.doc(id).delete()}catch(e){toast("삭제 실패")}}
+}
+
+function renderHistory(){
+  publishBoard();
+  const rs=[...records].sort((a,b)=>b.date-a.date);
+  // bests
+  $("bests").innerHTML=EX.map(x=>{
+    const best=rs.reduce((m,r)=>Math.max(m,r[x.k]||0),0);
+    const bestSet=rs.reduce((m,r)=>Math.max(m,...(r.rounds||[]).map(z=>z[x.k]||0)),0);
+    return `<div class="best" style="--c:var(--${x.k})"><small>${x.name} 최고</small><b>${best}회</b><small>한 세트 최고 ${bestSet||"–"}</small></div>`;
+  }).join("");
+  const mb=rs.reduce((m,r)=>Math.max(m,missionSets(r.rounds||[])),0);
+  const sb=rs.reduce((m,r)=>Math.max(m,spidey(r)),0);
+  $("mbest").innerHTML=`스파이더맨 <b>${spiderCount(rs)}</b>회 달성 · 스파이더맨 지수 최고 <b>${sb}%</b> (${tierOf(sb)}) · 톰 홀랜드 세트 최고 <b>${mb}</b> / ${MISSION_GOAL}세트`;
+  // chart: last 10 sessions, stacked
+  const last=rs.slice(0,10).reverse().map(r=>{const d=new Date(r.date);return{...r,label:`${d.getMonth()+1}/${d.getDate()}`}});
+  $("chart").innerHTML=stackChart(last,`최근 ${last.length}회 세션 종목별 횟수`);
+  renderCalendar();renderPeriods();
+
+  // list
+  const log=$("log");
+  if(!rs.length){log.innerHTML=`<li style="display:block"><p class="empty">아직 기록이 없어요. 20분 동안 탭으로 세고 <b>기록 저장</b>을 누르면 여기에 날짜별로 쌓입니다.</p></li>`;return}
+  log.innerHTML=rs.map(r=>{
+    const d=new Date(r.date),days="일월화수목금토";
+    const ds=`${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} (${days[d.getDay()]}) ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    return `<li><span class="d">${ds}<span class="tag sp">스파이더맨 ${spidey(r)}%</span>${r.rounds&&r.rounds.length?`<span class="tag">톰 홀랜드 ${missionSets(r.rounds)}/${MISSION_GOAL}</span>`:""}</span><span class="sum">${r.pull+r.push+r.squat}회</span>
+      <span class="meta">${EX.map(x=>`<span><i style="--c:var(--${x.k})">${x.name}</i> ${r[x.k]||0}</span>`).join("")}<span>${r.rounds&&r.rounds.length?r.rounds.length+"세트 · ":""}${fmt((r.seconds||0)*1000)}</span></span>
+      ${r.rounds&&r.rounds.length?`<span class="rs">${r.rounds.map((z,i)=>`<span>${i+1}세트 ${z.pull}/${z.push}/${z.squat}</span>`).join("")}</span>`:""}
+      <button class="del" data-id="${r.id}">삭제</button></li>`;
+  }).join("");
+}
+function stackChart(items,label){
+  if(!items.length)return "";
+  const W=600,H=170,pl=34,pb=20,pt=8,bw=Math.min(40,(W-pl)/items.length*0.6);
+  const max=Math.max(...items.map(r=>(r.pull||0)+(r.push||0)+(r.squat||0)),10);
+  const step=niceStep(max),top=Math.ceil(max/step)*step;
+  const y=v=>pt+(H-pt-pb)*(1-v/top);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">`;
+  for(let v=0;v<=top;v+=step)s+=`<line x1="${pl}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-6}" y="${y(v)+3}" text-anchor="end">${v}</text>`;
+  items.forEach((r,i)=>{
+    const cx=pl+(W-pl)*(i+.5)/items.length;let acc=0;
+    EX.forEach(x=>{const v=r[x.k]||0;if(!v)return;
+      s+=`<rect x="${cx-bw/2}" y="${y(acc+v)}" width="${bw}" height="${y(acc)-y(acc+v)}" fill="var(--${x.k})"/>`;acc+=v});
+    s+=`<text x="${cx}" y="${H-5}" text-anchor="middle">${r.label}</text>`;
+  });
+  return s+"</svg>";
+}
+
+/* ---------- calendar & period stats ---------- */
+const pad2=n=>String(n).padStart(2,"0");
+const dayKey=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const monthKey=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+function weekStart(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x} // Monday
+const weekKey=d=>dayKey(weekStart(d));
+function groupBy(keyFn){
+  const m=new Map();
+  records.forEach(r=>{const k=keyFn(new Date(r.date));const g=m.get(k)||{key:k,pull:0,push:0,squat:0,n:0};
+    EX.forEach(x=>g[x.k]+=r[x.k]||0);g.n++;m.set(k,g)});
+  return m;
+}
+let calMonth=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)})();
+let selDay=null;
+let period=lsGet("bw20-period","day");
+
+function renderCalendar(){
+  const byDay=groupBy(dayKey),y=calMonth.getFullYear(),m=calMonth.getMonth();
+  $("calTitle").textContent=`${y}년 ${m+1}월`;
+  const first=new Date(y,m,1),lead=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+  const maxDay=Math.max(1,...[...byDay.values()].map(g=>g.pull+g.push+g.squat));
+  const today=dayKey(new Date());
+  let h="월화수목금토일".split("").map(w=>`<div class="wd">${w}</div>`).join("");
+  for(let i=0;i<lead;i++)h+=`<div class="day out"></div>`;
+  let mDays=0,mTot={pull:0,push:0,squat:0};
+  for(let d=1;d<=days;d++){
+    const k=`${y}-${pad2(m+1)}-${pad2(d)}`,g=byDay.get(k),t=g?g.pull+g.push+g.squat:0;
+    if(g){mDays++;EX.forEach(x=>mTot[x.k]+=g[x.k])}
+    const lv=g?Math.round(20+70*t/maxDay):0;
+    h+=`<button class="day${lv>=55?" hot":""}${k===today?" today":""}${k===selDay?" sel":""}" data-day="${k}" style="--lv:${lv}" aria-label="${m+1}월 ${d}일${g?` ${t}회`:""}"><span>${d}</span>${g?`<small>${t}</small>`:""}</button>`;
+  }
+  $("cal").innerHTML=h;
+  $("calNext").disabled=calMonth>=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+  $("msum").innerHTML=`<span>운동한 날 <b>${mDays}</b>일</span>${EX.map(x=>`<span>${x.name} <b>${mTot[x.k]}</b></span>`).join("")}<span>연속 <b>${streak(byDay)}</b>일</span>`;
+  renderDayDetail();
+}
+function streak(byDay){
+  const d=new Date();if(!byDay.has(dayKey(d)))d.setDate(d.getDate()-1);
+  let n=0;while(byDay.has(dayKey(d))){n++;d.setDate(d.getDate()-1)}
+  return n;
+}
+function renderDayDetail(){
+  const el=$("dayDetail");
+  if(!selDay){el.textContent="날짜를 누르면 그날 기록이 나옵니다.";return}
+  const [yy,mm,dd]=selDay.split("-").map(Number);
+  const rs=records.filter(r=>dayKey(new Date(r.date))===selDay).sort((a,b)=>a.date-b.date);
+  if(!rs.length){el.innerHTML=`<b>${mm}월 ${dd}일</b> · 기록 없음`;return}
+  el.innerHTML=`<b>${mm}월 ${dd}일</b> · `+rs.map(r=>{const d=new Date(r.date);
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())} 철봉 <b>${r.pull||0}</b> 팔굽 <b>${r.push||0}</b> 스쿼트 <b>${r.squat||0}</b>${r.rounds&&r.rounds.length?` (톰 홀랜드 ${missionSets(r.rounds)}세트)`:""}`}).join(" / ");
+}
+$("cal").addEventListener("click",e=>{const b=e.target.closest(".day[data-day]");if(!b)return;selDay=selDay===b.dataset.day?null:b.dataset.day;renderCalendar()});
+$("calPrev").addEventListener("click",()=>{calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()-1,1);renderCalendar()});
+$("calNext").addEventListener("click",()=>{calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+1,1);renderCalendar()});
+
+const PERIODS={
+  day:{name:"하루",keyFn:dayKey,label:k=>{const[,m,d]=k.split("-");return `${+m}/${+d}`},long:k=>{const[y,m,d]=k.split("-");return `${y}.${+m}.${+d}`},
+       prev:k=>null},
+  week:{name:"주",keyFn:weekKey,label:k=>{const[,m,d]=k.split("-");return `${+m}/${+d}~`},long:k=>{const s=new Date(k+"T00:00"),e=new Date(s);e.setDate(e.getDate()+6);return `${s.getMonth()+1}/${s.getDate()} ~ ${e.getMonth()+1}/${e.getDate()} 주`},
+       prev:k=>{const d=new Date(k+"T00:00");d.setDate(d.getDate()-7);return dayKey(d)}},
+  month:{name:"달",keyFn:monthKey,label:k=>`${+k.split("-")[1]}월`,long:k=>{const[y,m]=k.split("-");return `${y}년 ${+m}월`},
+       prev:k=>{const[y,m]=k.split("-").map(Number);return monthKey(new Date(y,m-2,1))}},
+};
+function renderPeriods(){
+  const P=PERIODS[period];
+  $("pDay").setAttribute("aria-pressed",period==="day");$("pWeek").setAttribute("aria-pressed",period==="week");$("pMonth").setAttribute("aria-pressed",period==="month");
+  const g=groupBy(P.keyFn),all=[...g.values()];
+  if(!all.length){$("pbest").innerHTML=`<small>최고의 ${P.name}</small><span>기록을 저장하면 ${P.name} 단위 합계와 최고 기록이 여기에 나옵니다.</span>`;$("pbests").innerHTML="";$("pchart").innerHTML="";return}
+  const tot=x=>x.pull+x.push+x.squat;
+  const best=all.reduce((a,b)=>tot(b)>tot(a)?b:a);
+  const curKey=P.keyFn(new Date()),cur=g.get(curKey);
+  const avg=Math.round(all.reduce((a,b)=>a+tot(b),0)/all.length);
+  $("pbest").innerHTML=`<small>최고의 ${P.name} · ${P.long(best.key)}</small><b>${tot(best)}회</b>
+    <span>철봉 ${best.pull} · 팔굽혀펴기 ${best.push} · 스쿼트 ${best.squat} · 운동 ${best.n}회</span>
+    <span>이번 ${P.name} ${cur?tot(cur):0}회 · 평균 ${avg}회 (운동한 ${P.name} 기준)</span>`;
+  $("pbests").innerHTML=EX.map(x=>{const b=all.reduce((a,c)=>c[x.k]>a[x.k]?c:a);
+    return `<div class="best" style="--c:var(--${x.k})"><small>${x.name} ${P.name} 최고</small><b>${b[x.k]}회</b><small>${b[x.k]?P.long(b.key):"–"}</small></div>`}).join("");
+  // last 8 periods: workout days for "day", consecutive weeks/months otherwise
+  let keys;
+  if(period==="day")keys=all.map(x=>x.key).sort().slice(-8);
+  else{keys=[];let k=curKey;for(let i=0;i<8;i++){keys.unshift(k);k=P.prev(k)}}
+  const items=keys.map(k=>({...(g.get(k)||{pull:0,push:0,squat:0}),label:P.label(k)}));
+  $("pchart").innerHTML=stackChart(items,`최근 ${P.name}별 종목 합계`);
+}
+[["pDay","day"],["pWeek","week"],["pMonth","month"]].forEach(([id,p])=>$(id).addEventListener("click",()=>{period=p;lsSet("bw20-period",p);renderPeriods()}));
+
+function niceStep(m){const raw=m/4,p=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p}
+
+$("log").addEventListener("click",e=>{
+  const b=e.target.closest(".del");if(!b)return;
+  if(!b.classList.contains("arm")){b.classList.add("arm");b.textContent="한 번 더 누르면 삭제";setTimeout(()=>{if(b.isConnected){b.classList.remove("arm");b.textContent="삭제"}},3000);return}
+  removeRecord(b.dataset.id);
+});
+
+const TABS=["work","cal","stats","rank","log"];
+function showTab(t){
+  TABS.forEach(x=>{$("pane-"+x).hidden=x!==t;$("tab-"+x).setAttribute("aria-selected",x===t)});
+  lsSet("bw20-tab",t);window.scrollTo(0,0);
+}
+TABS.forEach(x=>$("tab-"+x).addEventListener("click",()=>showTab(x)));
+showTab(TABS.includes(lsGet("bw20-tab","work"))?lsGet("bw20-tab","work"):"work");
+
+let toastT=null;
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2200)}
+
+renderSession();renderHistory();
+if(S.runningSince)loop();
+initStore();
+</script>
+</body>
+</html>
