@@ -1,0 +1,1727 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1d2320">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="스파이더20">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="description" content="20분 동안 철봉·팔굽혀펴기·스쿼트를 세트로 세고, 톰 홀랜드 기준 스파이더맨 지수로 친구들과 랭킹을 겨루는 운동 카운터">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>20분 맨몸 카운터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen gym clipboard — timer strip on top, three big tap pads, history log below */
+:root{
+  --bg:#e9ece8; --surface:#f7f8f5; --ink:#1d2320; --muted:#5f6a64; --line:#cfd5cf;
+  --pull:#1d4ea8; --push:#d3202e; --squat:#2b2e37;
+  --pull-soft:#dde6f6; --push-soft:#f9dfe1; --squat-soft:#e2e3e7;
+  --danger:#b3362f; --on-accent:#ffffff;
+  --f-display:"Black Han Sans","IBM Plex Sans KR",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141816; --surface:#1d2320; --ink:#e8ece9; --muted:#9aa59f; --line:#323a36;
+  --pull:#5b8ff0; --push:#ff5a63; --squat:#b9bfcc;
+  --pull-soft:#1a2740; --push-soft:#3a1a1d; --squat-soft:#262931;
+  --danger:#e0716a; --on-accent:#101412; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#141816; --surface:#1d2320; --ink:#e8ece9; --muted:#9aa59f; --line:#323a36;
+  --pull:#5b8ff0; --push:#ff5a63; --squat:#b9bfcc;
+  --pull-soft:#1a2740; --push-soft:#3a1a1d; --squat-soft:#262931;
+  --danger:#e0716a; --on-accent:#101412; color-scheme:dark }
+
+*{box-sizing:border-box}
+/* app-like touch: no double-tap zoom, no text selection / copy menu while tapping fast */
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;font-size:max(16px,1em)}
+button{touch-action:manipulation}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:16px 48px;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;letter-spacing:.01em}
+h2{font-family:var(--f-display);font-weight:400;font-size:1.25rem;margin:0}
+.sub{color:var(--muted);font-size:.85rem;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
+/* timer */
+.timer{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:center}
+.clock{font-family:var(--f-num);font-weight:700;font-size:clamp(2.6rem,12vw,3.6rem);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.clock.done{color:var(--danger)}
+.tctrl{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.btn{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 14px;font-weight:600;min-height:44px}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:transparent}
+.bar{grid-column:1/-1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--ink);transition:width .3s linear}
+.state{grid-column:1/-1;font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* pads */
+.pads{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pad{position:relative;display:flex;flex-direction:column;border-radius:16px;overflow:hidden;border:2px solid var(--c);background:var(--soft)}
+.pad[data-k="pull"]{--c:var(--pull);--soft:var(--pull-soft)}
+.pad[data-k="push"]{--c:var(--push);--soft:var(--push-soft)}
+.pad[data-k="squat"]{--c:var(--squat);--soft:var(--squat-soft)}
+.tap{border:0;background:transparent;padding:14px 8px 18px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:200px;justify-content:center;touch-action:manipulation;user-select:none;transition:transform .06s}
+.tap:active{transform:scale(.97)}
+.tap .name{font-family:var(--f-display);font-size:1.15rem;color:var(--c)}
+.tap .en{font-size:.72rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.tap .n{font-family:var(--f-num);font-weight:700;font-size:clamp(2.8rem,13vw,4.2rem);line-height:1.05;font-variant-numeric:tabular-nums;color:var(--ink)}
+.tap .hint{font-size:.75rem;color:var(--muted)}
+.pad.bump .n{animation:bump .22s cubic-bezier(.3,1.8,.5,1)}
+@keyframes bump{40%{transform:scale(1.28);color:var(--c)}}
+/* tap effects: web burst + floating count + sparks, drawn at the touch point */
+.pad::after{content:"";position:absolute;inset:0;background:var(--c);opacity:0;pointer-events:none}
+.pad.flash::after{animation:flash .25s ease-out}
+@keyframes flash{0%{opacity:.22}100%{opacity:0}}
+.pad.shake{animation:shake .18s ease-out}
+@keyframes shake{25%{transform:translate(-2px,1px) rotate(-.6deg)}50%{transform:translate(2px,-1px) rotate(.6deg)}75%{transform:translate(-1px,0)}}
+.fx{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2;color:var(--c)}
+.fx svg{position:absolute;width:190px;height:190px;left:-95px;top:-95px;filter:drop-shadow(0 0 5px currentColor);animation:web .55s cubic-bezier(.1,.8,.3,1) forwards}
+.fx .ring{position:absolute;left:-12px;top:-12px;width:24px;height:24px;border:4px solid currentColor;border-radius:50%;animation:ring .55s cubic-bezier(.1,.7,.3,1) forwards}
+.fx .ring.r2{animation-delay:.08s;border-width:2px;opacity:0;animation-name:ring2}
+@keyframes ring{0%{transform:scale(.3);opacity:1}100%{transform:scale(9);opacity:0;border-width:1px}}
+@keyframes ring2{0%{transform:scale(.3);opacity:.8}100%{transform:scale(12);opacity:0}}
+.fx .core{position:absolute;left:-26px;top:-26px;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle,var(--surface) 0 20%,currentColor 45%,transparent 70%);animation:core .3s ease-out forwards}
+@keyframes core{0%{transform:scale(.2);opacity:1}100%{transform:scale(2.2);opacity:0}}
+.fx .strand{position:absolute;left:-1px;top:0;width:3px;height:var(--len);background:linear-gradient(currentColor,transparent);border-radius:2px;transform-origin:50% 0;
+  transform:rotate(var(--a)) scaleY(0);animation:strand .45s cubic-bezier(.1,.8,.3,1) forwards}
+@keyframes strand{0%{transform:rotate(var(--a)) scaleY(0);opacity:1}60%{opacity:1}100%{transform:rotate(var(--a)) translateY(30px) scaleY(1);opacity:0}}
+@keyframes web{0%{transform:scale(.15) rotate(-25deg);opacity:1}70%{opacity:.85}100%{transform:scale(1.35) rotate(8deg);opacity:0}}
+.fx b{position:absolute;left:0;top:0;transform:translate(-50%,-50%);font-family:var(--f-num);font-weight:700;font-size:1.9rem;white-space:nowrap;
+  text-shadow:0 2px 0 var(--surface),0 -2px 0 var(--surface),2px 0 0 var(--surface),-2px 0 0 var(--surface);animation:pop .75s cubic-bezier(.2,.9,.3,1) forwards}
+.fx b.minus{color:var(--muted);font-size:1.4rem}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.4);opacity:1}25%{transform:translate(-50%,-140%) scale(1.35)}100%{transform:translate(-50%,-300%) scale(1);opacity:0}}
+.fx i{position:absolute;left:calc(var(--s) / -2);top:calc(var(--s) / -2);width:var(--s);height:var(--s);border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor;animation:spark .6s cubic-bezier(.1,.8,.3,1) forwards}
+.fx i.w{background:var(--surface)}
+@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(.1);opacity:0}}
+/* combo counter + screen edge glow */
+.combo{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:12;transform:translateX(-50%);pointer-events:none;
+  font-family:var(--f-display);font-size:1.6rem;line-height:1;color:var(--cc,var(--danger));white-space:nowrap;
+  text-shadow:0 2px 0 var(--surface),0 -2px 0 var(--surface),2px 0 0 var(--surface),-2px 0 0 var(--surface),0 0 18px var(--cc,var(--danger))}
+.combo.pop{animation:combo .35s cubic-bezier(.2,1.8,.4,1)}
+.combo small{font-size:.6em;margin-right:4px}
+@keyframes combo{0%{transform:translateX(-50%) scale(1.6)}100%{transform:translateX(-50%) scale(1)}}
+.edge{position:fixed;inset:0;z-index:11;pointer-events:none;box-shadow:inset 0 0 0 0 var(--ec);opacity:0}
+.edge.on{animation:edge .6s ease-out}
+@keyframes edge{0%{opacity:1;box-shadow:inset 0 0 70px 14px var(--ec)}100%{opacity:0;box-shadow:inset 0 0 20px 0 var(--ec)}}
+.pads.quake{animation:quake .3s ease-out}
+@keyframes quake{20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-3px)}60%{transform:translate(-3px,1px)}80%{transform:translate(2px,0)}}
+.minis{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--c)}
+.minis button{border:0;background:transparent;padding:10px 0;font-family:var(--f-num);font-weight:700;color:var(--c);min-height:44px;font-size:.85rem}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,calc(50% - 360px)) calc(6px + env(safe-area-inset-bottom,0px));gap:4px}
+.tabs button{border:0;background:transparent;border-radius:10px;padding:8px 4px;font-weight:600;min-height:48px;font-size:.9rem;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.wrap{padding-bottom:96px!important}
+.pane{display:flex;flex-direction:column;gap:20px}
+.pane[hidden],[hidden]{display:none!important}
+.rscroll{max-height:220px;overflow:auto}
+.rhead .btns{display:flex;gap:6px;flex-wrap:wrap}
+.rounds{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.rhead .btn.on{background:var(--ink);color:var(--bg)}
+.mbar{display:flex;flex-direction:column;gap:6px}
+.mbar .track{height:10px;background:var(--line);border-radius:5px;position:relative;overflow:hidden}
+.mbar .track i{position:absolute;inset:0 auto 0 0;background:var(--ink);border-radius:5px;transition:width .3s}
+.mbar .track b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--danger)}
+.mbar p{margin:0;font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.ahead{color:var(--squat);font-weight:700}.behind{color:var(--danger);font-weight:700}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;border:1px solid var(--ink);border-radius:5px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.mbest{margin:0;font-size:.85rem;color:var(--muted)}.mbest b{color:var(--ink);font-family:var(--f-num)}
+.rtable{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.9rem}
+.rtable th,.rtable td{padding:6px 4px;text-align:right;border-top:1px solid var(--line)}
+.rtable th:first-child,.rtable td:first-child{text-align:left}
+.rtable thead th{border-top:0;font-weight:600;font-size:.78rem;color:var(--muted)}
+.rtable td{font-family:var(--f-num)}
+.rtable tr.cur td{font-weight:700}
+.rtable tr.cur td:first-child::after{content:" 진행 중";font-family:var(--f-body);font-size:.72rem;color:var(--muted);font-weight:400}
+.log .rs{grid-column:1/-1;font-size:.78rem;color:var(--muted);font-family:var(--f-num);font-variant-numeric:tabular-nums;display:flex;gap:4px 12px;flex-wrap:wrap}
+.minis button+button{border-left:1px solid var(--c)}
+@media (max-width:420px){.tap{min-height:170px}.tap .name{font-size:1rem}}
+
+.total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.total b{font-family:var(--f-num);font-size:1.3rem;font-variant-numeric:tabular-nums}
+.save{width:100%;background:var(--ink);color:var(--bg);border:0;border-radius:12px;padding:14px;font-weight:700;font-size:1rem;min-height:52px}
+.save:disabled{opacity:.4;cursor:default}
+
+/* history */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.phead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.legend{display:flex;gap:12px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--c);vertical-align:-1px}
+.bests{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.best{border-left:3px solid var(--c);padding:2px 0 2px 10px}
+.best small{display:block;color:var(--muted);font-size:.75rem}
+.best b{font-family:var(--f-num);font-size:1.15rem;font-variant-numeric:tabular-nums}
+.chart{overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{fill:var(--muted);font-family:var(--f-num);font-size:10px}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.log li{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+.log .d{font-weight:600}
+.log .meta{grid-column:1;font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums;display:flex;gap:10px;flex-wrap:wrap}
+.log .meta i{font-style:normal;color:var(--c);font-weight:600}
+.log .sum{font-family:var(--f-num);font-weight:700;font-size:1.1rem;grid-row:1;grid-column:2;text-align:right}
+.log .del{grid-column:2;border:0;background:none;color:var(--muted);font-size:.8rem;padding:4px 0;text-align:right}
+.log .del.arm{color:var(--danger);font-weight:700}
+.empty{color:var(--muted);font-size:.9rem;margin:0}
+.sync{font-size:.75rem;color:var(--muted)}
+.cal-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cal-head b{font-family:var(--f-display);font-weight:400;font-size:1.1rem}
+.cal-nav{border:1px solid var(--line);background:var(--bg);border-radius:10px;width:44px;height:44px;font-size:1.1rem}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .wd{text-align:center;font-size:.72rem;color:var(--muted);padding-bottom:2px}
+.cal .wd:nth-child(6){color:var(--pull)}.cal .wd:nth-child(7){color:var(--danger)}
+.day{border:1px solid transparent;border-radius:8px;min-height:48px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;background:color-mix(in srgb,var(--squat) calc(var(--lv,0) * 1%),var(--bg));font-variant-numeric:tabular-nums}
+.day span{font-size:.8rem}
+.day small{font-family:var(--f-num);font-size:.66rem;font-weight:700;color:var(--ink)}
+.day.hot span,.day.hot small{color:var(--on-accent)}
+.day.today{border-color:var(--ink)}
+.day.sel{outline:2px solid var(--push);outline-offset:1px}
+.day.out{visibility:hidden}
+.daydetail{font-size:.85rem;color:var(--muted);margin:0}
+.daydetail b{color:var(--ink)}
+.msum{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.msum b{color:var(--ink);font-family:var(--f-num)}
+.seg{display:inline-grid;grid-template-columns:repeat(3,auto);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;background:var(--bg)}
+.seg button{border:0;background:transparent;border-radius:8px;padding:6px 14px;font-weight:600;min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.pbest{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:12px;padding:12px}
+.pbest small{color:var(--muted);font-size:.78rem}
+.pbest b{font-family:var(--f-num);font-size:1.5rem;font-variant-numeric:tabular-nums}
+.pbest span{font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.divider{border:0;border-top:1px solid var(--line);margin:0}
+.spidey{border:2px solid var(--danger);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;background:var(--surface)}
+.spidey .pct{grid-row:span 2;font-family:var(--f-num);font-weight:700;font-size:clamp(2.2rem,10vw,2.8rem);line-height:1;color:var(--danger);font-variant-numeric:tabular-nums}
+.spidey .tier{font-family:var(--f-display);font-size:1.1rem}
+.spidey .why{font-size:.8rem;color:var(--muted)}
+.spidey .web{grid-column:1/-1;height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:6px}
+.spidey .web i{display:block;height:100%;width:0;background:var(--danger);transition:width .3s}
+.spidey .ticks{grid-column:1/-1;display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);gap:4px}
+.spidey .ticks span.on{color:var(--danger);font-weight:700}
+.tag.sp{border-color:var(--danger);color:var(--danger)}
+.rules{margin:0;font-size:.85rem;color:var(--muted)}
+.rules b{color:var(--danger)}
+.nick{display:flex;gap:8px;flex-wrap:wrap}
+.nick input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:44px}
+.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rank li{display:grid;grid-template-columns:2.2em 36px 1fr auto;gap:4px 10px;align-items:center;padding:10px 6px;border-top:1px solid var(--line);border-radius:8px}
+.rank li.me{background:var(--push-soft)}
+.rank .no{font-family:var(--f-num);font-weight:700;font-size:1.1rem;text-align:center;font-variant-numeric:tabular-nums}
+.rank li:nth-child(1) .no{color:var(--danger)}
+.rank img{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--line)}
+.rank .who{min-width:0}
+.rank .who b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .who small{color:var(--muted);font-size:.76rem;font-variant-numeric:tabular-nums}
+.rank .sp{text-align:right;font-family:var(--f-num);font-weight:700;font-size:1.4rem;color:var(--danger);line-height:1}
+.rank .sp small{display:block;font-family:var(--f-body);font-size:.68rem;font-weight:600;color:var(--muted)}
+.note{margin:0;font-size:.82rem;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
+.gate{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.gate-card{width:100%;max-width:400px;display:flex;flex-direction:column;gap:16px;text-align:center}
+.gate h1{font-size:2rem}
+.gate .big{font-family:var(--f-num);font-weight:700;font-size:3rem;color:var(--danger);line-height:1}
+.gate p{margin:0;color:var(--muted)}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:1rem}
+.gbtn svg{width:20px;height:20px}
+.gbtn:disabled{opacity:.5}
+.nickform{display:flex;flex-direction:column;gap:10px;text-align:left}
+.nickform label{font-weight:700}
+.nickform input{font:inherit;font-size:1.05rem;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);min-height:52px}
+.gbtn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gate .err{color:var(--danger);font-size:.85rem;min-height:1.2em}
+.sounds{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.sounds .btn{flex:1 1 auto;min-width:0}
+.sounds .btn[aria-pressed="true"]{border-color:var(--ink)}
+.clear{position:fixed;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.clear{padding-inline:16px}
+.clear div{max-width:100%;box-sizing:border-box;background:var(--surface);border:3px solid var(--danger);border-radius:18px;padding:18px 22px;box-shadow:0 10px 30px rgb(0 0 0 / .25);
+  font-family:var(--f-display);font-size:clamp(2rem,10vw,3.8rem);line-height:1.05;color:var(--danger);text-align:center;overflow-wrap:anywhere;
+  letter-spacing:.02em;animation:clearIn 1.4s cubic-bezier(.2,1.6,.4,1) both}
+.clear small{display:block;font-family:var(--f-body);font-weight:700;font-size:1rem;color:var(--ink);margin-top:8px}
+@keyframes clearIn{0%{transform:scale(.3) rotate(-8deg);opacity:0}18%{transform:scale(1.08) rotate(2deg);opacity:1}30%{transform:scale(1) rotate(0)}80%{opacity:1}100%{transform:scale(1.04);opacity:0}}
+@media (prefers-reduced-motion:reduce){.clear div{animation:clearFade 1.4s both}}
+@keyframes clearFade{0%,80%{opacity:1}100%{opacity:0}}
+.setdone{width:100%;min-height:60px;border-radius:14px;border:2px solid var(--danger);background:var(--surface);color:var(--danger);
+  font-family:var(--f-display);font-size:1.3rem;letter-spacing:.02em;touch-action:manipulation;transition:transform .06s}
+.setdone:active{transform:scale(.98)}
+.setdone.ready{background:var(--danger);color:var(--on-accent);box-shadow:0 6px 18px color-mix(in srgb,var(--danger) 35%,transparent)}
+.setdone.on{border-style:dashed;color:var(--muted);border-color:var(--line);font-family:var(--f-body);font-weight:700;font-size:1rem}
+.setdone:disabled{opacity:.45}
+.setdone.arm{border-style:solid;background:var(--push-soft);color:var(--ink);font-family:var(--f-body);font-weight:700;font-size:1rem}
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);width:100%}
+.seg3 button{min-height:44px}
+.seg3 button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:2px solid var(--c);background:transparent;color:var(--c);border-radius:999px;padding:8px 16px;font-weight:700;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--c);color:var(--on-accent)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi small{color:var(--muted);font-size:.76rem}
+.kpi b{font-family:var(--f-num);font-size:1.35rem;font-variant-numeric:tabular-nums;color:var(--c,var(--ink))}
+.kpi span{font-size:.74rem;color:var(--muted)}
+.prs{display:flex;flex-direction:column;gap:12px}
+.pr{border-left:4px solid var(--c);padding:4px 0 4px 12px;display:flex;flex-direction:column;gap:6px}
+.pr h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.1rem;color:var(--c)}
+.pr dl{margin:0;display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:baseline;font-variant-numeric:tabular-nums}
+.pr dt{color:var(--muted);font-size:.82rem}
+.pr dd{margin:0;font-family:var(--f-num);font-weight:700;text-align:right}
+.pr dd.when{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:.78rem;text-align:left}
+.sphero{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center}
+.sphero .big{grid-row:span 3;font-family:var(--f-num);font-weight:700;font-size:3.4rem;line-height:1;color:var(--danger)}
+.sphero .big small{display:block;font-family:var(--f-body);font-size:.75rem;color:var(--muted);font-weight:600;text-align:center}
+.sphero b{font-family:var(--f-display);font-weight:400;font-size:1.15rem}
+.sphero span{font-size:.85rem;color:var(--muted)}
+.rank .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--on-accent);background:var(--c,var(--muted));font-size:1rem}
+.rank li:nth-child(-n+3) .no{font-size:1.3rem}
+.rank .sp.c{color:var(--c)}
+.rankctl{display:flex;flex-direction:column;gap:8px}
+.seg.wide{display:grid;grid-template-columns:repeat(3,1fr);width:100%}
+/* race gauge: Tom Holland's pace vs mine */
+.race{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.lane{display:grid;grid-template-columns:4.6em 1fr;align-items:center;gap:8px}
+.lane .ln{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.trk{position:relative;height:14px;border-radius:7px;background:var(--line)}
+.trk i{position:absolute;inset:0 auto 0 0;width:0;border-radius:7px;transition:width .3s linear}
+.trk.tom i{background:repeating-linear-gradient(45deg,var(--muted) 0 6px,color-mix(in srgb,var(--muted) 70%,transparent) 6px 12px)}
+.trk.me i{background:var(--danger)}
+.trk b{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);min-width:26px;height:26px;padding:0 5px;border-radius:13px;display:grid;place-items:center;
+  font-size:.7rem;font-weight:800;color:var(--on-accent);border:2px solid var(--surface);transition:left .3s linear;white-space:nowrap}
+.trk.tom b{background:var(--muted)}
+.trk.me b{background:var(--danger)}
+.race .gap{font-size:.9rem;font-weight:700;text-align:center;padding:4px 0}
+.race .gap.ahead{color:var(--squat)}.race .gap.behind{color:var(--danger)}
+.exl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.exl div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.exl small{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.exl .bar{position:relative;height:6px;border-radius:3px;background:var(--line)}
+.exl .bar i{position:absolute;inset:0 auto 0 0;border-radius:3px;background:var(--c)}
+.exl .bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);border-radius:1px}
+/* leaderboard: plain, typographic */
+.board{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.board-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.board .rules{margin:0;font-size:.76rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.board .rules b{color:var(--ink)}
+.myrank{display:grid;grid-template-columns:auto 1fr auto;gap:0 14px;align-items:center;padding:12px 14px;border-radius:12px;background:var(--bg);border-left:4px solid var(--danger)}
+.myrank .mr-no{grid-row:span 2;font-family:var(--f-num);font-weight:700;font-size:1.9rem;line-height:1}
+.myrank .mr-no small{font-size:.45em;color:var(--muted);font-weight:500;margin-left:2px}
+.myrank b{font-size:.78rem;color:var(--muted);font-weight:600}
+.myrank span:last-child{font-size:.88rem;font-weight:700}
+.myrank .mr-v{grid-row:span 2;font-family:var(--f-num);font-weight:700;font-size:1.3rem}
+.lb{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.lb li{display:grid;grid-template-columns:1.8em 34px 1fr auto;gap:10px;align-items:center;padding:10px 4px;border-top:1px solid var(--line)}
+.lb li:first-child{border-top:0}
+.lb-no{font-family:var(--f-num);font-weight:700;font-size:1rem;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.lb li.top .lb-no{color:var(--ink)}
+.lb-av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--bg);border:1px solid var(--line);font-weight:700;font-size:.9rem}
+.lb li.me .lb-av{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.lb-who{min-width:0}
+.lb-who b{display:block;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-who small{display:block;font-size:.74rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-v{text-align:right;line-height:1.1}
+.lb-v b{display:block;font-family:var(--f-num);font-size:1.25rem;font-variant-numeric:tabular-nums}
+.lb-v small{font-size:.68rem;color:var(--muted)}
+.lb li.top .lb-v b{color:var(--danger)}
+.lb li.me{background:color-mix(in srgb,var(--ink) 5%,transparent);border-radius:10px}
+/* profile page */
+.profile .back{align-self:flex-start;border:0;background:none;color:var(--muted);font-weight:700;padding:4px 0;min-height:36px}
+.pf-head{display:flex;align-items:center;gap:14px}
+.pf-head b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.5rem}
+.pf-av{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:1.6rem;font-weight:800;background:var(--danger);color:var(--on-accent);flex:none}
+.pf-label{font-weight:700;font-size:.85rem}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:transparent;align-self:flex-start}
+button.me-badge{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;min-height:32px;cursor:pointer;color:var(--muted)}
+.wkdays{display:flex;flex-direction:column;gap:10px}
+.wkday{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.wkday.rest{background:transparent;border-style:dashed}
+.wkday .wh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.wkday .wh b{font-size:.95rem}
+.wkday .wh b small{color:var(--danger);font-weight:700;margin-left:6px;font-size:.75rem}
+.wkday .wh span{font-family:var(--f-num);font-weight:700;font-variant-numeric:tabular-nums}
+.wkday .wh em{font-style:normal;color:var(--muted);font-size:.82rem}
+.wlist{display:flex;flex-direction:column;gap:6px}
+.witem{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;width:100%;text-align:left;border:1px solid var(--line);background:var(--bg);
+  border-radius:12px;padding:10px 12px;min-height:52px}
+.witem .wt{font-family:var(--f-num);font-weight:700;font-size:.95rem}
+.witem .wm{font-size:.8rem;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;min-width:0}
+.witem .wm i{font-style:normal;font-weight:700;color:var(--c)}
+.witem .ws{font-family:var(--f-num);font-weight:700;text-align:right}
+.witem .ws small{display:block;font-family:var(--f-body);font-size:.7rem;color:var(--danger);font-weight:700}
+.witem::after{content:"›";grid-column:4;color:var(--muted);font-size:1.2rem}
+.witem{grid-template-columns:auto 1fr auto auto}
+.sheet{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet-bg{position:absolute;inset:0;background:rgb(0 0 0 / .45)}
+.sheet-card{position:relative;width:100%;max-width:560px;max-height:88%;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;
+  padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:sheetUp .22s ease-out}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet-card{animation:none}}
+.sh-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sh-x{border:1px solid var(--line);background:var(--bg);border-radius:50%;width:40px;height:40px;font-size:1rem}
+#shBody{display:flex;flex-direction:column;gap:14px}
+.sh-tags{display:flex;gap:6px;flex-wrap:wrap}
+.sh-tags .tag{margin-left:0}
+.sh-ex{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sh-ex div{border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface));border-radius:12px;padding:10px;text-align:center}
+.sh-ex small{display:block;font-weight:700;color:var(--c);font-size:.8rem}
+.sh-ex b{font-family:var(--f-num);font-size:1.8rem;line-height:1.2}
+.sh-ex span{display:block;font-size:.7rem;color:var(--muted)}
+.sh-del{align-self:stretch;min-height:46px}
+.daylist{display:flex;flex-direction:column;gap:6px}
+/* 5·10·15 one-shot button: Spider-Man suit colors, a single deliberate look in both themes */
+.webfill{--sr:#d3202e;--sb:#1d4ea8;position:relative;overflow:hidden;width:100%;min-height:64px;border:0;border-radius:16px;color:#fff;cursor:pointer;
+  display:flex;align-items:center;gap:14px;padding:10px 18px;text-align:left;touch-action:manipulation;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 60' fill='none' stroke='%23000' stroke-opacity='.28' stroke-width='1'%3E%3Cpath d='M60 30L0 0M60 30L60 0M60 30L120 0M60 30L0 30M60 30L120 30M60 30L0 60M60 30L60 60M60 30L120 60'/%3E%3Cpath d='M45 22Q60 26 75 22Q72 30 75 38Q60 34 45 38Q48 30 45 22Z'/%3E%3Cpath d='M28 12Q60 20 92 12Q86 30 92 48Q60 40 28 48Q34 30 28 12Z'/%3E%3C/svg%3E") center/120px 60px,
+    linear-gradient(115deg,var(--sr) 0 56%,#0c0c10 56% 57.5%,var(--sb) 57.5% 100%);
+  box-shadow:0 6px 0 #7d0f17,0 10px 22px rgb(211 32 46 / .35);transition:transform .08s,box-shadow .08s}
+.webfill::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgb(255 255 255 / .35) 45%,transparent 60%);transform:translateX(-120%);animation:wfShine 3.2s ease-in-out infinite}
+@keyframes wfShine{0%,60%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.webfill:active{transform:translateY(4px);box-shadow:0 2px 0 #7d0f17,0 4px 10px rgb(211 32 46 / .3)}
+.webfill:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.wf-web{flex:none;width:40px;height:40px;color:#fff;filter:drop-shadow(0 0 4px rgb(255 255 255 / .6))}
+.webfill.fire .wf-web{animation:wfSpin .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes wfSpin{0%{transform:scale(.6) rotate(-90deg)}100%{transform:scale(1) rotate(0)}}
+.wf-text{display:flex;flex-direction:column;gap:1px;min-width:0;position:relative;z-index:1}
+.wf-text b{font-family:var(--f-display);font-weight:400;font-size:1.7rem;line-height:1;letter-spacing:.03em;text-shadow:0 2px 0 rgb(0 0 0 / .35)}
+.wf-text b i{font-style:normal;opacity:.7;margin:0 4px}
+.wf-text small{font-size:.76rem;font-weight:700;opacity:.92}
+@media (prefers-reduced-motion:reduce){.webfill::after,.webfill.fire .wf-web{animation:none}}
+/* counter pads as Spider-Man suits: blue, red, black — fixed colors so they read the same in either theme */
+.pad[data-k="pull"]{--pc:#2457c4;--pd:#0e2a66}
+.pad[data-k="push"]{--pc:#e0283a;--pd:#7a0d18}
+.pad[data-k="squat"]{--pc:#3a3e4a;--pd:#0b0c10}
+.pad{border:0;color:#fff;box-shadow:0 5px 0 var(--pd),0 10px 20px color-mix(in srgb,var(--pd) 45%,transparent);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23000' fill-opacity='.22'%3E%3Cellipse cx='50' cy='44' rx='6' ry='8'/%3E%3Cellipse cx='50' cy='58' rx='8' ry='11'/%3E%3Cg stroke='%23000' stroke-opacity='.22' stroke-width='2.4' fill='none' stroke-linecap='round'%3E%3Cpath d='M45 40L30 26L24 34M55 40L70 26L76 34M44 46L26 42L20 50M56 46L74 42L80 50M44 54L28 62L24 72M56 54L72 62L76 72M46 62L36 76L36 88M54 62L64 76L64 88'/%3E%3C/g%3E%3C/svg%3E") center 46%/72% no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' fill='none' stroke='%23000' stroke-opacity='.3' stroke-width='1'%3E%3Cpath d='M40 40L0 0M40 40L40 0M40 40L80 0M40 40L0 40M40 40L80 40M40 40L0 80M40 40L40 80M40 40L80 80'/%3E%3Cpath d='M28 28Q40 31 52 28Q49 40 52 52Q40 49 28 52Q31 40 28 28Z'/%3E%3Cpath d='M14 14Q40 20 66 14Q60 40 66 66Q40 60 14 66Q20 40 14 14Z'/%3E%3C/svg%3E") center/80px 80px,
+    radial-gradient(90% 60% at 30% 10%,rgb(255 255 255 / .22),transparent 60%),
+    linear-gradient(165deg,var(--pc),var(--pd))}
+.pad .tap .name{color:#fff;letter-spacing:.02em;text-shadow:0 1px 0 rgb(0 0 0 / .35)}
+.pad .tap .en{color:rgb(255 255 255 / .7)}
+.pad .tap .n{color:#fff;text-shadow:0 3px 0 rgb(0 0 0 / .35),0 0 18px rgb(255 255 255 / .18)}
+.pad .tap .hint{color:rgb(255 255 255 / .88);font-weight:700}
+.tgt{display:block;width:72%;height:5px;margin-top:5px;border-radius:3px;background:rgb(0 0 0 / .3);overflow:hidden}
+.tgt i{display:block;height:100%;width:0;background:#fff;border-radius:3px;transition:width .2s}
+.tgt.full i{background:#ffd23f;box-shadow:0 0 8px #ffd23f}
+.pad .minis{border-top:1px solid rgb(255 255 255 / .22);background:rgb(0 0 0 / .22)}
+.pad .minis button{color:#fff}
+.pad .minis button+button{border-left:1px solid rgb(255 255 255 / .22)}
+.pad::after{background:#fff}
+.pad .fx{color:#fff}
+.pad .fx b{text-shadow:0 2px 8px rgb(0 0 0 / .55)}
+.pad .fx .core{background:radial-gradient(circle,#fff 0 25%,rgb(255 255 255 / .7) 45%,transparent 70%)}
+.pad.bump .n{animation:bumpW .22s cubic-bezier(.3,1.8,.5,1)}
+@keyframes bumpW{40%{transform:scale(1.28);text-shadow:0 0 22px #fff}}
+.installtip{display:grid;grid-template-columns:40px 1fr auto auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.installtip img{border-radius:10px}
+.installtip p{margin:0;font-size:.8rem;line-height:1.4}
+.installtip p b{font-weight:700}
+.it-x{border:0;background:none;color:var(--muted);width:32px;height:32px;font-size:.9rem}
+.undobar{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:12px;
+  background:var(--ink);color:var(--bg);padding:10px 10px 10px 16px;border-radius:12px;font-weight:600;font-size:.9rem;width:calc(100% - 32px);max-width:480px;justify-content:space-between;box-shadow:0 8px 24px rgb(0 0 0 / .25)}
+.undobar button{border:0;background:var(--danger);color:#fff;font-weight:800;border-radius:8px;padding:8px 12px;min-height:38px;white-space:nowrap}
+.toast{position:fixed;z-index:6;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.pad.bump .n,.pad.shake,.fx svg,.fx i,.pads.quake,.combo.pop{animation:none}.fx svg,.fx i,.fx .ring,.fx .core,.fx .strand,.edge{display:none}.tap{transition:none}.bar>i{transition:none}}
+/* ── workout tab: everything needed mid-set fits one phone screen ── */
+.titlebar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.titlebar h1{min-width:0}
+.me-badge{flex:none;display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:var(--muted);max-width:50%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.me-badge b{font-family:var(--f-num);color:var(--danger);font-size:.95rem}
+header .sub{display:none} /* how-to lives on the buttons themselves */
+body[data-tab="work"] header h1{font-size:1.25rem;line-height:1.2}
+body[data-tab="work"] .wrap{padding-block:8px 88px;gap:8px}
+#pane-work{gap:10px}
+#pane-work .timer{padding:10px 12px;gap:6px 10px}
+#pane-work .clock{font-size:clamp(2.2rem,11vw,2.8rem)}
+#pane-work .tctrl .btn{min-height:40px;padding:6px 12px}
+#pane-work .sounds{gap:6px}
+#pane-work .sounds .btn{min-height:34px;padding:4px 8px;font-size:.82rem}
+#pane-work .bar{height:4px}
+#pane-work .state{font-size:.72rem}
+#pane-work #stateText{display:none}
+#pane-work .pads{gap:8px}
+#pane-work .tap{min-height:0;padding:10px 6px 8px;gap:0}
+#pane-work .tap .en{display:none}
+#pane-work .tap .name{font-size:1rem}
+#pane-work .tap .n{font-size:clamp(2.4rem,11vw,3.2rem)}
+#pane-work .tap .hint{font-size:.7rem}
+#pane-work .minis button{min-height:38px;padding:6px 0}
+#pane-work .setdone{min-height:46px;font-size:1.1rem}
+#pane-work .setdone.on,#pane-work .setdone.arm{font-size:.88rem}
+#pane-work .spidey{padding:10px 12px;gap:2px 12px}
+#pane-work .spidey .pct{font-size:clamp(1.7rem,8vw,2.1rem)}
+#pane-work .spidey .tier{font-size:1rem}
+#pane-work .spidey .why{font-size:.72rem;line-height:1.35}
+#pane-work .spidey .ticks{display:none}
+#pane-work .race{gap:4px;margin-top:4px}
+#pane-work .lane .ln{font-size:.72rem}
+#pane-work .trk{height:12px}
+#pane-work .trk b{height:22px;min-width:22px;font-size:.66rem}
+#pane-work .race .gap{font-size:.85rem;padding:0}
+#pane-work .exl small{font-size:.66rem}
+@media (max-height:620px){#pane-work .exl,#pane-work .spidey .why{display:none}#pane-work .setdone{min-height:40px}#pane-work .tap .n{font-size:2.3rem}#pane-work .sounds .btn{min-height:30px}#pane-work .minis button{min-height:34px}#pane-work .tap{padding-top:6px}#pane-work .timer{padding-block:8px}}
+</style>
+
+</head>
+<body>
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="big">20:00</div>
+    <h1>20분 맨몸 카운터</h1>
+    <p>철봉 5 · 팔굽혀펴기 10 · 스쿼트 15가 1세트. 톰 홀랜드는 20분에 28세트를 했어요. 기록을 저장하고 친구들과 스파이더맨 랭킹을 겨루려면 로그인하세요.</p>
+    <button class="gbtn" id="googleLogin" disabled><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span id="googleLoginText">불러오는 중…</span></button>
+    <form class="nickform" id="nickForm" hidden>
+      <label for="gateNick">랭킹에 표시할 닉네임</label>
+      <input id="gateNick" maxlength="16" autocomplete="nickname" placeholder="예: 동네 스파이더" required>
+      <button class="gbtn primary" id="nickGo" type="submit">시작하기</button>
+    </form>
+    <p class="err" id="gateErr" role="alert"></p>
+  </div>
+</div>
+<div class="wrap">
+  <header>
+    <div class="titlebar"><h1>20분 맨몸 카운터</h1><button class="me-badge" id="meBadge" hidden aria-label="내 정보"></button></div>
+    <p class="sub">철봉 → 팔굽혀펴기 → 스쿼트가 1세트. 한 번 할 때마다 탭하세요. 한 세트가 끝나면 아래 <b>세트 완료</b>를 누르세요.</p>
+  </header>
+
+  <div class="pane" id="pane-work">
+  <div class="installtip" id="installTip" hidden>
+    <img src="icons/icon-192.png" alt="" width="40" height="40">
+    <p id="installText">홈 화면에 추가하면 주소창 없이 앱처럼 쓸 수 있어요.</p>
+    <button class="btn" id="installBtn" hidden>설치</button>
+    <button class="it-x" id="installX" aria-label="안내 닫기">✕</button>
+  </div>
+
+  <section class="timer" aria-label="타이머">
+    <div class="clock" id="clock">20:00</div>
+    <div class="tctrl">
+      <button class="btn primary" id="startBtn">시작</button>
+      <button class="btn" id="resetBtn">초기화</button>
+    </div>
+    <div class="sounds">
+      <button class="btn" id="bgmBtn" aria-pressed="false">▶ 음악</button>
+      <button class="btn" id="bgmNext" aria-label="다음 곡">다음 곡 ›</button>
+      <button class="btn" id="sfxBtn" aria-pressed="true">효과음 켬</button>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="state"><span id="stateText">대기 중 · 시작을 누르면 20분 카운트다운</span><span id="paceText"></span></div>
+  </section>
+
+  <section class="pads" id="pads" aria-label="종목별 카운터"></section>
+  <button class="setdone" id="nextRound">세트 완료</button>
+
+  <section class="spidey" aria-label="스파이더맨 지수">
+    <div class="pct" id="spPct">0%</div>
+    <div class="tier" id="spTier">평범한 고등학생</div>
+    <div class="why" id="spWhy">톰 홀랜드(20분 28세트)를 100%로 계산합니다</div>
+    <div class="race" aria-label="톰 홀랜드와 내 페이스 비교">
+      <div class="lane"><span class="ln">톰 홀랜드</span><div class="trk tom"><i id="raceTom"></i><b id="raceTomM">톰</b></div></div>
+      <div class="lane"><span class="ln">나</span><div class="trk me"><i id="spFill"></i><b id="raceMeM">나</b></div></div>
+      <div class="gap" id="raceGap">시작하면 톰 홀랜드가 20분에 28세트 페이스로 달려요</div>
+      <div class="exl" id="raceEx"></div>
+    </div>
+    <div class="ticks" id="spTicks"></div>
+  </section>
+
+  <section class="rounds" aria-label="세트별 기록">
+    <div class="rhead"><h2 id="roundTitle">세트</h2></div>
+    <button class="webfill" id="fillRound" aria-label="톰 홀랜드 1세트 한 번에 채우기: 철봉 5, 팔굽혀펴기 10, 스쿼트 15">
+      <svg class="wf-web" viewBox="0 0 100 100" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M50 50L50 2M50 50L84 16M50 50L98 50M50 50L84 84M50 50L50 98M50 50L16 84M50 50L2 50M50 50L16 16"/><path d="M50 30L64 36L70 50L64 64L50 70L36 64L30 50L36 36Z"/><path d="M50 12L77 23L88 50L77 77L50 88L23 77L12 50L23 23Z"/></svg>
+      <span class="wf-text"><b><span>5</span><i>·</i><span>10</span><i>·</i><span>15</span></b><small>톰 홀랜드 1세트 한 번에 채우기</small></span>
+    </button>
+    <div class="mbar" id="mbar">
+      <div class="track" aria-hidden="true"><i id="mFill"></i><b id="mPace"></b></div>
+      <p><span id="mLeft">1세트 = 풀업 5 · 푸시업 10 · 스쿼트 15</span><span id="mStatus"></span></p>
+    </div>
+    <div class="rscroll"><table class="rtable"><thead><tr><th>세트</th><th>철봉</th><th>팔굽혀펴기</th><th>스쿼트</th><th>합계</th></tr></thead><tbody id="roundBody"></tbody></table></div>
+  </section>
+
+  <div class="total"><span class="sub">이번 세션 합계</span><b id="sessTotal">0회</b></div>
+  <button class="save" id="saveBtn" disabled>기록 저장</button>
+  </div>
+
+  <div class="pane" id="pane-cal" hidden>
+  <section class="panel" aria-label="캘린더">
+    <div class="phead"><h2>캘린더</h2></div>
+    <div class="cal-head"><button class="cal-nav" id="calPrev" aria-label="이전 달">‹</button><b id="calTitle"></b><button class="cal-nav" id="calNext" aria-label="다음 달">›</button></div>
+    <div class="msum" id="msum"></div>
+    <div class="cal" id="cal"></div>
+    <div class="daydetail" id="dayDetail">날짜를 누르면 그날 기록이 나옵니다.</div>
+  </section>
+
+  </div>
+
+  <div class="pane" id="pane-stats" hidden>
+  <div class="seg seg3" role="tablist" aria-label="통계 종류">
+    <button role="tab" data-st="ex">종목별</button><button role="tab" data-st="best">최고 기록</button><button role="tab" data-st="spidey">스파이더맨</button>
+  </div>
+
+  <section class="panel" id="st-ex" aria-label="종목별 기록">
+    <div class="chips" id="exChips"></div>
+    <div class="phead"><h2 id="exTitle">철봉</h2>
+      <div class="seg" role="group" aria-label="기간"><button id="pDay">일</button><button id="pWeek">주</button><button id="pMonth">월</button></div>
+    </div>
+    <div class="kpis" id="exKpis"></div>
+    <div class="chart" id="pchart"></div>
+  </section>
+
+  <section class="panel" id="st-best" aria-label="최고 기록" hidden>
+    <div class="phead"><h2>최고 기록</h2></div>
+    <div class="prs" id="prs"></div>
+  </section>
+
+  <section class="panel" id="st-spidey" aria-label="스파이더맨 기록" hidden>
+    <div class="sphero" id="spHero"></div>
+    <div class="phead"><h2>최근 운동 스파이더맨 지수</h2></div>
+    <div class="chart" id="spChart"></div>
+    <div class="phead"><h2>스파이더맨 달성</h2></div>
+    <ul class="log" id="spList"></ul>
+  </section>
+  </div>
+
+  <div class="pane" id="pane-rank" hidden>
+  <div class="seg seg3" role="tablist" aria-label="랭킹 종류">
+    <button role="tab" data-rk="spidey">스파이더맨</button><button role="tab" data-rk="ex">종목별</button><button role="tab" data-rk="week">이번 주</button>
+  </div>
+  <section class="board" aria-label="랭킹">
+    <div class="board-head"><h2 id="rankTitle">스파이더맨 랭킹</h2><span class="sync" id="rankSync"></span></div>
+    <div id="rankCtl"></div>
+    <div class="myrank" id="myRank" hidden></div>
+    <p class="note" id="rankNote" hidden></p>
+    <ol class="lb" id="rankList"></ol>
+    <p class="rules" id="rankRule"></p>
+  </section>
+  </div>
+
+  <div class="pane" id="pane-me" hidden>
+  <section class="panel profile" aria-label="내 정보">
+    <button class="back" id="meBack">‹ 돌아가기</button>
+    <div class="pf-head"><span class="pf-av" id="pfAv">?</span><div><b id="pfName">닉네임</b><span class="sync" id="acct">계정 연결 중…</span></div></div>
+    <div class="kpis" id="pfStats"></div>
+    <label class="pf-label" for="nickInput">닉네임</label>
+    <div class="nick"><input id="nickInput" maxlength="16" placeholder="랭킹에 표시할 닉네임" aria-label="닉네임"><button class="btn" id="nickSave">저장</button></div>
+    <button class="btn danger" id="logoutBtn">로그아웃</button>
+  </section>
+  </div>
+
+  <div class="pane" id="pane-log" hidden>
+  <section class="panel" aria-label="최근 7일">
+    <div class="phead"><h2>최근 7일</h2><span class="sync" id="syncText">계정 연결 중…</span></div>
+    <div class="kpis" id="wkKpis"></div>
+    <div class="legend"><span style="--c:var(--pull)">철봉</span><span style="--c:var(--push)">팔굽혀펴기</span><span style="--c:var(--squat)">스쿼트</span></div>
+    <div class="chart" id="chart"></div>
+  </section>
+  <div class="wkdays" id="wkDays"></div>
+  </div>
+</div>
+<nav class="tabs" role="tablist" aria-label="화면">
+  <button role="tab" id="tab-work" aria-selected="true">운동</button>
+  <button role="tab" id="tab-cal" aria-selected="false">캘린더</button>
+  <button role="tab" id="tab-stats" aria-selected="false">통계</button>
+  <button role="tab" id="tab-rank" aria-selected="false">랭킹</button>
+  <button role="tab" id="tab-log" aria-selected="false">주간</button>
+</nav>
+<audio id="bgm" preload="none"></audio>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="shTitle">
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet-card">
+    <div class="sh-head"><h2 id="shTitle"></h2><button class="sh-x" id="sheetX" aria-label="닫기">✕</button></div>
+    <div id="shBody"></div>
+  </div>
+</div>
+<div class="combo" id="combo" hidden></div>
+<div class="edge" id="edge"></div>
+<div class="clear" id="clear" hidden><div id="clearText"></div></div>
+<div class="undobar" id="undoBar" hidden role="status" aria-live="polite"><span id="undoText"></span><button id="undoBtn">되돌리기</button></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const EX=[
+  {k:"pull",name:"철봉",en:"Pull-ups"},
+  {k:"push",name:"팔굽혀펴기",en:"Push-ups"},
+  {k:"squat",name:"스쿼트",en:"Squats"},
+];
+const DURATION=20*60*1000;
+const DRAFT_KEY="bw20-draft";
+let LOCAL_LOG="bw20-log"; // becomes per-account ("bw20-log:<uid>") after sign-in
+const $=id=>document.getElementById(id);
+
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+/* ---------- session state ---------- */
+// One set (round) = pull-ups + push-ups + squats. Once all three are in the set,
+// tapping a different exercise than the last one starts the next round.
+let S=lsGet(DRAFT_KEY,null);
+if(!S||!S.rounds)S=freshSession();
+function freshSession(){return{counts:{pull:0,push:0,squat:0},rounds:[],cleared:0,forceNew:false,lastK:null,elapsed:0,startedAt:null,runningSince:null}}
+const emptyRound=()=>({pull:0,push:0,squat:0});
+const rsum=r=>r.pull+r.push+r.squat;
+// Tom Holland mission: 5 pull-ups, 10 push-ups, 15 squats per set; 28 sets in 20 minutes
+const MISSION={pull:5,push:10,squat:15},MISSION_GOAL=28;
+const roundDone=r=>EX.every(x=>r[x.k]>=MISSION[x.k]);
+const missionSets=R=>R.filter(roundDone).length;
+// Spider-Man index: Tom Holland's 28 sets (140 / 280 / 420 reps) = 100%.
+// The weakest exercise decides how many full sets your reps are worth.
+const TOM={pull:5*MISSION_GOAL,push:10*MISSION_GOAL,squat:15*MISSION_GOAL};
+const spidey=c=>Math.round(Math.min(...EX.map(x=>(c[x.k]||0)/TOM[x.k]))*100);
+const TIERS=[[0,"평범한 고등학생"],[20,"거미에 물린 직후"],[40,"홈메이드 슈트"],[60,"스타크 인턴"],[80,"아이언 스파이더"],[100,"톰 홀랜드급"]];
+const tierOf=p=>TIERS.filter(t=>p>=t[0]).pop()[1];
+function elapsed(){return S.elapsed+(S.runningSince?Date.now()-S.runningSince:0)}
+function persistDraft(){lsSet(DRAFT_KEY,S)}
+
+/* pads */
+const pads=$("pads");
+EX.forEach(e=>{
+  const el=document.createElement("div");
+  el.className="pad";el.dataset.k=e.k;
+  el.innerHTML=`<button class="tap" id="tap-${e.k}" aria-label="${e.name} 1회 추가">
+      <span class="name">${e.name}</span><span class="en">${e.en}</span>
+      <span class="n" id="n-${e.k}">0</span><span class="hint" id="cur-${e.k}">탭 = +1</span>
+      <span class="tgt" aria-hidden="true"><i id="tgt-${e.k}"></i></span></button>
+    <div class="minis"><button id="minus-${e.k}" aria-label="${e.name} 1회 빼기">−1</button><button id="plus5-${e.k}" aria-label="${e.name} 5회 추가">+5</button></div>`;
+  pads.appendChild(el);
+  $("tap-"+e.k).addEventListener("click",ev=>{bumpCombo(e.k);if(add(e.k,1))tapFx(e.k,1,ev)});
+  $("minus-"+e.k).addEventListener("click",ev=>{if(add(e.k,-1))tapFx(e.k,-1,ev)});
+  $("plus5-"+e.k).addEventListener("click",ev=>{bumpCombo(e.k);if(add(e.k,5))tapFx(e.k,5,null)});
+});
+
+const WEB_SVG=(()=>{ // spider-web burst: 8 spokes + 2 rings
+  let l="";for(let i=0;i<8;i++){const a=i*Math.PI/4;l+=`<line x1="50" y1="50" x2="${50+46*Math.cos(a)}" y2="${50+46*Math.sin(a)}"/>`}
+  const ring=r=>Array.from({length:8},(_,i)=>{const a=i*Math.PI/4;return `${50+r*Math.cos(a)},${50+r*Math.sin(a)}`}).join(" ");
+  return `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">${l}<polygon points="${ring(18)}"/><polygon points="${ring(34)}" stroke-width="1.8"/></svg>`;
+})();
+// iOS Safari ignores user-scalable=no: block pinch zoom here (double-tap zoom is off via touch-action)
+document.addEventListener("gesturestart",e=>e.preventDefault(),{passive:false});
+document.addEventListener("dblclick",e=>e.preventDefault());
+let combo=0,comboT=null;
+function bumpCombo(k){
+  combo++;clearTimeout(comboT);comboT=setTimeout(()=>{combo=0;$("combo").hidden=true},1100);
+  const c=$("combo");
+  if(combo>=3){
+    c.style.setProperty("--cc",`var(--${k})`);
+    c.innerHTML=`<small>COMBO</small>×${combo}`;
+    c.style.fontSize=`${1.6+Math.min(combo,30)*.04}rem`;
+    c.hidden=false;c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop");
+  }
+  return combo;
+}
+function edgeGlow(k){const e=$("edge");e.style.setProperty("--ec",`var(--${k})`);e.classList.remove("on");void e.offsetWidth;e.classList.add("on")}
+function tapFx(k,d,ev){
+  const pad=document.querySelector(`.pad[data-k="${k}"]`),r=pad.getBoundingClientRect();
+  let x=r.width/2,y=r.height*.42;
+  if(ev&&ev.clientX){x=ev.clientX-r.left;y=ev.clientY-r.top}
+  const fx=document.createElement("div");fx.className="fx";fx.style.transform=`translate(${x}px,${y}px)`;
+  let h=`<b class="${d<0?"minus":""}">${d>0?"+"+d:"−1"}</b>`;
+  if(d>0){
+    const big=d>1||combo%10===0&&combo>0;
+    h=`<span class="core"></span><span class="ring"></span><span class="ring r2"></span>`+WEB_SVG+h;
+    const strands=big?12:8;
+    for(let i=0;i<strands;i++)h+=`<span class="strand" style="--a:${i*360/strands+Math.random()*20}deg;--len:${40+Math.random()*(big?70:40)}px"></span>`;
+    for(let i=0;i<(big?22:12);i++){const a=Math.random()*Math.PI*2,dist=40+Math.random()*(big?100:60);
+      h+=`<i class="${i%3?"":"w"}" style="--s:${3+Math.random()*(big?7:5)}px;--dx:${Math.cos(a)*dist}px;--dy:${Math.sin(a)*dist}px"></i>`}
+    if(big){edgeGlow(k);const ps=$("pads");ps.classList.remove("quake");void ps.offsetWidth;ps.classList.add("quake")}
+  }
+  fx.innerHTML=h;pad.appendChild(fx);
+  setTimeout(()=>fx.remove(),900);
+  if(d>0){pad.classList.remove("flash","shake");void pad.offsetWidth;pad.classList.add("flash","shake")}
+}
+function add(k,d){
+  if(d>0&&elapsed()>=DURATION){toast("20분이 끝났어요. 기록을 저장하거나 초기화하세요");return false} // reps after time don't count
+  if(d>0&&!S.runningSince&&elapsed()===0) start(); // first tap starts the clock
+  if(S.counts[k]+d<0)return false;
+  S.counts[k]=Math.max(0,S.counts[k]+d);
+  addToRound(k,d);
+  const i=S.rounds.length-1;
+  S.tomCel=S.tomCel||[];
+  if(i>=0&&roundDone(S.rounds[i])&&!S.tomCel.includes(i)){S.tomCel.push(i);missionRoundDone()}
+  if(d>0)thwip(k);else undoBlip();
+  try{navigator.vibrate&&navigator.vibrate(d>0?12:[8,40,8])}catch(e){}
+  const pad=document.querySelector(`.pad[data-k="${k}"]`);
+  pad.classList.remove("bump");void pad.offsetWidth;pad.classList.add("bump");
+  persistDraft();renderSession();
+  return true;
+}
+function addToRound(k,d){
+  const R=S.rounds;let cur=R[R.length-1];
+  if(d>0){
+    // a set moves on only after all three exercises are in it (or the "다음 세트" button)
+    const allIn=cur&&EX.every(x=>cur[x.k]>0);
+    if(!cur||S.forceNew||(allIn&&S.lastK!==k)){
+      // moving on without pressing "세트 완료": no banner mid-exercise, just note the new set
+      if(cur){S.cleared=Math.max(S.cleared||0,R.length);toast(`${R.length+1}세트 시작`)}
+      cur=emptyRound();R.push(cur)}
+    cur[k]+=d;S.forceNew=false;S.lastK=k;
+  }else{
+    let i=R.length-1;while(i>=0&&!R[i][k])i--;
+    if(i<0)return;
+    R[i][k]-=1;
+    if(i===R.length-1&&!rsum(R[i])){R.pop();S.lastK=null}
+  }
+}
+
+/* timer */
+let wake=null, ticker=null, audio=null, finished=false;
+function ac(){
+  if(!audio){
+    audio=new (window.AudioContext||window.webkitAudioContext)();
+    // master bus: compressor lets effects play loud without clipping
+    const comp=audio.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=6;
+    const out=audio.createGain();out.gain.value=1.4;
+    comp.connect(out);out.connect(audio.destination);audio.master=comp;
+  }
+  if(audio.state!=="running")audio.resume().catch(()=>{}); // iOS leaves it "interrupted" after switching apps
+  return audio;
+}
+const OUT=()=>ac().master;
+/* tap sound effects */
+let sfxOn=lsGet("bw20-sfx",true);
+const THWIP={pull:[2400,700],push:[1800,550],squat:[1300,420]}; // web-shooter sweep per exercise
+function thwip(k){
+  if(!sfxOn)return;
+  try{
+    const a=ac(),t=a.currentTime,len=.14,up=1+Math.min(combo,20)*.03; // pitch climbs with the combo
+    const buf=a.createBuffer(1,Math.floor(a.sampleRate*len),a.sampleRate),ch=buf.getChannelData(0);
+    for(let i=0;i<ch.length;i++)ch[i]=(Math.random()*2-1)*(1-i/ch.length);
+    const src=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();
+    src.buffer=buf;bp.type="bandpass";bp.Q.value=6;
+    bp.frequency.setValueAtTime(THWIP[k][0]*up,t);bp.frequency.exponentialRampToValueAtTime(THWIP[k][1]*up,t+len);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(3,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+len);
+    src.connect(bp);bp.connect(g);g.connect(OUT());src.start(t);src.stop(t+len);
+    // body: short pitched thump under the hiss so it cuts through music
+    const o=a.createOscillator(),og=a.createGain();o.type="triangle";
+    o.frequency.setValueAtTime(THWIP[k][1]*.5*up,t);o.frequency.exponentialRampToValueAtTime(90,t+.08);
+    og.gain.setValueAtTime(.0001,t);og.gain.exponentialRampToValueAtTime(.9,t+.004);og.gain.exponentialRampToValueAtTime(.0001,t+.09);
+    o.connect(og);og.connect(OUT());o.start(t);o.stop(t+.1);
+  }catch(e){}
+}
+function tone(freq,at,dur,type,vol){
+  const a=ac(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+at;
+  o.type=type||"triangle";o.frequency.value=freq;o.connect(g);g.connect(OUT());
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol||.25,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.start(t);o.stop(t+dur+.02);
+}
+function undoBlip(){if(sfxOn)try{tone(320,0,.09,"sine",.2);tone(240,.07,.1,"sine",.2)}catch(e){}}
+function whoosh(at,len,from,to,vol){
+  const a=ac(),t=a.currentTime+at;
+  const buf=a.createBuffer(1,Math.floor(a.sampleRate*len),a.sampleRate),ch=buf.getChannelData(0);
+  for(let i=0;i<ch.length;i++)ch[i]=Math.random()*2-1;
+  const src=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();
+  src.buffer=buf;bp.type="bandpass";bp.Q.value=2;
+  bp.frequency.setValueAtTime(from,t);bp.frequency.exponentialRampToValueAtTime(to,t+len);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+len*.6);g.gain.exponentialRampToValueAtTime(.0001,t+len);
+  src.connect(bp);bp.connect(g);g.connect(OUT());src.start(t);src.stop(t+len);
+}
+function fanfare(big){
+  if(!sfxOn)return;
+  try{
+    // no jingle: a rising whoosh into a deep impact, then the voice
+    whoosh(0,.32,300,5000,.9);
+    whoosh(.3,.25,3000,400,.5);
+    tone(70,.3,big?.9:.55,"sine",1);
+    tone(140,.3,.18,"triangle",.5);
+  }catch(e){}
+}
+/* music ducking: quieter under the clear fanfare and voice. iOS ignores volume, so it pauses there. */
+const canVol=(()=>{try{const t=new Audio();t.volume=.5;return Math.abs(t.volume-.5)<.01}catch(e){return false}})();
+let duckT=null,ducking=false;
+function duck(ms){
+  if(bgm.paused&&!ducking)return;
+  clearTimeout(duckT);ducking=true;
+  if(canVol)bgm.volume=.08;else bgm.pause();
+  duckT=setTimeout(()=>{
+    ducking=false;
+    if(canVol){let v=.08;const up=setInterval(()=>{v=Math.min(.6,v+.05);bgm.volume=v;if(v>=.6)clearInterval(up)},40)}
+    else if(shouldPlay()||bgmOn)playBgm();
+  },ms);
+}
+const VOICE=false; // iOS lowers all other audio while speech synthesis talks, so the spoken callout is off
+function say(text){
+  if(!VOICE||!sfxOn||!window.speechSynthesis)return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=1.05;u.pitch=1.15;u.volume=1;
+    setTimeout(()=>speechSynthesis.speak(u),350)}catch(e){}
+}
+let clearT=null;
+function showClear(main,sub){
+  edgeGlow("danger");
+  const box=$("clear"),t=$("clearText");
+  t.textContent=main;
+  if(sub){const sm=document.createElement("small");sm.textContent=sub;t.appendChild(sm)}
+  box.hidden=true;void box.offsetWidth;box.hidden=false;
+  clearTimeout(clearT);clearT=setTimeout(()=>box.hidden=true,1450);
+}
+function beep(times){
+  try{
+    ac();
+    for(let i=0;i<times;i++){
+      const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime+i*0.35;
+      o.frequency.value=880;o.connect(g);g.connect(audio.destination);
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.3,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.25);
+      o.start(t);o.stop(t+.3);
+    }
+  }catch(e){}
+}
+async function lockScreen(){try{wake=await navigator.wakeLock.request("screen")}catch(e){wake=null}}
+function start(){
+  if(elapsed()>=DURATION)return;
+  if(!S.startedAt)S.startedAt=Date.now();
+  S.runningSince=Date.now();
+  beep(1);lockScreen();playBgm();
+  persistDraft();loop();renderSession();
+}
+function pause(){
+  S.elapsed=elapsed();S.runningSince=null;
+  try{wake&&wake.release()}catch(e){} wake=null;
+  $("bgm").pause();
+  persistDraft();renderSession();
+}
+/* background music: the music button plays/pauses; starting the timer also plays it */
+let bgmOn=lsGet("bw20-bgm",true);
+const bgm=$("bgm");bgm.volume=.6;
+// playlist: plays in order, then starts over
+// works at /spider20/, /spider20 (no trailing slash) and /spider20/index.html
+const BASE=/\/$|\.html$/.test(location.pathname)?"":location.pathname.split("/").pop()+"/";
+const TRACKS=["bgm.mp3","bgm2.mp3","bgm3.mp3"].map(f=>BASE+f);
+let track=lsGet("bw20-track",0)%TRACKS.length;
+function setTrack(i){track=(i+TRACKS.length)%TRACKS.length;lsSet("bw20-track",track);bgm.src=TRACKS[track];renderBgm()}
+bgm.src=TRACKS[track];
+bgm.addEventListener("ended",()=>{setTrack(track+1);playBgm(true)});
+$("bgmNext").addEventListener("click",()=>{setTrack(track+1);bgmOn=true;lsSet("bw20-bgm",true);playBgm(true)});
+function playBgm(force){
+  if(!bgmOn&&!force)return;
+  const p=bgm.play();
+  p&&p.catch(e=>{if(e&&e.name==="NotAllowedError")toast("음악 버튼을 한 번 눌러 주세요");else if(e&&e.name!=="AbortError")toast("음악을 재생하지 못했어요")});
+}
+// the music button plays/pauses right away; the timer also starts it when music is on
+function renderBgm(){
+  const playing=!bgm.paused;
+  $("bgmBtn").textContent=`${playing?"❚❚":"▶"} 음악 ${track+1}/${TRACKS.length}`;
+  $("bgmBtn").setAttribute("aria-pressed",playing);
+  $("bgmBtn").setAttribute("aria-label",playing?"음악 일시정지":"음악 재생");
+}
+$("bgmBtn").addEventListener("click",()=>{
+  if(!bgm.paused){bgmOn=false;bgmWanted=false;bgm.pause()}else{bgmOn=true;playBgm(true)}
+  lsSet("bw20-bgm",bgmOn);
+});
+["play","pause"].forEach(ev=>bgm.addEventListener(ev,renderBgm));
+bgm.addEventListener("error",()=>{toast("음악 파일을 불러오지 못했어요");renderBgm()});
+function renderSfx(){$("sfxBtn").textContent=sfxOn?"효과음 켬":"효과음 끔";$("sfxBtn").setAttribute("aria-pressed",sfxOn)}
+$("sfxBtn").addEventListener("click",()=>{sfxOn=!sfxOn;lsSet("bw20-sfx",sfxOn);renderSfx();if(sfxOn)thwip("pull")});
+renderSfx();
+
+/* resume music after the phone pauses it (switching to KakaoTalk, a call, lock screen) */
+let bgmWanted=false; // music was playing when the page went away
+function shouldPlay(){return !ducking&&(bgmWanted||(bgmOn&&S.runningSince))}
+function resumeBgm(){
+  if(!shouldPlay()||!bgm.paused)return;
+  const p=bgm.play();
+  // iOS may refuse until the next touch: resume on the first tap anywhere
+  p&&p.catch(()=>{document.addEventListener("pointerdown",e=>{if(e.target.closest("#bgmBtn"))return;if(shouldPlay())bgm.play().catch(()=>{})},{once:true,capture:true})});
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){bgmWanted=bgmWanted||!bgm.paused;return}
+  resumeBgm();
+  if(audio&&audio.state!=="running")audio.resume().catch(()=>{});
+});
+window.addEventListener("pageshow",resumeBgm);
+// a pause the user didn't ask for (system interruption) while the page is visible
+bgm.addEventListener("pause",()=>{if(!ducking&&!document.hidden&&!bgm.ended&&bgmOn&&S.runningSince)setTimeout(resumeBgm,600)});
+bgm.addEventListener("play",()=>{bgmWanted=false});
+// lock-screen / control-center buttons
+if("mediaSession" in navigator){
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({title:"20분 맨몸 카운터",artist:"Spider20"});
+    navigator.mediaSession.setActionHandler("play",()=>{bgmOn=true;lsSet("bw20-bgm",true);playBgm(true)});
+    navigator.mediaSession.setActionHandler("pause",()=>{bgmOn=false;bgmWanted=false;lsSet("bw20-bgm",false);bgm.pause()});
+    navigator.mediaSession.setActionHandler("nexttrack",()=>{setTrack(track+1);playBgm(true)});
+  }catch(e){}
+}
+renderBgm();
+function loop(){clearInterval(ticker);ticker=setInterval(tick,250);tick()}
+function tick(){
+  const e=elapsed();
+  if(S.runningSince&&e>=DURATION){
+    S.elapsed=DURATION;S.runningSince=null;clearInterval(ticker);
+    try{wake&&wake.release()}catch(err){}
+    $("bgm").pause();
+    beep(3);try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(err){}
+    persistDraft();
+    if(total(S.counts))saveWorkout(true);else toast("20분 끝!");
+  }
+  renderClock();
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&S.runningSince)lockScreen()});
+
+// SET N CLEAR for any finished set; sets that hit 5/10/15 get the Tom Holland version
+function celebrateRound(i){
+  if((S.cleared||0)>i)return;
+  S.cleared=i+1;
+  const r=S.rounds[i];if(!r||roundDone(r))return; // already celebrated by missionRoundDone
+  fanfare(false);
+  try{navigator.vibrate&&navigator.vibrate([40,40,120])}catch(e){}
+  const miss=EX.filter(x=>r[x.k]<MISSION[x.k]).map(x=>`${x.name} ${MISSION[x.k]-r[x.k]}`).join(" · ");
+  showClear(`SET ${i+1} CLEAR!`,`${r.pull} / ${r.push} / ${r.squat} · 톰 홀랜드 세트까지 ${miss}`);
+  say(`Set ${i+1} clear!`);
+}
+function missionRoundDone(){
+  S.cleared=Math.max(S.cleared||0,S.rounds.length);
+  const n=missionSets(S.rounds),goal=n===MISSION_GOAL;
+  fanfare(goal);
+  try{navigator.vibrate&&navigator.vibrate(goal?[80,60,80,60,300]:[40,40,120])}catch(e){}
+  if(goal){showClear("SPIDER-MAN CLEAR!","28세트 · 톰 홀랜드 기록 달성");say("Spider-Man clear!")}
+  else{const k=S.rounds.length;showClear(`SET ${k} CLEAR!`,`톰 홀랜드 세트 ${n}/${MISSION_GOAL} ✓ · 28세트까지 ${MISSION_GOAL-n}`);say(`Set ${k} clear!`)}
+}
+function fillMissionRound(){
+  if(elapsed()>=DURATION){toast("20분이 끝났어요. 기록을 저장하거나 초기화하세요");return}
+  if(!S.runningSince&&elapsed()===0)start();
+  const R=S.rounds;let cur=R[R.length-1];
+  if(!cur||S.forceNew||roundDone(cur)){cur=emptyRound();R.push(cur)}
+  S.forceNew=false;S.lastK="squat";
+  const needs={};
+  EX.forEach(x=>{const need=Math.max(0,MISSION[x.k]-cur[x.k]);needs[x.k]=need;cur[x.k]+=need;S.counts[x.k]+=need});
+  S.tomCel=S.tomCel||[];S.tomCel.push(R.length-1);
+  try{navigator.vibrate&&navigator.vibrate([20,40,20,40,60])}catch(e){}
+  // three web shots, one per exercise, left to right
+  EX.forEach((x,i)=>{if(needs[x.k]>0)setTimeout(()=>{thwip(x.k);tapFx(x.k,needs[x.k],null)},i*110)});
+  const b=$("fillRound");b.classList.remove("fire");void b.offsetWidth;b.classList.add("fire");
+  missionRoundDone();persistDraft();renderSession();
+}
+$("fillRound").addEventListener("click",fillMissionRound);
+var skipArmed=null; // var: renderSession may run before this line
+$("nextRound").addEventListener("click",()=>{
+  const last=S.rounds[S.rounds.length-1];
+  if(!S.forceNew&&!(last&&EX.every(x=>last[x.k]>0))){
+    if(!last||!rsum(last))return;
+    if(!skipArmed){skipArmed=setTimeout(()=>{skipArmed=null;renderSession()},3000);renderSession();return}
+  }
+  clearTimeout(skipArmed);skipArmed=null;
+  S.forceNew=!S.forceNew;
+  if(S.forceNew&&S.rounds.length)celebrateRound(S.rounds.length-1);
+  persistDraft();renderSession()});
+$("startBtn").addEventListener("click",()=>S.runningSince?pause():start());
+let resetArmed=null;
+$("resetBtn").addEventListener("click",()=>{
+  const b=$("resetBtn");
+  if(total(S.counts)>0&&!resetArmed){
+    b.textContent="정말 초기화?";b.classList.add("danger");
+    resetArmed=setTimeout(()=>{resetArmed=null;b.textContent="초기화";b.classList.remove("danger")},3000);
+    return;
+  }
+  clearTimeout(resetArmed);resetArmed=null;b.textContent="초기화";b.classList.remove("danger");
+  newSession();
+});
+function newSession(){$("bgm").pause();S=freshSession();clearInterval(ticker);try{wake&&wake.release()}catch(e){}persistDraft();renderSession()}
+
+const total=c=>c.pull+c.push+c.squat;
+function fmt(ms){const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function renderMissionPace(){
+  const done=missionSets(S.rounds),e=Math.min(elapsed(),DURATION),target=e/DURATION*MISSION_GOAL;
+  $("mFill").style.width=Math.min(100,done/MISSION_GOAL*100)+"%";
+  $("mPace").style.left=`calc(${Math.min(100,target/MISSION_GOAL*100)}% - 1px)`;
+  const diff=done-Math.floor(target),st=$("mStatus");
+  const per=Math.round(DURATION/1000/MISSION_GOAL);
+  $("mLeft").textContent=`1세트 = 풀업 5 · 푸시업 10 · 스쿼트 15 · 세트당 ${per}초 페이스`;
+  if(e===0){st.textContent="빨간 선 = 28세트 페이스";st.className=""}
+  else if(diff>=0){st.textContent=`페이스보다 ${diff}세트 앞섬`;st.className="ahead"}
+  else{st.textContent=`페이스보다 ${-diff}세트 뒤처짐`;st.className="behind"}
+}
+function renderSpidey(){
+  const c=S.counts,p=spidey(c),e=Math.min(elapsed(),DURATION);
+  $("spPct").textContent=p+"%";
+  $("spTier").textContent=tierOf(p);
+  // race: Tom runs at 28 sets per 20 min; my position is the weakest exercise's share of Tom's totals
+  const tomP=e/DURATION,meP=Math.min(...EX.map(x=>(c[x.k]||0)/TOM[x.k]));
+  const pos=v=>`${Math.min(100,v*100)}%`;
+  const mpos=v=>`clamp(18px,${Math.min(100,v*100)}%,calc(100% - 18px))`; // keep the label inside the track
+  $("raceTom").style.width=pos(tomP);$("raceTomM").style.left=mpos(tomP);
+  $("spFill").style.width=pos(meP);$("raceMeM").style.left=mpos(meP);
+  $("raceTomM").textContent=`톰 ${Math.floor(tomP*MISSION_GOAL)}`;$("raceMeM").textContent=`나 ${Math.floor(meP*MISSION_GOAL)}`;
+  const gap=(meP-tomP)*MISSION_GOAL,g=$("raceGap");
+  if(e===0&&!total(c)){g.textContent="시작하면 톰 홀랜드가 20분에 28세트 페이스로 달려요";g.className="gap"}
+  else if(Math.abs(gap)<.5){g.textContent="톰 홀랜드와 나란히 달리는 중";g.className="gap ahead"}
+  else if(gap>0){g.textContent=`톰 홀랜드보다 ${gap.toFixed(1)}세트 앞섬`;g.className="gap ahead"}
+  else{g.textContent=`톰 홀랜드보다 ${(-gap).toFixed(1)}세트 뒤처짐`;g.className="gap behind"}
+  $("raceEx").innerHTML=EX.map(x=>{const mine=(c[x.k]||0)/TOM[x.k],tomN=Math.round(tomP*TOM[x.k]);
+    return `<div style="--c:var(--${x.k})"><small>${x.name} ${c[x.k]||0}/${tomN}</small><div class="bar"><i style="width:${pos(mine)}"></i><b style="left:${pos(tomP)}"></b></div></div>`}).join("");
+  $("spTicks").innerHTML=TIERS.map(t=>`<span class="${p>=t[0]?"on":""}">${t[0]}</span>`).join("");
+  const weak=EX.reduce((a,x)=>(c[x.k]||0)/TOM[x.k]<(c[a.k]||0)/TOM[a.k]?x:a);
+  let why;
+  if(!total(c))why="톰 홀랜드(20분 28세트)를 100%로 계산합니다";
+  else if(p>=100)why=`톰 홀랜드를 ${p===100?"따라잡았어요":(p-100)+"% 넘었어요"}`;
+  else{
+    const sets=Math.floor(Math.min(...EX.map(x=>(c[x.k]||0)/(TOM[x.k]/MISSION_GOAL))));
+    why=`${sets}세트 분량 · ${weak.name}이(가) 제일 부족해요`;
+    if(e>60000&&e<DURATION&&S.runningSince)why+=` · 이 페이스면 20분에 ${Math.round(p*DURATION/e)}%`;
+  }
+  $("spWhy").textContent=why;
+}
+function renderClock(){
+  renderSpidey();
+  const e=elapsed(),left=DURATION-e;
+  $("clock").textContent=fmt(left);
+  $("clock").classList.toggle("done",left<=0);
+  $("barFill").style.width=Math.min(100,e/DURATION*100)+"%";
+  renderMissionPace();
+  const st=$("stateText");
+  if(left<=0)st.textContent="완료 · 수고했어요";
+  else if(S.runningSince)st.textContent="운동 중 · 화면이 꺼지지 않게 유지합니다";
+  else if(e>0)st.textContent="일시정지";
+  else st.textContent="대기 중 · 시작 또는 첫 탭으로 카운트다운";
+  const mins=e/60000,t=total(S.counts);
+  $("paceText").textContent=mins>=1&&t?`분당 ${(t/mins).toFixed(1)}회`:"";
+}
+function renderSession(){
+  const R=S.rounds,cur=S.forceNew?null:R[R.length-1];
+  EX.forEach(x=>{
+    $("n-"+x.k).textContent=S.counts[x.k];
+    const c=cur?cur[x.k]:0,n=cur?R.length:R.length+1;
+    $("cur-"+x.k).textContent=!R.length&&!c?"탭 = +1":`${n}세트 ${c}/${MISSION[x.k]}${c>=MISSION[x.k]?" ✓":""}`;
+    $("tgt-"+x.k).style.width=`${Math.min(100,c/MISSION[x.k]*100)}%`;
+    $("tgt-"+x.k).parentElement.classList.toggle("full",c>=MISSION[x.k]);
+  });
+  $("roundTitle").textContent=`세트 ${R.length} · 톰 홀랜드 ${missionSets(R)}/${MISSION_GOAL}`;
+  const nb=$("nextRound"),last=R[R.length-1];
+  nb.classList.toggle("on",S.forceNew);
+  // the set can be finished only once all three exercises are in it
+  const ready=!S.forceNew&&!!last&&EX.every(x=>last[x.k]>0);
+  const missing=last?EX.filter(x=>!last[x.k]).map(x=>x.name):EX.map(x=>x.name);
+  nb.classList.toggle("ready",ready);
+  nb.textContent=S.forceNew?`SET ${R.length} 완료 · 다음 탭부터 ${R.length+1}세트 (누르면 취소)`
+    :ready?`SET ${R.length} 완료`:`세트 완료 · 남은 종목: ${missing.join(", ")}`;
+  nb.disabled=!S.forceNew&&!(last&&rsum(last)); // a set missing an exercise can still end, after a confirm tap
+  if(skipArmed&&!S.forceNew&&!ready)nb.textContent=`${missing.join(", ")} 빼고 SET ${R.length} 완료? 한 번 더 누르세요`;
+  nb.classList.toggle("arm",!!skipArmed&&!ready&&!S.forceNew);
+  renderMissionPace();
+  $("roundBody").innerHTML=R.length?R.map((r,i)=>({r,i})).reverse().map(({r,i})=>`<tr class="${i===R.length-1&&!S.forceNew?"cur":""}"><td>${i+1}${roundDone(r)?" ✓":""}</td><td>${r.pull}</td><td>${r.push}</td><td>${r.squat}</td><td>${rsum(r)}</td></tr>`).join("")
+    :`<tr><td colspan="5" style="font-family:var(--f-body);color:var(--muted);text-align:left">첫 탭을 하면 1세트가 시작됩니다.</td></tr>`;
+  const t=total(S.counts);
+  $("sessTotal").textContent=t+"회";
+  $("saveBtn").disabled=t===0;
+  $("startBtn").textContent=S.runningSince?"일시정지":(elapsed()>0&&elapsed()<DURATION?"계속":"시작");
+  $("startBtn").disabled=elapsed()>=DURATION;
+  renderClock();
+}
+
+/* ---------- history (db with local fallback) ---------- */
+let records=lsGet(LOCAL_LOG,[]); // local copy, also the fallback store
+let col=null;
+
+const withTimeout=(pr,ms)=>Promise.race([pr,new Promise(r=>setTimeout(()=>r(null),ms))]);
+let DB=null,USER=null,UID=null,boardBlocked=false,lastBoard="";
+/* ---------- Firebase (Auth + Firestore). Hosting is Vercel; this only talks to the API. ---------- */
+const firebaseConfig={
+  apiKey:"AIzaSyCRajHXD9_KlfvJQb-GtUr8NSk7ce0uad0",
+  authDomain:"to-do-cal-6e835.firebaseapp.com",
+  projectId:"to-do-cal-6e835",
+  storageBucket:"to-do-cal-6e835.firebasestorage.app",
+  messagingSenderId:"460218654402",
+  appId:"1:460218654402:web:fdb98e791b530e7bbee55b",
+  measurementId:"G-4PTMXMBG2K"
+};
+const FB_VER="10.12.2",FB_URL=m=>`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}.js`;
+let FBA=null; // auth helpers, set once Firebase loads
+// Small wrapper so the rest of the page reads like a plain document store.
+function makeDB(F,fs){
+  const wrapDoc=ref=>({set:d=>F.setDoc(ref,d),delete:()=>F.deleteDoc(ref),
+    get:async()=>{const s=await F.getDoc(ref);return{exists:s.exists(),data:()=>s.data()}}});
+  const wrapCol=path=>{const c=F.collection(fs,path),q=[];const api={
+    doc:id=>wrapDoc(F.doc(c,id)),
+    orderBy(f,d){q.push(F.orderBy(f,d));return api},
+    limit(n){q.push(F.limit(n));return api},
+    async get(){const s=await F.getDocs(F.query(c,...q));return{docs:s.docs.map(d=>({id:d.id,data:()=>d.data()}))}},
+    onSnapshot(next,err){return F.onSnapshot(F.query(c,...q),s=>next({docs:s.docs.map(d=>({id:d.id,data:()=>d.data()}))}),err)}};
+    return api};
+  return{collection:wrapCol,doc:p=>wrapDoc(F.doc(fs,p))};
+}
+async function loadFirebase(){
+  const [app,auth,store]=await Promise.all([import(FB_URL("app")),import(FB_URL("auth")),import(FB_URL("firestore"))]);
+  const fapp=app.initializeApp(firebaseConfig);
+  import(FB_URL("analytics")).then(async an=>{if(await an.isSupported())an.getAnalytics(fapp)}).catch(()=>{});
+  const au=auth.getAuth(fapp);
+  FBA={au,auth};
+  return{auth,au,db:makeDB(store,store.getFirestore(fapp))};
+}
+// Resolves with the signed-in Google user; shows the login screen until there is one.
+function waitForLogin(F){
+  const {auth,au}=F;
+  return new Promise(res=>{
+    // only look for a redirect result when we actually started one: on iPhone Safari the check
+    // loads a cross-site frame that tracking prevention can stall, which held up the whole login
+    let redirected=false;try{redirected=sessionStorage.getItem("bw20-redirect")==="1";sessionStorage.removeItem("bw20-redirect")}catch(e){}
+    if(redirected)auth.getRedirectResult(au).catch(e=>gateError(e));
+    let heard=false;
+    auth.onAuthStateChanged(au,u=>{
+      heard=true;
+      if(u&&!u.isAnonymous){res(u);return}
+      showGate(F);
+    });
+    // if Firebase hasn't said anything after 6 s, let the person tap the button anyway
+    setTimeout(()=>{if(!heard)showGate(F)},6000);
+  });
+}
+const inAppBrowser=/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent);
+window.addEventListener("error",e=>{const g=$("gate");if(g&&!g.hidden)$("gateErr").textContent="오류: "+(e.message||"알 수 없음")});
+window.addEventListener("unhandledrejection",e=>{const g=$("gate");if(g&&!g.hidden&&e.reason)$("gateErr").textContent="오류: "+(e.reason.code||e.reason.message||e.reason)});
+function showGate(F){
+  $("gate").hidden=false;
+  const btn=$("googleLogin");btn.disabled=false;$("googleLoginText").textContent="Google로 로그인";
+  if(inAppBrowser)$("gateErr").textContent="카카오톡 등 앱 안의 브라우저에서는 Google 로그인이 막혀요. 오른쪽 위 메뉴에서 'Chrome / Safari로 열기'를 눌러 주세요.";
+  btn.onclick=async()=>{
+    const {auth,au}=F,prov=new auth.GoogleAuthProvider();
+    prov.setCustomParameters({prompt:"select_account"});
+    btn.disabled=true;$("gateErr").textContent="";
+    try{await auth.signInWithPopup(au,prov)}
+    catch(e){
+      if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment"){try{sessionStorage.setItem("bw20-redirect","1")}catch(_){}await auth.signInWithRedirect(au,prov);return}
+      gateError(e);btn.disabled=false;
+    }
+  };
+}
+function gateError(e){
+  if(!e||e.code==="auth/popup-closed-by-user"||e.code==="auth/cancelled-popup-request")return;
+  $("gateErr").textContent=e.code==="auth/unauthorized-domain"?"이 주소가 Firebase 승인된 도메인에 없어요. 관리자에게 알려 주세요."
+    :"로그인하지 못했어요 ("+(e.code||"알 수 없는 오류")+"). 다시 시도해 주세요.";
+}
+const cleanNick=v=>v.replace(/\s+/g," ").trim().slice(0,16);
+async function nickTaken(db,uid,nick){
+  try{const all=await db.collection("board").get();return all.docs.some(d=>d.id!==uid&&(d.data().nick||"").toLowerCase()===nick.toLowerCase())}
+  catch(e){return false}
+}
+function askNick(u,db,uid){
+  $("googleLogin").hidden=true;$("gateErr").textContent="";
+  document.querySelector(".gate-card > p").textContent=`${u.displayName||"반가워요"}님, 랭킹에서 친구들에게 보일 닉네임을 정해 주세요. 나중에 랭킹 탭에서 바꿀 수 있어요.`;
+  const form=$("nickForm"),input=$("gateNick");
+  form.hidden=false;input.value=cleanNick(u.displayName||"");input.focus();
+  return new Promise(res=>{
+    form.onsubmit=async e=>{
+      e.preventDefault();
+      const n=cleanNick(input.value);
+      if(n.length<2){$("gateErr").textContent="닉네임은 2~16자로 정해 주세요.";return}
+      $("nickGo").disabled=true;
+      if(await nickTaken(db,uid,n)){$("gateErr").textContent=`'${n}'은(는) 이미 누가 쓰고 있어요. 다른 닉네임을 정해 주세요.`;$("nickGo").disabled=false;return}
+      res(n);
+    };
+  });
+}
+function renderAccount(u){
+  $("acct").textContent=u?`${u.displayName||u.email||"Google 계정"}${u.email&&u.displayName?" · "+u.email:""}`:"";
+}
+$("logoutBtn").addEventListener("click",async()=>{if(!FBA)return;try{localStorage.removeItem(DRAFT_KEY)}catch(e){}await FBA.auth.signOut(FBA.au);location.reload()});
+async function initStore(){
+  const sync=$("syncText");
+  sync.textContent="계정 연결 중…";
+  let F=null;
+  try{F=await withTimeout(loadFirebase(),10000)}catch(e){F=null}
+  if(!F){
+    $("googleLoginText").textContent="다시 시도";$("googleLogin").disabled=false;
+    $("googleLogin").onclick=()=>location.reload();
+    $("gateErr").textContent="서버에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.";return}
+  const u=await waitForLogin(F);
+  renderAccount(u);
+  const db=F.db,uid=u.uid;
+  // nickname: saved one, else the one on the ranking board, else ask once
+  myNick=lsGet("bw20-nick:"+uid,"");
+  if(!myNick){try{const mine=await db.doc("board/"+uid).get();if(mine.exists&&mine.data().nick)myNick=mine.data().nick}catch(e){}}
+  if(!myNick)myNick=await askNick(u,db,uid);
+  lsSet("bw20-nick:"+uid,myNick);$("nickInput").value=myNick;
+  $("gate").hidden=true;
+  // switch the local cache to this account; records made before any sign-in move into it once
+  LOCAL_LOG="bw20-log:"+uid;
+  const legacy=lsGet("bw20-log",[]).map(r=>({...r,synced:false}));
+  records=[...lsGet(LOCAL_LOG,[]),...legacy.filter(r=>!lsGet(LOCAL_LOG,[]).some(x=>x.id===r.id))];
+  try{localStorage.removeItem("bw20-log")}catch(e){}
+  lsSet(LOCAL_LOG,records);renderHistory();
+  DB=db;UID=uid;
+  initBoard();
+  col=db.collection(`users/${uid}/workouts`);
+  sync.textContent="서버에 저장됨";
+  // upload records saved on this device before the account was reachable
+  for(const r of records.filter(r=>!r.synced)){try{await col.doc(r.id).set(stripLocal(r));r.synced=true}catch(e){}}
+  lsSet(LOCAL_LOG,records);
+  col.orderBy("date","desc").limit(500).onSnapshot(snap=>{
+    const remote=snap.docs.map(d=>({...d.data(),id:d.id,synced:true}));
+    const ids=new Set(remote.map(r=>r.id));
+    records=[...remote,...records.filter(r=>!r.synced&&!ids.has(r.id))];
+    lsSet(LOCAL_LOG,records);renderHistory();
+  },()=>{sync.textContent="동기화 오류 · 이 기기 기록 표시 중";renderHistory()});
+}
+const stripLocal=r=>({date:r.date,pull:r.pull,push:r.push,squat:r.squat,mode:r.mode||null,rounds:r.rounds||null,seconds:r.seconds});
+
+let saving=false;
+$("saveBtn").addEventListener("click",()=>saveWorkout(false));
+let undoT=null;
+async function saveWorkout(auto){
+  if(saving||!total(S.counts))return; // a second tap while the first save is in flight would store it twice
+  saving=true;$("saveBtn").disabled=true;
+  if(S.runningSince)pause();
+  const before=JSON.parse(JSON.stringify(S)); // for 되돌리기
+  const r={id:String(Date.now()),date:S.startedAt||Date.now(),...S.counts,mode:"set",rounds:S.rounds.length?S.rounds.map(r=>({...r})):null,seconds:Math.round(Math.min(elapsed(),DURATION)/1000)};
+  records=[r,...records];lsSet(LOCAL_LOG,records);
+  if(col){try{await col.doc(r.id).set(stripLocal(r));r.synced=true;lsSet(LOCAL_LOG,records)}catch(e){toast("계정 저장 실패 · 이 브라우저에는 저장됨")}}
+  saving=false;
+  newSession();renderHistory();
+  const msg=spidey(r)>=100?`스파이더맨 +1! 지금까지 ${spiderCount(records)} 스파이더맨`:`저장됨 · 스파이더맨 지수 ${spidey(r)}% (${tierOf(spidey(r))})`;
+  if(!auto){toast(msg);return}
+  // auto-saved at 20:00: offer to take it back for a few seconds
+  $("undoText").textContent=spidey(r)>=100?"20분 끝! 자동 저장 · 스파이더맨 +1":`20분 끝! 자동 저장했어요 · 지수 ${spidey(r)}%`;
+  $("undoBar").hidden=false;clearTimeout(undoT);
+  undoT=setTimeout(()=>$("undoBar").hidden=true,8000);
+  $("undoBtn").onclick=async()=>{
+    clearTimeout(undoT);$("undoBar").hidden=true;
+    await removeRecord(r.id);
+    S=before;persistDraft();renderSession();
+    toast("저장을 취소했어요. 숫자를 고친 뒤 다시 저장하세요");
+  };
+}
+
+/* ---------- ranking board: board/<id> = one summary doc per person ---------- */
+const spiderCount=rs=>rs.filter(r=>spidey(r)>=100).length;
+let board=[],myNick="";
+function rankNote(t){const n=$("rankNote");n.hidden=!t;n.textContent=t||""}
+function boardSummary(){
+  const wk=weekKey(new Date()),stats={},week={key:wk,pull:0,push:0,squat:0};
+  EX.forEach(x=>{const k=x.k;stats[k]={
+    tot:records.reduce((a,r)=>a+(r[k]||0),0),
+    best:records.reduce((m,r)=>Math.max(m,r[k]||0),0),
+    set:records.reduce((m,r)=>Math.max(m,...(r.rounds||[]).map(z=>z[k]||0)),0)}});
+  records.forEach(r=>{if(weekKey(new Date(r.date))===wk)EX.forEach(x=>week[x.k]+=r[x.k]||0)});
+  return{spiders:spiderCount(records),bestPct:records.reduce((m,r)=>Math.max(m,spidey(r)),0),
+    sessions:records.length,reps:records.reduce((a,r)=>a+r.pull+r.push+r.squat,0),
+    tomSets:records.reduce((m,r)=>Math.max(m,missionSets(r.rounds||[])),0),stats,week};
+}
+async function publishBoard(){
+  if(!DB||!UID||boardBlocked)return;
+  const doc={...boardSummary(),nick:myNick.slice(0,16)};
+  const key=JSON.stringify(doc);
+  if(key===lastBoard)return;
+  lastBoard=key;
+  try{await DB.doc("board/"+UID).set({...doc,updatedAt:Date.now()})}
+  catch(e){boardBlocked=true;lastBoard="";
+    rankNote("랭킹 저장에 실패했어요. 잠시 뒤 다시 시도해 주세요.");setTimeout(()=>{boardBlocked=false},30000)}
+}
+async function initBoard(){
+  $("rankSync").textContent="불러오는 중…";
+  DB.collection("board").onSnapshot(snap=>{
+    board=snap.docs.map(d=>({id:d.id,...d.data()}));
+    $("rankSync").textContent=`${board.length}명 참여`;
+    renderRank();if(!$("pane-me").hidden)renderProfile();
+  },()=>{$("rankSync").textContent="";rankNote("랭킹을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.")});
+  publishBoard();
+}
+let rankTab=lsGet("bw20-rank","spidey"),rankEx=lsGet("bw20-rankex","pull"),rankMetric=lsGet("bw20-rankm","tot");
+const METRICS={tot:"누적",best:"한 번 최고",set:"한 세트 최고"};
+async function renderRank(){
+  document.querySelectorAll("[data-rk]").forEach(b=>b.setAttribute("aria-selected",b.dataset.rk===rankTab));
+  const list=$("rankList"),ctl=$("rankCtl"),wk=weekKey(new Date());
+  let rows,score,big,sub,unit,color="var(--danger)";
+  if(rankTab==="spidey"){
+    $("rankTitle").textContent="스파이더맨 랭킹";ctl.innerHTML="";
+    $("rankRule").innerHTML=`20분 안에 스파이더맨 지수 <b>100%</b>(철봉 140 · 팔굽혀펴기 280 · 스쿼트 420)를 찍을 때마다 <b>1 스파이더맨</b>. 같으면 최고 지수, 그다음 총 횟수 순.`;
+    rows=[...board].sort((a,b)=>(b.spiders||0)-(a.spiders||0)||(b.bestPct||0)-(a.bestPct||0)||(b.reps||0)-(a.reps||0));
+    score=r=>`${r.spiders||0}|${r.bestPct||0}|${r.reps||0}`;big=r=>r.spiders||0;unit="스파이더맨";
+    sub=r=>`최고 ${r.bestPct||0}% · ${tierOf(r.bestPct||0)} · 톰 세트 최고 ${r.tomSets||0} · 총 ${r.reps||0}회`;
+  }else if(rankTab==="ex"){
+    const x=EX.find(e=>e.k===rankEx)||EX[0],k=x.k;color=`var(--${k})`;
+    $("rankTitle").textContent=`${x.name} 랭킹`;
+    ctl.innerHTML=`<div class="rankctl"><div class="chips">${EX.map(e=>`<button class="chip" data-rex="${e.k}" style="--c:var(--${e.k})" aria-pressed="${e.k===k}">${e.name}</button>`).join("")}</div>
+      <div class="seg wide" role="group" aria-label="기준">${Object.entries(METRICS).map(([m,l])=>`<button data-rm="${m}" aria-pressed="${m===rankMetric}">${l}</button>`).join("")}</div></div>`;
+    $("rankRule").textContent=rankMetric==="tot"?`지금까지 한 ${x.name} 전체 횟수`:rankMetric==="best"?`한 번(20분) 운동에서 한 ${x.name} 최고 횟수`:`한 세트에서 한 ${x.name} 최고 횟수`;
+    const v=r=>((r.stats||{})[k]||{})[rankMetric]||0;
+    rows=[...board].filter(r=>r.stats).sort((a,b)=>v(b)-v(a));
+    score=r=>String(v(r));big=v;unit="회";
+    sub=r=>{const st=(r.stats||{})[k]||{};return `누적 ${st.tot||0} · 한 번 최고 ${st.best||0} · 한 세트 최고 ${st.set||0}`};
+  }else{
+    $("rankTitle").textContent="이번 주 랭킹";ctl.innerHTML="";
+    $("rankRule").textContent=`${PERIODS.week.long(wk)} 동안 세 종목을 합친 횟수. 매주 월요일에 새로 시작해요.`;
+    const w=r=>r.week&&r.week.key===wk?r.week:{pull:0,push:0,squat:0};
+    const t=r=>{const x=w(r);return x.pull+x.push+x.squat};
+    rows=[...board].sort((a,b)=>t(b)-t(a));
+    score=r=>String(t(r));big=t;unit="회";
+    sub=r=>{const x=w(r);return `철봉 ${x.pull} · 팔굽혀펴기 ${x.push} · 스쿼트 ${x.squat}`};
+  }
+  const mine=$("myRank");
+  const ranked=[];let rank=0,prev=null;
+  rows.forEach((r,i)=>{const sc=score(r);if(sc!==prev){rank=i+1;prev=sc}ranked.push({r,rank})});
+  const nm=r=>r.nick||"닉네임 없는 거미";
+  // my position, and how far the person above is
+  const me=ranked.findIndex(e=>e.r.id===UID);
+  if(me<0){mine.hidden=true}
+  else{
+    const e=ranked[me],above=ranked.slice(0,me).reverse().find(x=>x.rank<e.rank);
+    const diff=above?Number(big(above.r))-Number(big(e.r)):0;
+    mine.hidden=false;
+    mine.innerHTML=`<span class="mr-no">${e.rank}<small>/${rows.length}</small></span><b></b><span class="mr-v"></span><span></span>`;
+    mine.querySelector("b").textContent="내 순위";
+    mine.querySelector(".mr-v").textContent=`${big(e.r)}${unit==="회"?"회":""}`;
+    mine.querySelector("span:last-child").textContent=e.rank===1?"1위를 지키는 중!":above?(diff>0?`${above.rank}위까지 ${diff}${unit==="스파이더맨"?" 스파이더맨":"회"}`:`${above.rank}위와 동점, 다음 기준에서 밀려요`):"";
+  }
+  list.innerHTML="";
+  if(!rows.length){list.innerHTML=`<li style="display:block"><p class="empty">아직 기록이 없어요. 운동을 저장하면 랭킹에 올라가요.</p></li>`;return}
+  ranked.forEach(({r,rank},i)=>{
+    const li=document.createElement("li");
+    li.className=(r.id===UID?"me ":"")+(i===0?"top":"");
+    li.innerHTML=`<span class="lb-no"></span><span class="lb-av"></span><span class="lb-who"><b></b><small></small></span><span class="lb-v"><b></b><small></small></span>`;
+    li.querySelector(".lb-no").textContent=rank;
+    li.querySelector(".lb-av").textContent=[...nm(r)][0]||"?";
+    li.querySelector(".lb-who b").textContent=nm(r)+(r.id===UID?" · 나":"");
+    li.querySelector(".lb-who small").textContent=sub(r);
+    li.querySelector(".lb-v b").textContent=big(r);
+    li.querySelector(".lb-v small").textContent=unit;
+    list.appendChild(li);
+  });
+}
+document.querySelectorAll("[data-rk]").forEach(b=>b.addEventListener("click",()=>{rankTab=b.dataset.rk;lsSet("bw20-rank",rankTab);renderRank()}));
+$("rankCtl").addEventListener("click",e=>{
+  const c=e.target.closest("[data-rex]"),m=e.target.closest("[data-rm]");
+  if(c){rankEx=c.dataset.rex;lsSet("bw20-rankex",rankEx)}
+  if(m){rankMetric=m.dataset.rm;lsSet("bw20-rankm",rankMetric)}
+  if(c||m)renderRank();
+});
+$("nickInput").value=myNick;
+
+$("nickSave").addEventListener("click",()=>{
+  if(!DB){toast("서버에 연결되면 랭킹에 반영돼요");return}
+  const n=cleanNick($("nickInput").value);
+  if(n.length<2){toast("닉네임은 2~16자로 정해 주세요");return}
+  if(board.some(r=>r.id!==UID&&(r.nick||"").toLowerCase()===n.toLowerCase())){toast(`'${n}'은(는) 이미 누가 쓰고 있어요`);return}
+  myNick=n;lsSet("bw20-nick:"+UID,myNick);$("nickInput").value=n;renderMeBadge();
+  publishBoard().then(()=>toast(boardBlocked?"닉네임 저장 실패":"닉네임 저장됨"));
+});
+
+async function removeRecord(id){
+  records=records.filter(r=>r.id!==id);lsSet(LOCAL_LOG,records);renderHistory();
+  if(col){try{await col.doc(id).delete()}catch(e){toast("삭제 실패")}}
+}
+
+function renderMeBadge(){
+  const el=$("meBadge");if(!el)return;
+  if(!myNick){el.hidden=true;return}
+  el.hidden=false;el.textContent="";
+  const n=document.createElement("span");n.textContent=myNick;
+  const c=document.createElement("b");c.textContent=`${spiderCount(records)}`;
+  el.append(n,c,document.createTextNode("스파이더맨"));
+  if(!$("pane-me").hidden)renderProfile();
+}
+function renderHistory(){
+  publishBoard();renderMeBadge();
+  const rs=[...records].sort((a,b)=>b.date-a.date);
+  renderCalendar();renderStats();renderWeek();
+}
+function stackChart(items,label){
+  if(!items.length)return "";
+  const W=600,H=170,pl=34,pb=20,pt=8,bw=Math.min(40,(W-pl)/items.length*0.6);
+  const max=Math.max(...items.map(r=>(r.pull||0)+(r.push||0)+(r.squat||0)),10);
+  const step=niceStep(max),top=Math.ceil(max/step)*step;
+  const y=v=>pt+(H-pt-pb)*(1-v/top);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">`;
+  for(let v=0;v<=top;v+=step)s+=`<line x1="${pl}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-6}" y="${y(v)+3}" text-anchor="end">${v}</text>`;
+  items.forEach((r,i)=>{
+    const cx=pl+(W-pl)*(i+.5)/items.length;let acc=0;
+    EX.forEach(x=>{const v=r[x.k]||0;if(!v)return;
+      s+=`<rect x="${cx-bw/2}" y="${y(acc+v)}" width="${bw}" height="${y(acc)-y(acc+v)}" fill="var(--${x.k})"/>`;acc+=v});
+    s+=`<text x="${cx}" y="${H-5}" text-anchor="middle">${r.label}</text>`;
+  });
+  return s+"</svg>";
+}
+
+/* ---------- calendar & period stats ---------- */
+const pad2=n=>String(n).padStart(2,"0");
+const dayKey=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const monthKey=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+function weekStart(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x} // Monday
+const weekKey=d=>dayKey(weekStart(d));
+function groupBy(keyFn){
+  const m=new Map();
+  records.forEach(r=>{const k=keyFn(new Date(r.date));const g=m.get(k)||{key:k,pull:0,push:0,squat:0,n:0};
+    EX.forEach(x=>g[x.k]+=r[x.k]||0);g.n++;m.set(k,g)});
+  return m;
+}
+let calMonth=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)})();
+let selDay=null;
+let period=lsGet("bw20-period","day");
+
+function renderCalendar(){
+  const byDay=groupBy(dayKey),y=calMonth.getFullYear(),m=calMonth.getMonth();
+  $("calTitle").textContent=`${y}년 ${m+1}월`;
+  const first=new Date(y,m,1),lead=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+  const maxDay=Math.max(1,...[...byDay.values()].map(g=>g.pull+g.push+g.squat));
+  const today=dayKey(new Date());
+  let h="월화수목금토일".split("").map(w=>`<div class="wd">${w}</div>`).join("");
+  for(let i=0;i<lead;i++)h+=`<div class="day out"></div>`;
+  let mDays=0,mTot={pull:0,push:0,squat:0};
+  for(let d=1;d<=days;d++){
+    const k=`${y}-${pad2(m+1)}-${pad2(d)}`,g=byDay.get(k),t=g?g.pull+g.push+g.squat:0;
+    if(g){mDays++;EX.forEach(x=>mTot[x.k]+=g[x.k])}
+    const lv=g?Math.round(20+70*t/maxDay):0;
+    h+=`<button class="day${lv>=55?" hot":""}${k===today?" today":""}${k===selDay?" sel":""}" data-day="${k}" style="--lv:${lv}" aria-label="${m+1}월 ${d}일${g?` ${t}회`:""}"><span>${d}</span>${g?`<small>${t}</small>`:""}</button>`;
+  }
+  $("cal").innerHTML=h;
+  $("calNext").disabled=calMonth>=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+  $("msum").innerHTML=`<span>운동한 날 <b>${mDays}</b>일</span>${EX.map(x=>`<span>${x.name} <b>${mTot[x.k]}</b></span>`).join("")}<span>연속 <b>${streak(byDay)}</b>일</span>`;
+  renderDayDetail();
+}
+function streak(byDay){
+  const d=new Date();if(!byDay.has(dayKey(d)))d.setDate(d.getDate()-1);
+  let n=0;while(byDay.has(dayKey(d))){n++;d.setDate(d.getDate()-1)}
+  return n;
+}
+function renderDayDetail(){
+  const el=$("dayDetail");
+  if(!selDay){el.textContent="날짜를 누르면 그날 기록이 나옵니다.";return}
+  const [yy,mm,dd]=selDay.split("-").map(Number);
+  const rs=records.filter(r=>dayKey(new Date(r.date))===selDay).sort((a,b)=>a.date-b.date);
+  if(!rs.length){el.innerHTML=`<b>${mm}월 ${dd}일</b> · 기록 없음`;return}
+  el.innerHTML=`<b>${mm}월 ${dd}일</b> · ${rs.length}번 운동 · 눌러서 자세히 보기<div class="daylist" style="margin-top:8px">${rs.map(workoutItem).join("")}</div>`;
+}
+$("cal").addEventListener("click",e=>{const b=e.target.closest(".day[data-day]");if(!b)return;selDay=selDay===b.dataset.day?null:b.dataset.day;renderCalendar()});
+$("calPrev").addEventListener("click",()=>{calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()-1,1);renderCalendar()});
+$("calNext").addEventListener("click",()=>{calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+1,1);renderCalendar()});
+
+const PERIODS={
+  day:{name:"하루",keyFn:dayKey,label:k=>{const[,m,d]=k.split("-");return `${+m}/${+d}`},long:k=>{const[y,m,d]=k.split("-");return `${y}.${+m}.${+d}`},
+       prev:k=>null},
+  week:{name:"주",keyFn:weekKey,label:k=>{const[,m,d]=k.split("-");return `${+m}/${+d}~`},long:k=>{const s=new Date(k+"T00:00"),e=new Date(s);e.setDate(e.getDate()+6);return `${s.getMonth()+1}/${s.getDate()} ~ ${e.getMonth()+1}/${e.getDate()} 주`},
+       prev:k=>{const d=new Date(k+"T00:00");d.setDate(d.getDate()-7);return dayKey(d)}},
+  month:{name:"달",keyFn:monthKey,label:k=>`${+k.split("-")[1]}월`,long:k=>{const[y,m]=k.split("-");return `${y}년 ${+m}월`},
+       prev:k=>{const[y,m]=k.split("-").map(Number);return monthKey(new Date(y,m-2,1))}},
+};
+function barChart(items,color,label,goal){
+  if(!items.length)return "";
+  const W=600,H=170,pl=34,pb=20,pt=8,bw=Math.min(40,(W-pl)/items.length*0.6);
+  const max=Math.max(...items.map(r=>r.v),goal||0,5);
+  const step=niceStep(max),top=Math.ceil(max/step)*step;
+  const y=v=>pt+(H-pt-pb)*(1-v/top);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">`;
+  for(let v=0;v<=top;v+=step)s+=`<line x1="${pl}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-6}" y="${y(v)+3}" text-anchor="end">${v}</text>`;
+  if(goal)s+=`<line x1="${pl}" x2="${W}" y1="${y(goal)}" y2="${y(goal)}" stroke="var(--danger)" stroke-width="2" stroke-dasharray="6 4"/><text x="${W-2}" y="${y(goal)-5}" text-anchor="end" style="fill:var(--danger)">${goal}</text>`;
+  items.forEach((r,i)=>{
+    const cx=pl+(W-pl)*(i+.5)/items.length;
+    if(r.v>0)s+=`<rect x="${cx-bw/2}" y="${y(r.v)}" width="${bw}" height="${y(0)-y(r.v)}" rx="3" fill="${r.c||color}"/><text x="${cx}" y="${y(r.v)-4}" text-anchor="middle">${r.v}</text>`;
+    s+=`<text x="${cx}" y="${H-5}" text-anchor="middle">${r.label}</text>`;
+  });
+  return s+"</svg>";
+}
+let statTab=lsGet("bw20-stat","ex"),statEx=lsGet("bw20-statex","pull");
+const fmtDate=t=>{const d=new Date(t);return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`};
+function renderStats(){
+  document.querySelectorAll("[data-st]").forEach(b=>b.setAttribute("aria-selected",b.dataset.st===statTab));
+  $("st-ex").hidden=statTab!=="ex";$("st-best").hidden=statTab!=="best";$("st-spidey").hidden=statTab!=="spidey";
+  if(statTab==="ex")renderExStats();else if(statTab==="best")renderPRs();else renderSpideyStats();
+}
+document.querySelectorAll("[data-st]").forEach(b=>b.addEventListener("click",()=>{statTab=b.dataset.st;lsSet("bw20-stat",statTab);renderStats()}));
+
+/* 종목별: one exercise, by day / week / month */
+function renderExStats(){
+  const ALL={k:"all",name:"전체"};
+  const x=statEx==="all"?ALL:(EX.find(e=>e.k===statEx)||EX[0]),k=x.k,P=PERIODS[period];
+  $("exChips").innerHTML=EX.map(e=>`<button class="chip" data-ex="${e.k}" style="--c:var(--${e.k})" aria-pressed="${e.k===k}">${e.name}</button>`).join("")
+    +`<button class="chip" data-ex="all" style="--c:var(--ink)" aria-pressed="${k==="all"}">전체</button>`;
+  $("exTitle").textContent=x.name;$("exTitle").style.color=k==="all"?"var(--ink)":`var(--${k})`;
+  if(k==="all")return renderAllStats(P);
+  $("pDay").setAttribute("aria-pressed",period==="day");$("pWeek").setAttribute("aria-pressed",period==="week");$("pMonth").setAttribute("aria-pressed",period==="month");
+  const g=groupBy(P.keyFn),all=[...g.values()].filter(v=>v[k]>0);
+  const total=records.reduce((a,r)=>a+(r[k]||0),0),sessions=records.filter(r=>r[k]>0).length;
+  const curKey=P.keyFn(new Date()),cur=g.get(curKey);
+  const bestP=all.length?all.reduce((a,b)=>b[k]>a[k]?b:a):null;
+  const bestSet=records.reduce((m,r)=>Math.max(m,...(r.rounds||[]).map(z=>z[k]||0)),0);
+  const kp=(label,val,sub)=>`<div class="kpi" style="--c:var(--${k})"><small>${label}</small><b>${val}</b><span>${sub||""}</span></div>`;
+  $("exKpis").innerHTML=
+    kp(`이번 ${P.name}`,`${cur?cur[k]:0}회`,bestP?`최고 ${bestP[k]}회 (${P.long(bestP.key)})`:"")+
+    kp("누적",`${total}회`,`${sessions}번 운동`)+
+    kp("운동당 평균",`${sessions?Math.round(total/sessions):0}회`,`톰 홀랜드 20분 ${TOM[k]}회`)+
+    kp("한 세트 최고",`${bestSet||0}회`,`톰 홀랜드 세트 기준 ${MISSION[k]}회`);
+  let keys;
+  if(period==="day")keys=[...g.keys()].sort().slice(-8);
+  else{keys=[];let kk=curKey;for(let i=0;i<8;i++){keys.unshift(kk);kk=P.prev(kk)}}
+  $("pchart").innerHTML=keys.length?barChart(keys.map(kk=>({v:(g.get(kk)||{})[k]||0,label:P.label(kk)})),`var(--${k})`,`최근 ${P.name}별 ${x.name}`)
+    :`<p class="empty">기록을 저장하면 ${x.name} 그래프가 나와요.</p>`;
+}
+/* 전체: the three exercises added up */
+function renderAllStats(P){
+  $("pDay").setAttribute("aria-pressed",period==="day");$("pWeek").setAttribute("aria-pressed",period==="week");$("pMonth").setAttribute("aria-pressed",period==="month");
+  const t=v=>(v.pull||0)+(v.push||0)+(v.squat||0);
+  const g=groupBy(P.keyFn),all=[...g.values()].filter(v=>t(v)>0);
+  const total=records.reduce((a,r)=>a+t(r),0),sessions=records.length;
+  const curKey=P.keyFn(new Date()),cur=g.get(curKey);
+  const bestP=all.length?all.reduce((a,b)=>t(b)>t(a)?b:a):null;
+  const bestSet=records.reduce((m,r)=>Math.max(m,...(r.rounds||[]).map(rsum)),0);
+  const kp=(label,val,sub)=>`<div class="kpi" style="--c:var(--ink)"><small>${label}</small><b>${val}</b><span>${sub||""}</span></div>`;
+  $("exKpis").innerHTML=
+    kp(`이번 ${P.name}`,`${cur?t(cur):0}회`,bestP?`최고 ${t(bestP)}회 (${P.long(bestP.key)})`:"")+
+    kp("누적",`${total}회`,`${sessions}번 운동`)+
+    kp("운동당 평균",`${sessions?Math.round(total/sessions):0}회`,`톰 홀랜드 20분 ${TOM.pull+TOM.push+TOM.squat}회`)+
+    kp("한 세트 최고",`${bestSet||0}회`,`톰 홀랜드 세트 기준 ${MISSION.pull+MISSION.push+MISSION.squat}회`);
+  let keys;
+  if(period==="day")keys=[...g.keys()].sort().slice(-8);
+  else{keys=[];let kk=curKey;for(let i=0;i<8;i++){keys.unshift(kk);kk=P.prev(kk)}}
+  $("pchart").innerHTML=keys.length?stackChart(keys.map(kk=>({...(g.get(kk)||{pull:0,push:0,squat:0}),label:P.label(kk)})),`최근 ${P.name}별 세 종목 합계`)
+    :`<p class="empty">기록을 저장하면 그래프가 나와요.</p>`;
+}
+$("exChips").addEventListener("click",e=>{const b=e.target.closest("[data-ex]");if(!b)return;statEx=b.dataset.ex;lsSet("bw20-statex",statEx);renderExStats()});
+[["pDay","day"],["pWeek","week"],["pMonth","month"]].forEach(([id,p])=>$(id).addEventListener("click",()=>{period=p;lsSet("bw20-period",p);renderExStats()}));
+
+/* 최고 기록: personal records per exercise and overall */
+function renderPRs(){
+  if(!records.length){$("prs").innerHTML=`<p class="empty">아직 기록이 없어요. 운동을 저장하면 종목별 최고 기록이 여기에 쌓여요.</p>`;return}
+  const best=(arr,f)=>arr.reduce((a,b)=>f(b)>f(a)?b:a);
+  const groups={day:[...groupBy(dayKey).values()],week:[...groupBy(weekKey).values()],month:[...groupBy(monthKey).values()]};
+  const row=(label,val,when)=>`<dt>${label}</dt><dd>${val}</dd><dd class="when">${when}</dd>`;
+  let h=EX.map(x=>{
+    const k=x.k,bs=best(records,r=>r[k]||0);
+    let setBest=0,setWhen="";
+    records.forEach(r=>(r.rounds||[]).forEach(z=>{if((z[k]||0)>setBest){setBest=z[k];setWhen=fmtDate(r.date)}}));
+    const d=best(groups.day,g=>g[k]),w=best(groups.week,g=>g[k]),m=best(groups.month,g=>g[k]);
+    return `<div class="pr" style="--c:var(--${k})"><h3>${x.name}</h3><dl>
+      ${row("한 번 운동",`${bs[k]||0}회`,bs[k]?fmtDate(bs.date):"–")}
+      ${row("한 세트",`${setBest}회`,setWhen||"–")}
+      ${row("하루",`${d[k]}회`,d[k]?PERIODS.day.long(d.key):"–")}
+      ${row("한 주",`${w[k]}회`,w[k]?PERIODS.week.long(w.key):"–")}
+      ${row("한 달",`${m[k]}회`,m[k]?PERIODS.month.long(m.key):"–")}
+    </dl></div>`;
+  }).join("");
+  const tot=r=>r.pull+r.push+r.squat,bt=best(records,tot),bm=best(records,r=>missionSets(r.rounds||[]));
+  h+=`<div class="pr" style="--c:var(--ink)"><h3>전체</h3><dl>
+    ${row("한 번 운동 합계",`${tot(bt)}회`,fmtDate(bt.date))}
+    ${row("톰 홀랜드 세트",`${missionSets(bm.rounds||[])}/${MISSION_GOAL}`,missionSets(bm.rounds||[])?fmtDate(bm.date):"–")}
+    ${row("총 운동",`${records.length}번`,`연속 ${streak(groupBy(dayKey))}일`)}
+  </dl></div>`;
+  $("prs").innerHTML=h;
+}
+
+/* 스파이더맨: count, best index, trend, achievement dates */
+function renderSpideyStats(){
+  const rs=[...records].sort((a,b)=>a.date-b.date);
+  const n=spiderCount(rs),bp=rs.reduce((m,r)=>Math.max(m,spidey(r)),0);
+  const nextT=TIERS.find(t=>t[0]>bp);
+  $("spHero").innerHTML=`<div class="big">${n}<small>스파이더맨</small></div>
+    <b>최고 ${bp}% · ${tierOf(bp)}</b>
+    <span>${nextT?`다음 단계 '${nextT[1]}'까지 ${nextT[0]-bp}%`:"최고 단계 달성"}</span>
+    <span>100%(철봉 140 · 팔굽혀펴기 280 · 스쿼트 420)를 한 번 찍을 때마다 1 스파이더맨</span>`;
+  const last=rs.slice(-10);
+  $("spChart").innerHTML=last.length?barChart(last.map(r=>{const v=spidey(r),d=new Date(r.date);return{v,label:`${d.getMonth()+1}/${d.getDate()}`,c:v>=100?"var(--danger)":"var(--muted)"}}),"var(--muted)","최근 운동 스파이더맨 지수",100)
+    :`<p class="empty">운동을 저장하면 지수 그래프가 나와요.</p>`;
+  const wins=rs.filter(r=>spidey(r)>=100).reverse();
+  $("spList").innerHTML=wins.length?wins.map((r,i)=>`<li><span class="d">${fmtDate(r.date)}<span class="tag sp">${spidey(r)}%</span></span><span class="sum">#${wins.length-i}</span>
+      <span class="meta"><span><i style="--c:var(--pull)">철봉</i> ${r.pull}</span><span><i style="--c:var(--push)">팔굽혀펴기</i> ${r.push}</span><span><i style="--c:var(--squat)">스쿼트</i> ${r.squat}</span></span></li>`).join("")
+    :`<li style="display:block"><p class="empty">아직 없어요. 20분 안에 철봉 140 · 팔굽혀펴기 280 · 스쿼트 420을 채우면 첫 스파이더맨이 기록돼요.</p></li>`;
+}
+
+function niceStep(m){const raw=m/4,p=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p}
+
+/* one workout as a tappable row (calendar day list, weekly list) */
+const DAYS_KO="일월화수목금토";
+function workoutItem(r){
+  const d=new Date(r.date),sp=spidey(r);
+  return `<button class="witem" data-wid="${r.id}"><span class="wt">${pad2(d.getHours())}:${pad2(d.getMinutes())}</span>
+    <span class="wm">${EX.map(x=>`<span><i style="--c:var(--${x.k})">${x.name.slice(0,2)}</i> ${r[x.k]||0}</span>`).join("")}</span>
+    <span class="ws">${r.pull+r.push+r.squat}회${sp>=100?"<small>스파이더맨!</small>":`<small style="color:var(--muted)">${sp}%</small>`}</span></button>`;
+}
+/* 주간: today and the six days before it */
+function renderWeek(){
+  const today=new Date();today.setHours(0,0,0,0);
+  const days=[];for(let i=0;i<7;i++){const d=new Date(today);d.setDate(d.getDate()-i);days.push(d)}
+  const keyOf=d=>dayKey(d),byDay={};
+  records.forEach(r=>{const k=dayKey(new Date(r.date));(byDay[k]=byDay[k]||[]).push(r)});
+  const inWeek=days.flatMap(d=>byDay[keyOf(d)]||[]);
+  const sum=k=>inWeek.reduce((a,r)=>a+(r[k]||0),0),tot=sum("pull")+sum("push")+sum("squat");
+  const kp=(l,v,sb,c)=>`<div class="kpi" style="--c:${c||"var(--ink)"}"><small>${l}</small><b>${v}</b><span>${sb||""}</span></div>`;
+  $("wkKpis").innerHTML=kp("운동",`${inWeek.length}번`,`${days.filter(d=>byDay[keyOf(d)]).length}일 운동 · 쉰 날 ${days.filter(d=>!byDay[keyOf(d)]).length}일`)
+    +kp("총 횟수",`${tot}회`,`철봉 ${sum("pull")} · 팔굽 ${sum("push")} · 스쿼트 ${sum("squat")}`)
+    +kp("스파이더맨",spiderCount(inWeek),"이번 7일 동안","var(--danger)")
+    +kp("최고 지수",`${inWeek.reduce((m,r)=>Math.max(m,spidey(r)),0)}%`,tierOf(inWeek.reduce((m,r)=>Math.max(m,spidey(r)),0)));
+  $("chart").innerHTML=stackChart([...days].reverse().map(d=>{const rs=byDay[keyOf(d)]||[];
+    return{pull:rs.reduce((a,r)=>a+r.pull,0),push:rs.reduce((a,r)=>a+r.push,0),squat:rs.reduce((a,r)=>a+r.squat,0),label:`${d.getMonth()+1}/${d.getDate()}`}}),"최근 7일 종목별 횟수");
+  $("wkDays").innerHTML=days.map((d,i)=>{
+    const rs=(byDay[keyOf(d)]||[]).sort((a,b)=>b.date-a.date);
+    const t=rs.reduce((a,r)=>a+r.pull+r.push+r.squat,0);
+    const label=`${d.getMonth()+1}.${d.getDate()} (${DAYS_KO[d.getDay()]})${i===0?"<small>오늘</small>":i===1?"<small style=\"color:var(--muted)\">어제</small>":""}`;
+    if(!rs.length)return `<div class="wkday rest"><div class="wh"><b>${label}</b><em>쉬는 날</em></div></div>`;
+    return `<div class="wkday"><div class="wh"><b>${label}</b><span>${rs.length}번 · ${t}회</span></div><div class="wlist">${rs.map(workoutItem).join("")}</div></div>`;
+  }).join("");
+}
+/* detail sheet */
+function openWorkout(id){
+  const r=records.find(x=>x.id===id);if(!r)return;
+  const d=new Date(r.date),sp=spidey(r),R=r.rounds||[];
+  $("shTitle").textContent=`${d.getMonth()+1}월 ${d.getDate()}일 (${DAYS_KO[d.getDay()]}) ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  $("shBody").innerHTML=`
+    <div class="sh-tags"><span class="tag sp">스파이더맨 ${sp}% · ${tierOf(sp)}</span>${R.length?`<span class="tag">톰 홀랜드 ${missionSets(R)}/${MISSION_GOAL}</span>`:""}<span class="tag">${fmt((r.seconds||0)*1000)} 운동</span></div>
+    <div class="sh-ex">${EX.map(x=>`<div style="--c:var(--${x.k})"><small>${x.name}</small><b>${r[x.k]||0}</b><span>톰 홀랜드 ${TOM[x.k]}의 ${Math.round((r[x.k]||0)/TOM[x.k]*100)}%</span></div>`).join("")}</div>
+    <div class="kpis">
+      <div class="kpi"><small>합계</small><b>${r.pull+r.push+r.squat}회</b><span>${R.length?R.length+"세트":"세트 기록 없음"}</span></div>
+      <div class="kpi"><small>분당</small><b>${r.seconds?((r.pull+r.push+r.squat)/(r.seconds/60)).toFixed(1):"–"}회</b><span>${sp>=100?"이날 1 스파이더맨 획득":`100%까지 ${100-sp}%`}</span></div>
+    </div>
+    ${R.length?`<div style="overflow-x:auto"><table class="rtable"><thead><tr><th>세트</th><th>철봉</th><th>팔굽혀펴기</th><th>스쿼트</th><th>합계</th></tr></thead><tbody>${R.map((z,i)=>`<tr><td>${i+1}${roundDone(z)?" ✓":""}</td><td>${z.pull}</td><td>${z.push}</td><td>${z.squat}</td><td>${rsum(z)}</td></tr>`).join("")}</tbody></table></div>`:""}
+    <button class="btn danger sh-del" id="shDel" data-id="${r.id}">이 기록 삭제</button>`;
+  $("sheet").hidden=false;
+}
+function closeSheet(){$("sheet").hidden=true}
+$("sheetBg").addEventListener("click",closeSheet);$("sheetX").addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("sheet").hidden)closeSheet()});
+$("shBody").addEventListener("click",e=>{
+  const b=e.target.closest("#shDel");if(!b)return;
+  if(!b.classList.contains("arm")){b.classList.add("arm");b.textContent="한 번 더 누르면 삭제돼요";setTimeout(()=>{if(b.isConnected){b.classList.remove("arm");b.textContent="이 기록 삭제"}},3000);return}
+  removeRecord(b.dataset.id);closeSheet();toast("기록을 삭제했어요");
+});
+document.addEventListener("click",e=>{const w=e.target.closest(".witem[data-wid]");if(w)openWorkout(w.dataset.wid)});
+
+const TABS=["work","cal","stats","rank","log","me"]; // "me" (내 정보) opens from the title-bar badge
+var lastTab="work";
+function renderProfile(){
+  const n=myNick||"닉네임 없음";
+  $("pfName").textContent=n;$("pfAv").textContent=[...n][0]||"?";
+  const sp=spiderCount(records),bp=records.reduce((m,r)=>Math.max(m,spidey(r)),0);
+  const reps=records.reduce((a,r)=>a+r.pull+r.push+r.squat,0),tom=records.reduce((m,r)=>Math.max(m,missionSets(r.rounds||[])),0);
+  const myRow=board.find(r=>r.id===UID);
+  const rows=[...board].sort((a,b)=>(b.spiders||0)-(a.spiders||0)||(b.bestPct||0)-(a.bestPct||0)||(b.reps||0)-(a.reps||0));
+  const rk=myRow?rows.findIndex(r=>r.id===UID)+1:0;
+  const kp=(l,v,s,c)=>`<div class="kpi" style="--c:${c||"var(--ink)"}"><small>${l}</small><b>${v}</b><span>${s||""}</span></div>`;
+  $("pfStats").innerHTML=kp("스파이더맨",sp,rk?`스파이더맨 랭킹 ${rk}위 / ${rows.length}명`:"","var(--danger)")
+    +kp("최고 지수",`${bp}%`,tierOf(bp))
+    +kp("총 운동",`${records.length}번`,`연속 ${streak(groupBy(dayKey))}일`)
+    +kp("총 횟수",`${reps}회`,`톰 홀랜드 세트 최고 ${tom}/${MISSION_GOAL}`);
+}
+function showTab(t){
+  if(t!=="me")lastTab=t;
+  TABS.forEach(x=>{$("pane-"+x).hidden=x!==t;const tb=$("tab-"+x);if(tb)tb.setAttribute("aria-selected",x===t)});
+  if(t==="me")renderProfile();
+  document.body.dataset.tab=t;
+  lsSet("bw20-tab",t);window.scrollTo(0,0);
+}
+TABS.forEach(x=>{const tb=$("tab-"+x);if(tb)tb.addEventListener("click",()=>showTab(x))});
+$("meBadge").addEventListener("click",()=>showTab("me"));
+$("meBack").addEventListener("click",()=>showTab(lastTab||"work"));
+{const t0=lsGet("bw20-tab","work");showTab(TABS.includes(t0)&&t0!=="me"?t0:"work")}
+
+let toastT=null;
+/* "add to home screen" tip: iPhone Safari gets instructions, Android/Chrome gets an install button */
+(function(){
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  if(standalone||lsGet("bw20-installtip-off",false))return;
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent),inApp=/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(navigator.userAgent);
+  const tip=$("installTip");
+  if(ios&&!inApp){$("installText").innerHTML="홈 화면에 추가하면 앱처럼 쓸 수 있어요. 아래 <b>공유 버튼</b> → <b>홈 화면에 추가</b>";tip.hidden=false}
+  let deferred=null;
+  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;$("installText").textContent="앱으로 설치하면 주소창 없이 바로 열려요.";$("installBtn").hidden=false;tip.hidden=false});
+  $("installBtn").addEventListener("click",async()=>{if(!deferred)return;deferred.prompt();try{await deferred.userChoice}catch(e){}deferred=null;tip.hidden=true});
+  $("installX").addEventListener("click",()=>{tip.hidden=true;lsSet("bw20-installtip-off",true)});
+  window.addEventListener("appinstalled",()=>{tip.hidden=true;lsSet("bw20-installtip-off",true)});
+})();
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2200)}
+
+renderSession();renderHistory();
+if(S.runningSince)loop();
+initStore();
+</script>
+</body>
+</html>

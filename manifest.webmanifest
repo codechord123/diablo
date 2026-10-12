@@ -1,0 +1,17 @@
+{
+  "name": "20분 맨몸 카운터",
+  "short_name": "스파이더20",
+  "description": "철봉·팔굽혀펴기·스쿼트를 20분 동안 세고, 톰 홀랜드 기준 스파이더맨 지수로 친구들과 겨루는 운동 카운터",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e9ece8",
+  "theme_color": "#d3202e",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
